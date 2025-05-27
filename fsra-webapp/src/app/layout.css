@@ -1,0 +1,54 @@
+/* src/app/layout.css */
+body {
+    margin: 0;
+    display: flex;
+    font-family: Arial, sans-serif;
+  }
+  
+  nav.sidebar {
+    width: 500px;
+    height: 100vh;
+    background-color: #f0f0f0;
+    padding: 20px;
+    box-sizing: border-box;
+    justify-content: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  nav.sidebar h2 {
+    margin-top: 0;
+  }
+  
+  nav.sidebar ul {
+    list-style: none;
+    padding-left: 0;
+  }
+  
+  nav.sidebar ul li {
+    margin-bottom: 10px;
+    text-align: left;
+  }
+
+  nav.sidebar a, a:visited {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  nav.sidebar a:hover {
+    color: #b5b5b5
+  }
+
+  nav.sidebar a:focus {
+    color: #008fc7;
+  }
+
+
+  
+  main.content {
+    flex: 1;
+    padding: 20px;
+  }
+
+  
