@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
           <ul>
             <li><Link href="/">Home</Link></li>
             <li><Link href="/comparer">AIS vs AVR Compare Tool</Link></li>
-            <li><Link href="/feature2">Feature 2</Link></li>
+            <li><Link href="/pba">PBA Search</Link></li>
             <li><Link href="/feature3">Feature 3</Link></li>
           </ul>
         </nav>
@@ -24,7 +24,7 @@ export default function RootLayout({ children }) {
         <main className="content">
           {children}
         </main>
-      </body>
+      </body> 
     </html>
   );
 }
