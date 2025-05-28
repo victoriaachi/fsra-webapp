@@ -1,6 +1,6 @@
 # compare.py
 from flask import Blueprint, jsonify, request
-import pdfplumber 
+import pdfplumber, fitz
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -19,23 +19,30 @@ def compare_route():
 
     try:
         # Extract text from AIS
-        with pdfplumber.open(ais_file) as ais_pdf:
-            ais_text = "\n".join([page.extract_text() or "" for page in ais_pdf.pages])
+        ais_doc = fitz.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
+        ais_text = ""
+        for page in ais_doc:
+            ais_text += page.get_text() + "\n"
+        ais_doc.close()
         
         # Extract text from AVR
         with pdfplumber.open(avr_file) as avr_pdf:
-            avr_text = "\n".join([page.extract_text() or "" for page in avr_pdf.pages])
+            avr_text = ""
+            for page in avr_pdf.pages:
+                avr_text += page.extract_text() + "\n"
 
         # Just print them in the terminal for now
         print("\n===== AIS PDF TEXT =====\n")
         print(ais_text)
-        print("\n===== AVR PDF TEXT =====\n")
+        print("\n===== AVR PDF TABLES =====\n")
         print(avr_text)
 
         return jsonify({
             "result": "Received both files successfully!",
             "ais_length": len(ais_text),
-            "avr_length": len(avr_text)
+            "ais_text": ais_text,
+            "avr_length": len(avr_text),
+            "avr_text": avr_text,
         })
 
     except Exception as e:

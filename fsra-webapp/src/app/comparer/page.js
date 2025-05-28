@@ -6,6 +6,9 @@ export default function PdfUploader() {
   const [ais, setAis] = useState(null);
   const [avr, setAvr] = useState(null);
 
+  const [aisText, setAisText] = useState("");
+  const [avrText, setAvrText] = useState("");
+
   const aisChange = (e) => {
     setAis(e.target.files[0]);
   };
@@ -20,8 +23,8 @@ export default function PdfUploader() {
       return;
     }
     const formData = new FormData();
-  formData.append("ais", ais);
-  formData.append("avr", avr);
+    formData.append("ais", ais);
+    formData.append("avr", avr);
 
   try {
     const response = await fetch("http://127.0.0.1:8080/compare", {
@@ -30,25 +33,15 @@ export default function PdfUploader() {
     });
     const data = await response.json();
     console.log("Backend response:", data);
+
+    setAisText(data.ais_text);
+    setAvrText(data.avr_text);
+
   } catch (error) {
     console.error("Error uploading PDFs:", error);
   }
 }
 
-const [message, setMessage] = useState("");
-
-  const handleSubmit = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:5000/compare", {
-        method: "POST",
-      });
-      const data = await response.json();
-      setMessage(data.result); // Show backend message
-    } catch (error) {
-      console.error("Error:", error);
-      setMessage("Error connecting to backend");
-    }
-  };
 
   return (
     <div>
@@ -76,6 +69,11 @@ const [message, setMessage] = useState("");
       </div>
 
       <button onClick={pdfSubmit}>Submit</button>
+        <h2>Extracted AIS Text</h2>
+      <pre>{aisText}</pre>
+      
+  <h2>Extracted AVR Tables</h2>
+  <pre>{avrText}</pre>
 
     </div>
   );
