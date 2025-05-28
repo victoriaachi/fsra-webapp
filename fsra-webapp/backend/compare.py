@@ -23,7 +23,9 @@ def compare_route():
         ais_text = ""
         for page in ais_doc:
             ais_text += page.get_text() + "\n"
+            field = page.load_widget()
         ais_doc.close()
+
         
         # Extract text from AVR
         with pdfplumber.open(avr_file) as avr_pdf:
