@@ -9,6 +9,9 @@ export default function PdfUploader() {
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
 
+  const [error, setError] = useState("");
+
+
   const aisChange = (e) => {
     setAis(e.target.files[0]);
   };
@@ -19,8 +22,11 @@ export default function PdfUploader() {
 
   const pdfSubmit = async () => {
     if (!ais || !avr) {
-      alert("Please upload both PDF files.");
+      setError("Please upload two files.");
       return;
+    }
+    else {
+      setError("");
     }
     const formData = new FormData();
     formData.append("ais", ais);
@@ -67,7 +73,7 @@ export default function PdfUploader() {
           onChange={avrChange}
         />
       </div>
-
+      {error && <p style={{ color: "red" }}>{error}</p>}
       <button onClick={pdfSubmit}>Submit</button>
         <h2>Extracted AIS Fields</h2>
       <pre>{aisText}</pre>
