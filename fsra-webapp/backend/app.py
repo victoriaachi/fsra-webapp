@@ -1,5 +1,4 @@
 from flask import Flask, jsonify, request
-from test import compare_numbers
 from flask_cors import CORS
 from compare import compare_bp
 from pba import pba_bp
