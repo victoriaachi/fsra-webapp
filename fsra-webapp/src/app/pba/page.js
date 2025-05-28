@@ -26,7 +26,6 @@ export default function pba() {
         body: JSON.stringify({ keyword: inputValue })
       });
       
-  
       const result = await response.json();
       console.log(result.message);
       setSubmitText(inputValue);
@@ -51,12 +50,9 @@ export default function pba() {
         <div>
         
           <p>submitted text: {submittedText}</p>
+
         </div>
-       
-
       </div>
-
-
     )
     
   }

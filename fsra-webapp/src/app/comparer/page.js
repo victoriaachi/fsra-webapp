@@ -11,7 +11,6 @@ export default function PdfUploader() {
 
   const [error, setError] = useState("");
 
-
   const aisChange = (e) => {
     setAis(e.target.files[0]);
   };
@@ -48,11 +47,9 @@ export default function PdfUploader() {
   }
 }
 
-
   return (
     <div>
       <h1>AIS vs AVR Compare Tool</h1>
-
       <div>
         <label htmlFor="ais">AIS:</label>
         <input
@@ -61,9 +58,7 @@ export default function PdfUploader() {
           accept="application/pdf"
           onChange={aisChange}
         />
-        
       </div>
-
       <div>
         <label htmlFor="avr">AVR:</label>
         <input
