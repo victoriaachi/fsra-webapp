@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import './page.css'
 
 export default function PdfUploader() {
   const [ais, setAis] = useState(null);
@@ -23,7 +24,7 @@ export default function PdfUploader() {
   formData.append("avr", avr);
 
   try {
-    const response = await fetch("http://127.0.0.1:5000/compare", {
+    const response = await fetch("http://127.0.0.1:8080/compare", {
       method: "POST",
       body: formData,
     });
@@ -33,6 +34,21 @@ export default function PdfUploader() {
     console.error("Error uploading PDFs:", error);
   }
 }
+
+const [message, setMessage] = useState("");
+
+  const handleSubmit = async () => {
+    try {
+      const response = await fetch("http://127.0.0.1:5000/compare", {
+        method: "POST",
+      });
+      const data = await response.json();
+      setMessage(data.result); // Show backend message
+    } catch (error) {
+      console.error("Error:", error);
+      setMessage("Error connecting to backend");
+    }
+  };
 
   return (
     <div>

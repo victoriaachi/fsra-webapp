@@ -1,4 +1,5 @@
 import "./layout.css";  // import your CSS file
+import './globals.css'
 import Link from "next/link";
  
 
