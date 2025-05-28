@@ -21,9 +21,12 @@ def compare_route():
         # Extract text from AIS
         ais_doc = fitz.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
         ais_text = ""
+        field_count = 0;
         for page in ais_doc:
-            ais_text += page.get_text() + "\n"
-            field = page.load_widget()
+            for field in page.widgets():
+                ais_text += str(field_count) + " " + field.field_name + ": " + field.field_value + "\n"
+                field_count += 1
+            #ais_text += page.get_text() + "\n"
         ais_doc.close()
 
         
@@ -34,10 +37,10 @@ def compare_route():
                 avr_text += page.extract_text() + "\n"
 
         # Just print them in the terminal for now
-        print("\n===== AIS PDF TEXT =====\n")
-        print(ais_text)
-        print("\n===== AVR PDF TABLES =====\n")
-        print(avr_text)
+        #print("\n===== AIS PDF TEXT =====\n")
+        #print(ais_text)
+        #print("\n===== AVR PDF TABLES =====\n")
+        #print(avr_text)
 
         return jsonify({
             "result": "Received both files successfully!",

@@ -69,10 +69,10 @@ export default function PdfUploader() {
       </div>
 
       <button onClick={pdfSubmit}>Submit</button>
-        <h2>Extracted AIS Text</h2>
+        <h2>Extracted AIS Fields</h2>
       <pre>{aisText}</pre>
       
-  <h2>Extracted AVR Tables</h2>
+  <h2>Extracted AVR Text</h2>
   <pre>{avrText}</pre>
 
     </div>

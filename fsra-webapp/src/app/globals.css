@@ -35,6 +35,11 @@ a {
   text-decoration: none;
 }
 
+button:active {
+  background-color: #4CAF50; /* a nice green */
+  color: white;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;

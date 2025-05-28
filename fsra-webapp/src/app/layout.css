@@ -4,8 +4,13 @@ body {
     display: flex;
     font-family: Arial, sans-serif;
   }
+
+  main {
+    margin-left: 300px;
+  }
   
   nav.sidebar {
+    position: fixed;
     width: 300px;
     height: 100vh;
     background-color: #f0f0f0;
