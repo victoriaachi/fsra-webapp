@@ -38,18 +38,18 @@ def compare_route():
                 avr_text += page.extract_text() + "\n"
 
         prompt = f"""
-    You are analyzing a document. Here is its text:
+    You are a pensions actuary analyzing a document. There is text as well as tables and financial statements. Here is the document:
     {avr_text}
 
-    Please find the number of active members in this plan.
-    """
+    Please find the number of ontario plan beneficiaries. It may be in a sentence or found in a table
+"""
 
         ollama_response = requests.post(
             'http://localhost:11434/api/generate',
             json={
-                "model": "llama3",
+                "model": "llama3.2",
                 "prompt": prompt,
-                "stream": False
+                "stream": False,
             }
         )
 
