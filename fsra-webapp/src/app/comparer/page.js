@@ -8,6 +8,7 @@ export default function PdfUploader() {
 
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
+  const [ollamaText, setOllamaText] = useState("");
 
   const [error, setError] = useState("");
 
@@ -41,6 +42,7 @@ export default function PdfUploader() {
 
     setAisText(data.ais_text);
     setAvrText(data.avr_text);
+    setOllamaText(data.ollama_text);
 
   } catch (error) {
     console.error("Error uploading PDFs:", error);
@@ -73,9 +75,11 @@ export default function PdfUploader() {
         <h2>Extracted AIS Fields</h2>
       <pre>{aisText}</pre>
       
-  <h2>Extracted AVR Text</h2>
-  <pre>{avrText}</pre>
+      <h2>Extracted AVR Text</h2>
+      <pre>{avrText}</pre>
 
+      <h2>Ollama Summary</h2>
+      <pre>{ollamaText}</pre>
     </div>
   );
 }

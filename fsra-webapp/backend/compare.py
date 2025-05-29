@@ -1,5 +1,6 @@
 # compare.py
 from flask import Blueprint, jsonify, request
+import requests
 import pdfplumber, fitz
 
 compare_bp = Blueprint('compare', __name__)
@@ -36,6 +37,24 @@ def compare_route():
             for page in avr_pdf.pages:
                 avr_text += page.extract_text() + "\n"
 
+        prompt = f"""
+    You are analyzing a document. Here is its text:
+    {avr_text}
+
+    Please find the number of active members in this plan.
+    """
+
+        ollama_response = requests.post(
+            'http://localhost:11434/api/generate',
+            json={
+                "model": "llama3",
+                "prompt": prompt,
+                "stream": False
+            }
+        )
+
+        result = ollama_response.json().get("response", "No response")
+
         # Just print them in the terminal for now
         #print("\n===== AIS PDF TEXT =====\n")
         #print(ais_text)
@@ -48,6 +67,7 @@ def compare_route():
             "ais_text": ais_text,
             "avr_length": len(avr_text),
             "avr_text": avr_text,
+            "ollama_text": result
         })
 
     except Exception as e:
