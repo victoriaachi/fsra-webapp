@@ -89,7 +89,7 @@ export default function fileUploader() {
       {/* <h2>Ollama Summary</h2>
       <pre>{ollamaText}</pre> */}
       <h2>Gemini Extracted Fields</h2>
-{Object.keys(geminiFields).length > 0 ? (
+{/* {Object.keys(geminiFields).length > 0 ? (
   <table>
     <tbody>
       {Object.entries(geminiFields).map(([key, value]) => (
@@ -102,7 +102,7 @@ export default function fileUploader() {
   </table>
 ) : (
   <p>No Gemini fields extracted.</p>
-)}
+)} */}
 
     </div>
   );

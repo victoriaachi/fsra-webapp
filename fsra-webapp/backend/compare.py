@@ -54,18 +54,19 @@ def compare_route():
         #print("\n===== AVR PDF TABLES =====\n")
         #print(avr_text)
         prompt = f"""
-You are an actuary. From the text below, extract the following 10 fields:
+You are an actuary. From the text below, extract the following 10 fields, if applicable. Otherwise, return "n/a"
 
 1. Market value of assets  
 2. Total liabilities  
 3. Solvency ratio  
-4. Number of Ontario plan members  
-5. Employer contribution 2024  
-6. Employer contribution 2025  
-7. Special payments required  
-8. Average annual pension for salaried members  
-9. Total retired IVHS members  
-10. Funded status  
+4. Number of Ontario plan beneficiaries  
+5. Employer contribution period 1  
+6. Employer contribution period 2  
+7. Employer contribution period 3 
+8. Employer contribution period 4 
+8. Special payments required 
+9. Transfer ratio 
+10. Funded ratio
 
 Please return the results as JSON with this format:
 {{
@@ -100,7 +101,7 @@ Text:
             #"gemini_text": gemini_text,
             "avr_length": len(avr_text),
             "avr_text": avr_text,
-            "gemini_fields": json.loads(gemini_text)
+            "gemini_fields": gemini_fields
             #"ollama_text": result
             #"excel_data_preview": excel_df.head(10).to_dict()
 
