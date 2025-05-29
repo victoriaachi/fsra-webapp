@@ -2,13 +2,17 @@
 import { useState } from "react";
 import './page.css'
 
-export default function PdfUploader() {
+export default function fileUploader() {
   const [ais, setAis] = useState(null);
   const [avr, setAvr] = useState(null);
 
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
-  const [ollamaText, setOllamaText] = useState("");
+  //const [geminiText, setGeminiText] = useState("");
+  const [geminiFields, setGeminiFields] = useState({});
+
+  // const [ollamaText, setOllamaText] = useState("");
+  // const [excelPreview, setExcelPreview] = useState([]);
 
   const [error, setError] = useState("");
 
@@ -20,7 +24,7 @@ export default function PdfUploader() {
     setAvr(e.target.files[0]);
   };
 
-  const pdfSubmit = async () => {
+  const fileSubmit = async () => {
     if (!ais || !avr) {
       setError("Please upload two files.");
       return;
@@ -42,7 +46,11 @@ export default function PdfUploader() {
 
     setAisText(data.ais_text);
     setAvrText(data.avr_text);
-    setOllamaText(data.ollama_text);
+    //setGeminiText(data.gemini_text);
+    setGeminiFields(data.gemini_fields); // structured JSON 🎯
+    //setOllamaText(data.ollama_text);
+    //setExcelPreview(data.excel_Preview);
+    //console.log("Excel preview:", data.excel_preview);
 
   } catch (error) {
     console.error("Error uploading PDFs:", error);
@@ -71,15 +79,31 @@ export default function PdfUploader() {
         />
       </div>
       {error && <p style={{ color: "red" }}>{error}</p>}
-      <button onClick={pdfSubmit}>Submit</button>
+      <button onClick={fileSubmit}>Submit</button>
         <h2>Extracted AIS Fields</h2>
       <pre>{aisText}</pre>
       
       <h2>Extracted AVR Text</h2>
       <pre>{avrText}</pre>
 
-      <h2>Ollama Summary</h2>
-      <pre>{ollamaText}</pre>
+      {/* <h2>Ollama Summary</h2>
+      <pre>{ollamaText}</pre> */}
+      <h2>Gemini Extracted Fields</h2>
+{Object.keys(geminiFields).length > 0 ? (
+  <table>
+    <tbody>
+      {Object.entries(geminiFields).map(([key, value]) => (
+        <tr key={key}>
+          <td><strong>{key.replace(/_/g, " ")}</strong></td>
+          <td>{value}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+) : (
+  <p>No Gemini fields extracted.</p>
+)}
+
     </div>
   );
 }

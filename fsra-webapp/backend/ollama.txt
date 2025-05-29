@@ -1,0 +1,23 @@
+ """
+   with pdfplumber.open(avr_file) as avr_pdf:
+        avr_text = ""
+        for page in avr_pdf.pages:
+            avr_text += page.extract_text() + "\n"
+
+        prompt = f"""
+    You are a pensions actuary analyzing a document. There is text as well as tables and financial statements. Here is the document:
+    {avr_text}
+
+    Please find the number of ontario plan beneficiaries. It may be in a sentence or found in a table"""
+
+        ollama_response = requests.post(
+            'http://localhost:11434/api/generate',
+            json={
+                "model": "llama3.2",
+                "prompt": prompt,
+                "stream": False,
+            }
+        )
+
+        result = ollama_response.json().get("response", "No response") 
+        """
