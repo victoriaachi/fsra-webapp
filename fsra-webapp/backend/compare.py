@@ -6,6 +6,8 @@ import pandas as pd
 from gemini import call_gemini 
 import pdfplumber
 import json
+import re
+from number_compare import num_equal
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -57,30 +59,27 @@ def compare_route():
 You are an actuary. From the text below, extract the following 10 fields, if applicable. Otherwise, return "n/a"
 
 1. Market value of assets  
-2. Total liabilities  
+2. Net Surplus/Deficit
 3. Solvency ratio  
 4. Number of Ontario plan beneficiaries  
-5. Employer contribution period 1  
-6. Employer contribution period 2  
-7. Employer contribution period 3 
-8. Employer contribution period 4 
-8. Special payments required 
-9. Transfer ratio 
-10. Funded ratio
+5. Normal cost (defined benefit provision) - employer, period 1
+6. Normal cost (defined benefit provision) - employer, period 2   
+7. Normal cost (defined benefit provision) - employer, period 3
+8. Normal cost (defined benefit provision) - employer, period 4
+9. Transfer ratio
 
 Please return the results as JSON with this format:
 {{
-  "total_assets": "...",
-  "total_liabilities": "...",
-  "solvency_ratio": "...",
-  "number_of_ontario_members": "...",
-  "employer_contribution_2024": "...",
-  "employer_contribution_2025": "...",
-  "special_payments_required": "...",
-  "avg_annual_pension_salaried": "...",
-  "retired_ivhs_members": "...",
-  "funded_status": "..."
-}}
+    "market_value_of_assets": "...",
+    "net_surplus_deficit": "..."",
+    "solvency_ratio": "1....",
+    "number_of_ontario_plan_beneficiaries": "...",
+    "normal_cost_(defined_benefit_provision)_employer_period_1": "...",
+    "normal_cost_(defined_benefit_provision)_employer_period_2": "...",
+    "normal_cost_(defined_benefit_provision)_employer_period_3": ""..."",
+    "normal_cost_(defined_benefit_provision)_employer_period_4": ""..."",
+    "transfer_ratio": "..."
+  }}
 
 Text:
 {avr_text}
@@ -90,9 +89,27 @@ Text:
 
         try:
             gemini_fields = json.loads(gemini_text)
+ 
         except json.JSONDecodeError:
             gemini_fields = {"error": "Gemini returned invalid JSON"}
             print("⚠️ Could not parse Gemini response as JSON:\n", gemini_text)
+
+        # Load ais.json file (assuming ais.json is in the same directory as compare.py)
+        with open('ais.json', 'r') as f:
+            ais_json = json.load(f)
+
+        # Now compare ais_json and gemini_fields
+        print("Comparison between ais.json and Gemini Fields:")
+
+        for key in ais_json.keys():
+            ais_value = ais_json[key]
+            gemini_value = gemini_fields.get(key)
+            if num_equal(ais_value, gemini_value):
+                print(f"[MATCH] {key}: {ais_value}")
+            else:
+                print(f"[DIFFERENT] {key} -> ais.json: {ais_value} | gemini_fields: {gemini_value}")
+
+
 
         return jsonify({
             "result": "Received both files successfully!",

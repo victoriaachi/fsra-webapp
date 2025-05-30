@@ -9,7 +9,7 @@ export default function fileUploader() {
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
   //const [geminiText, setGeminiText] = useState("");
-  const [geminiFields, setGeminiFields] = useState({});
+  const [geminiFields, setGeminiFields] = useState([]);
 
   // const [ollamaText, setOllamaText] = useState("");
   // const [excelPreview, setExcelPreview] = useState([]);
@@ -47,7 +47,8 @@ export default function fileUploader() {
     setAisText(data.ais_text);
     setAvrText(data.avr_text);
     //setGeminiText(data.gemini_text);
-    setGeminiFields(data.gemini_fields); // structured JSON 🎯
+    //setGeminiFields(data.gemini_fields); // structured JSON 🎯
+    setGeminiFields(data.gemini_fields);
     //setOllamaText(data.ollama_text);
     //setExcelPreview(data.excel_Preview);
     //console.log("Excel preview:", data.excel_preview);
@@ -89,20 +90,30 @@ export default function fileUploader() {
       {/* <h2>Ollama Summary</h2>
       <pre>{ollamaText}</pre> */}
       <h2>Gemini Extracted Fields</h2>
-{/* {Object.keys(geminiFields).length > 0 ? (
+      <h2>Gemini Field Comparison</h2>
+{geminiFields.length > 1 ? (
   <table>
+    <thead>
+      <tr>
+        {fieldsTable[0].map((header, i) => (
+          <th key={i}>{header}</th>
+        ))}
+      </tr>
+    </thead>
     <tbody>
-      {Object.entries(geminiFields).map(([key, value]) => (
-        <tr key={key}>
-          <td><strong>{key.replace(/_/g, " ")}</strong></td>
-          <td>{value}</td>
+      {geminiFields.slice(1).map((row, rowIndex) => (
+        <tr key={rowIndex}>
+          {row.map((cell, cellIndex) => (
+            <td key={cellIndex}>{cell}</td>
+          ))}
         </tr>
       ))}
     </tbody>
   </table>
 ) : (
-  <p>No Gemini fields extracted.</p>
-)} */}
+  <p>No field data available.</p>
+)}
+
 
     </div>
   );
