@@ -7,7 +7,7 @@ from gemini import call_gemini
 import pdfplumber
 import json
 import re
-from number_compare import num_equal
+from value_compare import val_equal
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -28,12 +28,16 @@ def compare_route():
         # Extract text from AIS
         ais_doc = fitz.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
         ais_text = ""
-        field_count = 0;
+        field_count = 0
+        seen_fields = set()  # track field names we already processed
+
         for page in ais_doc:
             for field in page.widgets():
-                ais_text += str(field_count) + " " + field.field_name + ": " + field.field_value + "\n"
-                field_count += 1
-            #ais_text += page.get_text() + "\n"
+                if field.field_name not in seen_fields:
+                    ais_text += f"{field_count} {field.field_name}: {field.field_value}\n"
+                    seen_fields.add(field.field_name)
+                    field_count += 1
+
         ais_doc.close()
 
         with pdfplumber.open(avr_file) as avr_pdf:

@@ -4,6 +4,10 @@ def extract_num(s):
     result = None  # default result if no number found
 
     if s is not None:
+
+        if re.fullmatch(r'\d{4}-\d{2}-\d{2}', s):
+            return int(s.replace('-', ''))
+
         # Check if number is in parentheses -> treat as negative
         is_negative = False
         s = s.strip()
@@ -13,7 +17,6 @@ def extract_num(s):
 
         # Remove commas
         s = s.replace(',', '')
-        s = s.replace('-', '')
 
         # Extract number with optional decimal and % sign
         match = re.search(r'([-+]?\d*\.?\d+)%?', s)
@@ -32,13 +35,16 @@ def extract_num(s):
     return result
 
 
-def num_equal(str1, str2, tol=1e-9):
+def val_equal(str1, str2, tol=1e-9):
     num1 = extract_num(str1)
     num2 = extract_num(str2)
     print(num_equal);
     print(num1);
     print(num2);
     
+    if num1 is None and num2 is None:
+        return True
+
     if num1 is None or num2 is None:
         return False
     
