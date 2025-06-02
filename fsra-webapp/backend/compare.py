@@ -7,7 +7,10 @@ from gemini import call_gemini
 import pdfplumber
 import json
 import re
-from value_compare import val_equal
+import copy
+import array
+from value_compare import val_equal, extract_num
+from template import key_map, titles
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -24,6 +27,22 @@ def compare_route():
     print("AIS filename:", ais_file.filename)
     print("AVR filename:", avr_file.filename)
 
+    #ais_dict = copy.deepcopy(key_map);
+    # variable names
+    keys = list(key_map.keys());
+    # values in ais
+    ais_vals = [""]*len(key_map);
+    avr_vals = [""]*len(key_map);
+    # titles to display/ask api
+    # titles = list(key_map); ---------- already imported
+    # boolean array to keep track of values that are found
+    ais_found = [0]*len(key_map);
+    avr_found = [0]*len(key_map);
+    compare = [0]*len(key_map);
+
+    titles_str = ", ".join(titles)
+
+
     try:
         # Extract text from AIS
         ais_doc = fitz.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
@@ -34,7 +53,18 @@ def compare_route():
         for page in ais_doc:
             for field in page.widgets():
                 if field.field_name not in seen_fields:
-                    ais_text += f"{field_count} {field.field_name}: {field.field_value}\n"
+                    extracted_val = field.field_value
+                    #print(f"{keys[field_count]}: {extracted_val}")
+                    if extracted_val is not None:
+                        ais_text += f"{field_count} {field.field_name}: {extracted_val}\n"
+                        ais_vals[field_count] = extracted_val;
+                        ais_found[field_count] = 1;
+                        #print(f"{field_count}: {ais_vals[field_count]}")
+                        #print(f"{keys[field_count]}");
+                        # seen_fields.add(field.field_name)
+                        # field_count += 1
+                    #ais_text += f"{field.field_name}\n"
+                    #ais_text += f"{field_count} {field.field_name}: {field.field_value}\n"
                     seen_fields.add(field.field_name)
                     field_count += 1
 
@@ -60,58 +90,83 @@ def compare_route():
         #print("\n===== AVR PDF TABLES =====\n")
         #print(avr_text)
         prompt = f"""
-You are an actuary. From the text below, extract the following 10 fields, if applicable. Otherwise, return "n/a"
-
-1. Market value of assets  
-2. Net Surplus/Deficit
-3. Solvency ratio  
-4. Number of Ontario plan beneficiaries  
-5. Normal cost (defined benefit provision) - employer, period 1
-6. Normal cost (defined benefit provision) - employer, period 2   
-7. Normal cost (defined benefit provision) - employer, period 3
-8. Normal cost (defined benefit provision) - employer, period 4
-9. Transfer ratio
+You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
+If you cannot find a field or if does not contain numbers, return "". If the value is a date, please return it in YYYYMMDD format.
 
 Please return the results as JSON with this format:
 {{
-    "market_value_of_assets": "...",
-    "net_surplus_deficit": "..."",
-    "solvency_ratio": "1....",
-    "number_of_ontario_plan_beneficiaries": "...",
-    "normal_cost_(defined_benefit_provision)_employer_period_1": "...",
-    "normal_cost_(defined_benefit_provision)_employer_period_2": "...",
-    "normal_cost_(defined_benefit_provision)_employer_period_3": ""..."",
-    "normal_cost_(defined_benefit_provision)_employer_period_4": ""..."",
-    "transfer_ratio": "..."
+    "field_1": "",
+    "field_2": ""
   }}
 
 Text:
 {avr_text}
 """
 
-        gemini_text = call_gemini(prompt)
+        gemini = call_gemini(prompt)
+        print(gemini)
+        #gemini_text = gemini.text.strip()
 
         try:
-            gemini_fields = json.loads(gemini_text)
+            gemini_fields = json.loads(gemini)
+            
  
         except json.JSONDecodeError:
             gemini_fields = {"error": "Gemini returned invalid JSON"}
             print("⚠️ Could not parse Gemini response as JSON:\n", gemini_text)
 
         # Load ais.json file (assuming ais.json is in the same directory as compare.py)
-        with open('ais.json', 'r') as f:
-            ais_json = json.load(f)
+        # with open('ais.json', 'r') as f:
+        #     ais_json = json.load(f)
 
-        # Now compare ais_json and gemini_fields
-        print("Comparison between ais.json and Gemini Fields:")
+        try:
+            parsed_json = json.loads(gemini)
+            avr_vals = list(parsed_json.values())
+            print("parsing worked")
+            print("List of values:", avr_vals)
+            for i, val in enumerate(avr_vals):
+                if val is not None:
+                    avr_found[i] = 1;
+            print(avr_found)
+            print(ais_found)
+        except json.JSONDecodeError as e:
+            print("JSON parsing error:", e)
+            print("Raw output:", gemini_text)
 
-        for key in ais_json.keys():
-            ais_value = ais_json[key]
-            gemini_value = gemini_fields.get(key)
-            if num_equal(ais_value, gemini_value):
-                print(f"[MATCH] {key}: {ais_value}")
-            else:
-                print(f"[DIFFERENT] {key} -> ais.json: {ais_value} | gemini_fields: {gemini_value}")
+
+        # Now compare ais_json and gemini_fields ----- ais list
+        print("Comparison between ais list and Gemini Fields (json):")
+        for i, (ais_val, avr_val) in enumerate(zip(ais_vals, avr_vals)):
+            print(f"Index: {i}")
+            print(f"AIS Value: {ais_val}")
+            print(f"AVR Value: {avr_val}")
+
+            if avr_found[i] == 0 and ais_found[i] == 0: # both are not found
+                compare[i] = 1;
+            elif avr_found[i] == 0 or ais_found[i] == 0: # found/not found
+                compare[i] = 0;
+            else: # both found, compare first
+                if val_equal(ais_val, avr_val):
+                    print("match")
+                    compare[i] = 1;
+                else:
+                    print("different")
+                    compare[i] = 0;
+        
+        for i, (ais_val, avr_val, compare_val) in enumerate(zip(ais_vals, avr_vals, compare)):
+            print(i)
+            if compare_val == 0:
+                print(f"ais value: {ais_val}, avr value: {avr_val}")
+
+
+
+        # for key in ais_json.keys():
+        #     ais_value = ais_json[key]
+        #     gemini_value = gemini_fields.get(key)
+        #     if val_equal(ais_value, gemini_value):
+        #         print(f"[MATCH] {key}: {ais_value}")
+        #     else:
+        #         print(f"[DIFFERENT] {key} -> ais.json: {ais_value} | gemini_fields: {gemini_value}")
 
 
 

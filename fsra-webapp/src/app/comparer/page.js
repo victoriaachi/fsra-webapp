@@ -91,28 +91,8 @@ export default function fileUploader() {
       <pre>{ollamaText}</pre> */}
       <h2>Gemini Extracted Fields</h2>
       <h2>Gemini Field Comparison</h2>
-{geminiFields.length > 1 ? (
-  <table>
-    <thead>
-      <tr>
-        {fieldsTable[0].map((header, i) => (
-          <th key={i}>{header}</th>
-        ))}
-      </tr>
-    </thead>
-    <tbody>
-      {geminiFields.slice(1).map((row, rowIndex) => (
-        <tr key={rowIndex}>
-          {row.map((cell, cellIndex) => (
-            <td key={cellIndex}>{cell}</td>
-          ))}
-        </tr>
-      ))}
-    </tbody>
-  </table>
-) : (
+
   <p>No field data available.</p>
-)}
 
 
     </div>
