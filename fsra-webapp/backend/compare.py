@@ -2,7 +2,7 @@
 from flask import Blueprint, jsonify, request
 import requests
 import fitz
-import pandas as pd
+#import pandas as pd
 from gemini import call_gemini_compare
 import pdfplumber
 import json
@@ -61,7 +61,7 @@ def compare_route():
                 if field.field_name not in seen_fields:
                     extracted_val = field.field_value
                     #print(f"{keys[field_count]}: {extracted_val}")
-                    if extracted_val is not None:
+                    if extracted_val is not None and extracted_val != "":
                         ais_text += f"{field_count} {field.field_name}: {extracted_val}\n"
                         ais_vals[field_count] = extracted_val;
                         ais_found[field_count] = 1;
@@ -109,7 +109,7 @@ Text:
 {avr_text}
 """
 
-        gemini = call_gemini(prompt)
+        gemini = call_gemini_compare(prompt)
         print(gemini)
         #gemini_text = gemini.text.strip()
 
@@ -131,7 +131,7 @@ Text:
             print("parsing worked")
             print("List of values:", avr_vals)
             for i, val in enumerate(avr_vals):
-                if val is not None:
+                if val is not None and val != "":
                     avr_found[i] = 1;
             print(avr_found)
             print(ais_found)

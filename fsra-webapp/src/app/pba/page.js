@@ -7,6 +7,7 @@ export default function pba() {
   const [inputValue, setInputValue] = useState("");
   const [submittedText, setSubmitText] = useState("");
   const [error, setError] = useState("");
+  const [definition, setDefinitionText] = useState("");
 
   const handleSubmit = async () => {
     const trimmedInput = inputValue.trim();
@@ -16,6 +17,8 @@ export default function pba() {
     }
     else {
       setError("");
+      setSubmitText(inputValue);
+      setInputValue(""); // clear input
     }
     try {
       const response = await fetch("http://127.0.0.1:8080/pba", {
@@ -28,7 +31,8 @@ export default function pba() {
       
       const result = await response.json();
       console.log(result.message);
-      setSubmitText(inputValue);
+      setDefinitionText(result.definition);
+      
   
       setInputValue(""); // clear input
     } catch (error) {
@@ -51,6 +55,10 @@ export default function pba() {
         
           <p>submitted text: {submittedText}</p>
 
+        </div>
+        <div>
+          <h2> Definition</h2>
+          <p>{definition}</p>
         </div>
       </div>
     )

@@ -1,7 +1,9 @@
 from flask import Blueprint, jsonify, request
 from gemini import call_gemini_pba
 import requests
-from bs4 import BeautifulSoup
+from docx import Document 
+from doc2docx import convert
+import os
 
 pba_bp = Blueprint('pba', __name__)
 
@@ -9,23 +11,27 @@ pba_bp = Blueprint('pba', __name__)
 def submit_keyword():
     data = request.json
     url = "https://www.ontario.ca/laws/statute/90p08"
+    doc_path = "./pba.doc"
+    docx_path = "./pba_converted.docx"
     keyword = data.get('keyword', '').strip()
     print(f"Received keyword in blueprint: {keyword}")
-    # You can process keyword here
+
+
     
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # raise error if invalid response
-        soup = BeautifulSoup(response.content, 'html.parser')
-
-        # Step 2: Extract main text content
-        page_text = soup.get_text(separator='\n')[:5000]  # limit to 5k chars if needed
+        # Convert .doc to .docx
+        convert(doc_path)
+        # Extract text from converted .docx
+        doc = Document("./pba.docx")
+        pba_text = "\n".join([para.text for para in doc.paragraphs])
+        #print(pba_text)
 
         prompt = f"""
-You are an actuary. Using the content below, define the term "{keyword}".
+You are an actuary. Using the content in the following text, define the term "{keyword} and give the section/reference
+If the term cannot be found in the following text or if it is not related to pensions, return "Please enter a word that is related to pensions"".
 
 Content:
-{page_text}
+{pba_text}
 """
 
         gemini_response = call_gemini_pba(prompt)
