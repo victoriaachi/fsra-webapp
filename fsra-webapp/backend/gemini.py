@@ -5,7 +5,12 @@ import google.generativeai as genai
 genai.configure(api_key="AIzaSyBZpiIY4SowywMml4IdUJddsFZn98WDWJQ")
 
 # Reusable function
-def call_gemini(prompt):
+def call_gemini_compare(prompt):
     model = genai.GenerativeModel("gemini-1.5-flash", generation_config={"response_mime_type": "application/json"})
+    response = model.generate_content(prompt)
+    return response.text
+
+def call_gemini_pba(prompt):
+    model = genai.GenerativeModel("gemini-1.5-flash")
     response = model.generate_content(prompt)
     return response.text

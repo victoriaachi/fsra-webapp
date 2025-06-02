@@ -3,7 +3,7 @@ from flask import Blueprint, jsonify, request
 import requests
 import fitz
 import pandas as pd
-from gemini import call_gemini 
+from gemini import call_gemini_compare
 import pdfplumber
 import json
 import re
@@ -11,6 +11,12 @@ import copy
 import array
 from value_compare import val_equal, extract_num
 from template import key_map, titles
+
+# llm = ChatOpenAI(
+#     temperature=0,
+#     model="gpt-3.5-turbo",
+#     openai_api_key=os.getenv("OPENAI_API_KEY", "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")
+# )
 
 compare_bp = Blueprint('compare', __name__)
 
