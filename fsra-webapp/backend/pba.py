@@ -31,8 +31,8 @@ def submit_keyword():
         prompt = f"""
 You are an actuary. Using the content in the following text, define the term "{keyword}. 
 If a clear definition is found, return it.
-If the term is mentioned or explained indirectly, return a best-guess explanation with source section.
-If the term truly does not appear or cannot be defined from the text, return "" for all fields.
+If the term is mentioned, return a best-guess explanation with source section.
+If the term does not appear or cannot be defined from the text, return "" for all fields.
 Give the section number and the few sentences of text you got your definition from.
 Please return the results as JSON with this format:
 {{
