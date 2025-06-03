@@ -8,8 +8,11 @@ export default function pba() {
   const [submittedText, setSubmitText] = useState("");
   const [error, setError] = useState("");
   const [definition, setDefinitionText] = useState("");
+  const [sectionName, setSectionName] = useState("");
+  const [sectionText, setSectionText] = useState("");
 
   const handleSubmit = async () => {
+    event.preventDefault();
     const trimmedInput = inputValue.trim();
     if (trimmedInput.length === 0) {
       setError("Please enter a valid keyword.");
@@ -22,6 +25,8 @@ export default function pba() {
     }
     try {
       setDefinitionText("searching...");
+      setSectionName("");
+      setSectionText("");
       const response = await fetch("http://127.0.0.1:8080/pba", {
         method: 'POST',
         headers: {
@@ -32,7 +37,16 @@ export default function pba() {
       
       const result = await response.json();
       console.log(result.message);
-      setDefinitionText(result.definition);
+      if (definition === null || sectionName === null || sectionText === null) {
+        setError("Please enter a keyword that is related to pensions.");
+      }
+      else {
+        setDefinitionText("error");
+        setDefinitionText(result.definition);
+        setSectionText(result.section_text);
+        setSectionName(result.section_name);
+      }
+      
       
   
       setInputValue(""); // clear input
@@ -45,10 +59,16 @@ export default function pba() {
       <div> 
         <h1> Pension Benefits Act Search</h1>
         <div>
-          <input type="text" placeholder="Enter keyword" value={inputValue} onChange={(e) => setInputValue(e.target.value)}></input>
-          <button onClick={handleSubmit}>Submit</button>
-
         </div>
+        <form onSubmit={handleSubmit}>
+        <input 
+          type="text" 
+          placeholder="Enter keyword" 
+          value={inputValue} 
+          onChange={(e) => setInputValue(e.target.value)}
+        />
+        <button type="submit">Submit</button>
+      </form>
 
         {error && <p style={{ color: "red" }}>{error}</p>}
 
@@ -61,6 +81,12 @@ export default function pba() {
           <h2> Definition</h2>
           <p>{definition}</p>
         </div>
+
+        <div> 
+          <h2> Source</h2>
+          <p>{sectionName}</p>
+          <p>{sectionText}</p>
+          </div>
       </div>
     )
     
