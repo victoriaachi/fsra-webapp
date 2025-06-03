@@ -21,6 +21,7 @@ export default function pba() {
       setInputValue(""); // clear input
     }
     try {
+      setDefinitionText("searching...");
       const response = await fetch("http://127.0.0.1:8080/pba", {
         method: 'POST',
         headers: {

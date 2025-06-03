@@ -4,26 +4,27 @@ import requests
 from docx import Document 
 from doc2docx import convert
 import os
+from doc_download import get_pba_text
 
 pba_bp = Blueprint('pba', __name__)
 
 @pba_bp.route('/pba', methods=['POST'])
 def submit_keyword():
     data = request.json
-    url = "https://www.ontario.ca/laws/statute/90p08"
-    doc_path = "./pba.doc"
-    docx_path = "./pba_converted.docx"
+    # url = "https://www.ontario.ca/laws/statute/90p08"
+    # doc_path = "./pba.doc"
+    # docx_path = "./pba_converted.docx"
     keyword = data.get('keyword', '').strip()
     print(f"Received keyword in blueprint: {keyword}")
 
-
-    
-    try:
+    try: 
+        pba_text = get_pba_text();
+    #try:
         # Convert .doc to .docx
-        convert(doc_path)
+        #convert(doc_path)
         # Extract text from converted .docx
-        doc = Document("./pba.docx")
-        pba_text = "\n".join([para.text for para in doc.paragraphs])
+        #doc = Document("./pba.docx")
+        #pba_text = "\n".join([para.text for para in doc.paragraphs])
         #print(pba_text)
 
         prompt = f"""
