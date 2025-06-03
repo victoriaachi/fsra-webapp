@@ -12,12 +12,6 @@ import array
 from value_compare import val_equal, extract_num
 from template import key_map, titles
 
-# llm = ChatOpenAI(
-#     temperature=0,
-#     model="gpt-3.5-turbo",
-#     openai_api_key=os.getenv("OPENAI_API_KEY", "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")
-# )
-
 compare_bp = Blueprint('compare', __name__)
 
 @compare_bp.route('/compare', methods=['GET', 'POST'])
@@ -33,14 +27,12 @@ def compare_route():
     print("AIS filename:", ais_file.filename)
     print("AVR filename:", avr_file.filename)
 
-    #ais_dict = copy.deepcopy(key_map);
     # variable names
     keys = list(key_map.keys());
     # values in ais
     ais_vals = [""]*len(key_map);
     avr_vals = [""]*len(key_map);
-    # titles to display/ask api
-    # titles = list(key_map); ---------- already imported
+
     # boolean array to keep track of values that are found
     ais_found = [0]*len(key_map);
     avr_found = [0]*len(key_map);
@@ -81,20 +73,6 @@ def compare_route():
             for page in avr_pdf.pages:
                 avr_text += page.extract_text() + "\n"
 
-        
-        #excel_df = pd.read_excel(avr_file, sheet_name="page_7")  # You can add `sheet_name=...` if needed
-        #excel_data = excel_df.to_dict(orient='records')  # Convert to list of dicts for JSON
-        #excel_data = excel_df.fillna("").to_dict(orient='records')
-
-        # excel_df = pd.read_excel(avr_file, index_col=0, sheet_name="page_7")  # Use first column as row labels
-        # excel_data = excel_df.to_dict()  # Now you get a dict of columns
-        # excel_data_preview = excel_df.head(10).where(pd.notnull(excel_df), None).to_dict()
-
-        # Just print them in the terminal for now
-        #print("\n===== AIS PDF TEXT =====\n")
-        #print(ais_text)
-        #print("\n===== AVR PDF TABLES =====\n")
-        #print(avr_text)
         prompt = f"""
 You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
 If you cannot find a field or if does not contain numbers, return "". If the value is a date, please return it in YYYYMMDD format.
@@ -111,7 +89,6 @@ Text:
 
         gemini = call_gemini_compare(prompt)
         print(gemini)
-        #gemini_text = gemini.text.strip()
 
         try:
             gemini_fields = json.loads(gemini)
@@ -120,10 +97,6 @@ Text:
         except json.JSONDecodeError:
             gemini_fields = {"error": "Gemini returned invalid JSON"}
             print("⚠️ Could not parse Gemini response as JSON:\n", gemini_text)
-
-        # Load ais.json file (assuming ais.json is in the same directory as compare.py)
-        # with open('ais.json', 'r') as f:
-        #     ais_json = json.load(f)
 
         try:
             parsed_json = json.loads(gemini)
@@ -166,26 +139,13 @@ Text:
 
 
 
-        # for key in ais_json.keys():
-        #     ais_value = ais_json[key]
-        #     gemini_value = gemini_fields.get(key)
-        #     if val_equal(ais_value, gemini_value):
-        #         print(f"[MATCH] {key}: {ais_value}")
-        #     else:
-        #         print(f"[DIFFERENT] {key} -> ais.json: {ais_value} | gemini_fields: {gemini_value}")
-
-
-
         return jsonify({
             "result": "Received both files successfully!",
             "ais_length": len(ais_text),
             "ais_text": ais_text,
-            #"gemini_text": gemini_text,
             "avr_length": len(avr_text),
             "avr_text": avr_text,
             "gemini_fields": gemini_fields
-            #"ollama_text": result
-            #"excel_data_preview": excel_df.head(10).to_dict()
 
         })
 
