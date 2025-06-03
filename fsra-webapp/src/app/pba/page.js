@@ -37,11 +37,11 @@ export default function pba() {
       
       const result = await response.json();
       console.log(result.message);
-      if (definition === null || sectionName === null || sectionText === null) {
+      if (result.definition === null || result.section_name === null || result.section_text === null) {
         setError("Please enter a keyword that is related to pensions.");
+        setDefinitionText("");
       }
       else {
-        setDefinitionText("error");
         setDefinitionText(result.definition);
         setSectionText(result.section_text);
         setSectionName(result.section_name);
