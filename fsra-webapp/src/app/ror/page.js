@@ -8,12 +8,10 @@ import {
 export default function Ror() {
   const [excel, setExcel] = useState(null);
   const [error, setError] = useState("");
-  const [responseMsg, setResponseMsg] = useState("");
   const [graphData, setGraphData] = useState(null);
 
   const excelChange = (e) => {
     setExcel(e.target.files[0]);
-    setResponseMsg("");
     setError("");
   };
 
@@ -38,7 +36,6 @@ export default function Ror() {
 
       if (response.ok) {
         setGraphData(data); // ✅ save data for chart
-        setResponseMsg("File uploaded successfully!");
       } else {
         setError(data.error || "Upload failed");
       }
@@ -61,10 +58,9 @@ export default function Ror() {
         />
       </div>
       {error && <p style={{ color: "red" }}>{error}</p>}
-      {responseMsg && <p style={{ color: "green" }}>{responseMsg}</p>}
       <button onClick={fileSubmit}>Submit</button>
       {graphData && Object.entries(graphData).map(([sheetName, data]) => (
-  <div key={sheetName} style={{ width: '100%', height: 400, marginTop: 30 }}>
+  <div key={sheetName} style={{ width: '100%', height: 400, marginTop: 100 }}>
     <h2>{sheetName}</h2>  {/* Title per chart */}
     <ResponsiveContainer>
       <LineChart data={data}>

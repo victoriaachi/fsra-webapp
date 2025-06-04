@@ -50,12 +50,16 @@ def ror():
         return jsonify({"error": "No selected file"}), 400
 
     try:
-        ror_data = calculate_daily_ror(file)
+        daily = calculate_daily_ror(file)
 
         # Print it for debugging (convert to string so dates print nicely)
-        print(json.dumps(ror_data, indent=2, default=str))
+        print(json.dumps(daily, indent=2, default=str))
 
-        return jsonify(ror_data)
+        return jsonify({
+            "daily": daily
+            "quarterly": quarterly
+            "annually": annually 
+            })
 
     except Exception as e:
         print("Error processing file:", e)
