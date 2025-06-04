@@ -56,9 +56,13 @@ def ror():
         print(json.dumps(daily, indent=2, default=str))
 
         return jsonify({
-            "daily": daily
-            "quarterly": quarterly
-            "annually": annually 
+            "securities": securities,
+            "dailyRange": daily_range, 
+            "quarterRange": quarter_range, 
+            "annualRange": annual_range,
+            "daily": daily,
+            "quarter": quarterly,
+            "annual": annually 
             })
 
     except Exception as e:
