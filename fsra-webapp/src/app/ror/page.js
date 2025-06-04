@@ -198,8 +198,8 @@ export default function Ror() {
         borderColor: color,
         borderWidth: 2,
         backgroundColor: color,
-        cubicInterpolationMode: 'monotone',
-        tension: 0.8,
+        //cubicInterpolationMode: 'monotone',
+        tension: 0,
       };
     });
   
