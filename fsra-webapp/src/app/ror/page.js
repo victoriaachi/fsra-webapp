@@ -17,7 +17,20 @@ import { Line } from "react-chartjs-2";
 import 'chartjs-adapter-date-fns';
 import zoomPlugin from 'chartjs-plugin-zoom';
 
+const whiteBackgroundPlugin = {
+  id: 'whiteBackground',
+  beforeDraw: (chart) => {
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.fillStyle = 'white';  // Set background color here
+    ctx.fillRect(0, 0, chart.width, chart.height);
+    ctx.restore();
+  }
+};
+
 ChartJS.register(zoomPlugin);
+ChartJS.register(whiteBackgroundPlugin);
+
 
 ChartJS.register(
   LineElement,
@@ -130,6 +143,22 @@ export default function Ror() {
     const allSelected = selectedSecurities.length === backendData.securities.length;
     setSelectedSecurities(allSelected ? [] : [...backendData.securities]);
   };
+
+  const exportChart = () => {
+    if (chartRef.current) {
+      const chartInstance = chartRef.current;
+      // Get base64 image of chart
+      const base64Image = chartInstance.toBase64Image();
+      
+      // Create a link and trigger download
+      const link = document.createElement('a');
+      link.href = base64Image;
+      link.download = 'rate_of_return_chart.png';
+      link.click();
+    }
+  };
+
+ 
 
   const prepareChartData = () => {
     if (!backendData || !frequency) {
@@ -256,6 +285,8 @@ export default function Ror() {
           <button onClick={() => chartRef.current?.resetZoom()}>
         Reset Zoom
       </button>
+      <button onClick={exportChart}>Export Chart</button>
+
         </div>
       )}
 
