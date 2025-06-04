@@ -28,6 +28,29 @@ ChartJS.register(
   CategoryScale
 );
 
+const distinctColors = [
+  "#e6194B", // red
+  "#3cb44b", // green
+  "#ffe119", // yellow
+  "#4363d8", // blue
+  "#f58231", // orange
+  "#911eb4", // purple
+  "#46f0f0", // cyan
+  "#f032e6", // magenta
+  "#bcf60c", // lime
+  "#fabebe", // pink
+  "#008080", // teal
+  "#e6beff", // lavender
+  "#9A6324", // brown
+  "#fffac8", // cream
+  "#800000", // maroon
+  "#aaffc3", // mint
+  "#808000", // olive
+  "#ffd8b1", // peach
+  "#000075", // navy
+  "#808080"  // grey
+];
+
 export default function Ror() {
   const [excel, setExcel] = useState(null);
   const [error, setError] = useState("");
@@ -104,18 +127,24 @@ export default function Ror() {
   };
 
   const prepareChartData = () => {
-    if (!backendData || !frequency || !selectedSecurities.length) return;
+    if (!backendData || !frequency) {
+      setChartData(null);
+      return;
+    }
   
-    const rawData = backendData[frequency]; // daily, quarter, annual
+    if (!selectedSecurities.length) {
+      setChartData({ datasets: [] });  // <-- set empty datasets instead of null
+      return;
+    }
   
-    // Convert startDate and endDate strings to Date objects for comparison
+    const rawData = backendData[frequency];
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
   
-    const datasets = selectedSecurities.map((sec) => {
+    const datasets = selectedSecurities.map((sec, index) => {
       let dataPoints = rawData[sec] || [];
+      const color = distinctColors[index % distinctColors.length];
   
-      // Filter data points by date range if both start and end dates are set
       if (start && end) {
         dataPoints = dataPoints.filter(point => {
           const date = new Date(point.Date);
@@ -127,18 +156,21 @@ export default function Ror() {
         x: new Date(point.Date),
         y: point[`${frequency.charAt(0).toUpperCase() + frequency.slice(1)}Return`] * 100,
       }));
+  
       return {
         label: sec,
         data,
         fill: false,
-        borderColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
+        borderColor: color,
+        borderWidth: 0.8,
+        backgroundColor: color,
         cubicInterpolationMode: 'monotone',
         tension: 0.8,
       };
     });
   
     setChartData({ datasets });
-  };
+  };  
   
   
 
@@ -244,7 +276,15 @@ export default function Ror() {
                   },
                 },
                 legend: {
-                  onClick: (e) => e.native.preventDefault()  // disables toggle on click
+                  onClick: (e) => e.native.preventDefault(),  // disables toggle on click
+                  labels: {
+                    //boxBorderColor: 'transparent',
+                    usePointStyle: true,
+                    boxWidth: 12,
+                    boxHeight: 12,
+                    color: "#000"
+                  }
+                  
                 }
               },
               scales: {
