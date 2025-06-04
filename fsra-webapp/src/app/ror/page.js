@@ -31,11 +31,6 @@ export default function Ror() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        setGraphData(data); // ✅ save data for chart
-      } else {
-        setError(data.error || "Upload failed");
-      }
     } catch (error) {
       console.error("Error uploading file:", error);
       setError("Error uploading file");
