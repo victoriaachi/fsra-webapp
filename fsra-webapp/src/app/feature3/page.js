@@ -37,7 +37,7 @@ export default function feature3() {
       
       const result = await response.json();
       console.log(result.message);
-      if (result.definition === null || result.section_name === null || result.section_text === null) {
+      if (result.definition == 'NULL') {
         setError("Please enter a keyword that is related to pensions.");
         setDefinitionText("");
       }

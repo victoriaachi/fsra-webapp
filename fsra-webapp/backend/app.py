@@ -3,6 +3,7 @@ from flask_cors import CORS
 from compare import compare_bp
 from pba import pba_bp
 from feature3 import feature3_bp
+from ror import ror_bp
 
 app = Flask(__name__)
 CORS(app)
@@ -24,6 +25,7 @@ def hello():
 app.register_blueprint(compare_bp)
 app.register_blueprint(pba_bp)
 app.register_blueprint(feature3_bp)
+app.register_blueprint(ror_bp)
 
 if __name__ == "__main__":
     app.run(debug=True, port=8080)

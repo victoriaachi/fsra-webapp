@@ -2,7 +2,7 @@
 import { useState } from "react";
 import './page.css'
 
-export default function fileUploader() {
+export default function compare() {
   const [ais, setAis] = useState(null);
   const [avr, setAvr] = useState(null);
 
