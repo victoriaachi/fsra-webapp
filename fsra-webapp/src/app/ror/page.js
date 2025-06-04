@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import './page.css';
 import {
   Chart as ChartJS,
@@ -15,6 +15,9 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import 'chartjs-adapter-date-fns';
+import zoomPlugin from 'chartjs-plugin-zoom';
+
+ChartJS.register(zoomPlugin);
 
 ChartJS.register(
   LineElement,
@@ -51,7 +54,9 @@ const distinctColors = [
   "#808080"  // grey
 ];
 
+
 export default function Ror() {
+  const chartRef = useRef();
   const [excel, setExcel] = useState(null);
   const [error, setError] = useState("");
 
@@ -162,7 +167,7 @@ export default function Ror() {
         data,
         fill: false,
         borderColor: color,
-        borderWidth: 0.8,
+        borderWidth: 2,
         backgroundColor: color,
         cubicInterpolationMode: 'monotone',
         tension: 0.8,
@@ -188,10 +193,9 @@ export default function Ror() {
       </div>
       {error && <p style={{ color: "red" }}>{error}</p>}
       <button onClick={fileSubmit}>Submit</button>
-  
+
       {backendData && (
         <div className="selector" style={{ marginTop: "20px" }}>
-          {/* Frequency Selector */}
           <div>
             <label>Frequency:</label>
             <select value={frequency} onChange={handleFrequencyChange}>
@@ -200,8 +204,7 @@ export default function Ror() {
               <option value="annual">Annual</option>
             </select>
           </div>
-  
-          {/* Date Range Selector */}
+
           {backendData.ranges?.[frequency] && (
             <div style={{ marginTop: "10px" }}>
               <label>Date Range:</label>
@@ -221,8 +224,7 @@ export default function Ror() {
               />
             </div>
           )}
-  
-          {/* Securities Selector */}
+
           {backendData.securities?.length > 0 && (
             <div style={{ marginTop: "10px" }}>
               <label>Securities:</label>
@@ -245,77 +247,71 @@ export default function Ror() {
               </div>
             </div>
           )}
-  
-          {/* Debug / Summary */}
+
           <div style={{ marginTop: "20px", background: "#f0f0f0", padding: "10px" }}>
             <strong>Selected Frequency:</strong> {frequency}<br />
             <strong>Date Range:</strong> {startDate} to {endDate}<br />
             <strong>Securities:</strong> {selectedSecurities.join(", ") || "None selected"}
           </div>
+          <button onClick={() => chartRef.current?.resetZoom()}>
+        Reset Zoom
+      </button>
         </div>
       )}
-  
-      {/* Chart section inside the same root div */}
+
       {chartData && (
-        <div style={{ marginTop: "40px" }}>
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              plugins: {
-                title: {
-                  display: true,
-                  text: "Rate of Return",
-                  font: {
-                    size: 18,
-                  },
+        <Line
+          ref={chartRef}
+          data={chartData}
+          options={{
+            responsive: true,
+            plugins: {
+              title: {
+                display: true,
+                text: "Rate of Return",
+                font: { size: 18 },
+              },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
                 },
-                tooltip: {
-                  callbacks: {
-                    label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
-                  },
-                },
-                legend: {
-                  onClick: (e) => e.native.preventDefault(),  // disables toggle on click
-                  labels: {
-                    //boxBorderColor: 'transparent',
-                    usePointStyle: true,
-                    boxWidth: 12,
-                    boxHeight: 12,
-                    color: "#000"
-                  }
-                  
+              },
+              legend: {
+                onClick: (e) => e.native.preventDefault(),
+                labels: {
+                  usePointStyle: true,
+                  boxWidth: 12,
+                  boxHeight: 12,
+                  color: "#000"
                 }
               },
-              scales: {
-                x: {
-                  type: "time",
-                  time: {
-                    unit: "month",
-                  },
-                  title: {
-                    display: true,
-                    text: "Date",
-                  },
-                },
-                y: {
-                  ticks: {
-                    callback: (value) => `${value}%`,
-                  },
-                  title: {
-                    display: true,
-                    text: "Return (%)",
-                  },
+              zoom: {
+                pan: { enabled: true, mode: 'xy' },
+                zoom: {
+                  wheel: { enabled: true },
+                  pinch: { enabled: true },
+                  mode: 'xy',
                 },
               },
-            }}
-          />
-        </div>
+            },
+            scales: {
+              x: {
+                type: "time",
+                time: { unit: "month" },
+                title: { display: true, text: "Date" },
+              },
+              y: {
+                ticks: {
+                  callback: (value) => `${value}%`,
+                },
+                title: { display: true, text: "Return (%)" },
+              },
+            },
+          }}
+        />
       )}
+
+      
     </div>
   );
 }
-  
-
-
-  
