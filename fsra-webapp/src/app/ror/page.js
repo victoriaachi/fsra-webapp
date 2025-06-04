@@ -133,7 +133,7 @@ export default function Ror() {
         fill: false,
         borderColor: `hsl(${Math.random() * 360}, 70%, 50%)`,
         cubicInterpolationMode: 'monotone',
-        tension: 0.4,
+        tension: 0.8,
       };
     });
   

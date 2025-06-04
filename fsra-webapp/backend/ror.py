@@ -190,10 +190,10 @@ def calculate_quarterly_ror(file):
         last_per_quarter = df[df['Date'] <= df['QuarterEnd']].groupby('QuarterEnd').last().reset_index()
 
         # Step 3: Calculate ROR between quarters
-        last_per_quarter['QuarterlyReturn'] = last_per_quarter['Price'].pct_change()
+        last_per_quarter['QuarterReturn'] = last_per_quarter['Price'].pct_change()
         last_per_quarter = last_per_quarter.dropna()
 
-        result[sheet_name] = last_per_quarter[['QuarterEnd', 'QuarterlyReturn']].rename(
+        result[sheet_name] = last_per_quarter[['QuarterEnd', 'QuarterReturn']].rename(
             columns={'QuarterEnd': 'Date'}).to_dict(orient='records')
 
     return result
