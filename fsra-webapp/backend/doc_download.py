@@ -40,7 +40,7 @@ def download_doc_file_if_updated(doc_url, doc_path, headers):
         print("File not changed, using existing .doc file.")
         return False  # file not updated
 
-def get_pba_text():
+def get_pba_docx():
     doc_url = "https://www.ontario.ca/laws/docs/90p08_e.doc"
     doc_path = "./pba.doc"
     docx_path = "./pba.docx"
@@ -67,5 +67,8 @@ def get_pba_text():
 
     # Extract text from docx (whether newly converted or reused)
     doc = Document(docx_path)
+    return doc
+
+def get_pba_text():
+    doc = get_pba_docx()
     pba_text = "\n".join([para.text for para in doc.paragraphs])
-    return pba_text

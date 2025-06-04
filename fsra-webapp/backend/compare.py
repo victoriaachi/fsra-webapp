@@ -11,6 +11,7 @@ import copy
 import array
 from value_compare import val_equal, extract_num
 from template import key_map, titles
+from clean_text import clean_text
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -72,6 +73,8 @@ def compare_route():
             avr_text = ""
             for page in avr_pdf.pages:
                 avr_text += page.extract_text() + "\n"
+
+        avr_text = clean_text(avr_text);
 
         prompt = f"""
 You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 

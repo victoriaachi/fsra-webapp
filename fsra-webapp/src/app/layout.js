@@ -16,7 +16,7 @@ export default function RootLayout({ children }) {
           <h2>Dashboard</h2>
           <ul>
             <li><Link href="/">Home</Link></li>
-            <li><Link href="/comparer">AIS vs AVR Compare Tool</Link></li>
+            <li><Link href="/compare">AIS vs AVR Compare Tool</Link></li>
             <li><Link href="/pba">PBA Search</Link></li>
             <li><Link href="/feature3">Feature 3</Link></li>
           </ul>
