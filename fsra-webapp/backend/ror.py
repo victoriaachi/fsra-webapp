@@ -14,6 +14,18 @@ def find_data_start(df):
             continue
     return None
 
+def has_data_beyond_col3(df):
+    if df.shape[1] <= 3:
+        return False
+
+    subset = df.iloc[:, 3:]
+
+    # Replace empty strings or strings with just spaces to NaN
+    subset = subset.replace(r'^\s*$', pd.NA, regex=True)
+
+    has_data = subset.notna().any().any()
+    return has_data
+
 def calculate_daily_ror(file):
     xls = pd.ExcelFile(file)
     result = {}
@@ -48,6 +60,9 @@ def get_daily_date_range(file):
 
     for sheet_name in xls.sheet_names:
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -64,16 +79,12 @@ def get_daily_date_range(file):
             max_dates.append(df['Date'].max())
 
     if not min_dates or not max_dates:
-        return None  # or raise an error
+        return None
 
-    # Shared range is the overlap
-    shared_min = max(min_dates)
-    shared_max = min(max_dates)
+    overall_min = min(min_dates)
+    overall_max = max(max_dates)
 
-    if shared_min > shared_max:
-        return None  # No overlap
-
-    return shared_min, shared_max
+    return overall_min, overall_max
 
 def get_quarterly_date_range(file):
     xls = pd.ExcelFile(file)
@@ -82,6 +93,9 @@ def get_quarterly_date_range(file):
 
     for sheet_name in xls.sheet_names:
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -103,13 +117,11 @@ def get_quarterly_date_range(file):
     if not min_dates or not max_dates:
         return None
 
-    shared_min = max(min_dates)
-    shared_max = min(max_dates)
+    overall_min = min(min_dates)
+    overall_max = max(max_dates)
 
-    if shared_min > shared_max:
-        return None
+    return overall_min, overall_max
 
-    return shared_min, shared_max
 
 def get_annual_date_range(file):
     xls = pd.ExcelFile(file)
@@ -118,6 +130,9 @@ def get_annual_date_range(file):
 
     for sheet_name in xls.sheet_names:
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -139,13 +154,11 @@ def get_annual_date_range(file):
     if not min_dates or not max_dates:
         return None
 
-    shared_min = max(min_dates)
-    shared_max = min(max_dates)
+    overall_min = min(min_dates)
+    overall_max = max(max_dates)
 
-    if shared_min > shared_max:
-        return None
+    return overall_min, overall_max
 
-    return shared_min, shared_max
 
 
 def calculate_quarterly_ror(file):
@@ -154,6 +167,9 @@ def calculate_quarterly_ror(file):
 
     for sheet_name in xls.sheet_names:
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -162,7 +178,8 @@ def calculate_quarterly_ror(file):
         df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        # Specify the date format here to avoid the warning
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
@@ -181,12 +198,16 @@ def calculate_quarterly_ror(file):
 
     return result
 
+
 def calculate_annual_ror(file):
     xls = pd.ExcelFile(file)
     result = {}
 
     for sheet_name in xls.sheet_names:
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -233,22 +254,38 @@ def ror():
         
 
         # Print it for debugging (convert to string so dates print nicely)
-        print(json.dumps(daily, indent=2, default=str))
         print(json.dumps(quarterly, indent=2, default=str))
-        print(json.dumps(annual, indent=2, default=str))
-        print("daily range:", daily_range)
         print("quarter range:", quarter_range)
-        print("annual range:", annual_range)
 
         xls = pd.ExcelFile(file)
-        securities = xls.sheet_names
-        print(securities)
+        filtered_sheets = []
+        for sheet_name in xls.sheet_names:
+            df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+            if not has_data_beyond_col3(df):
+                filtered_sheets.append(sheet_name)
+
+        securities = filtered_sheets
+
+        daily_range_str = {
+            "min": daily_range[0].strftime('%Y-%m-%d') if daily_range else None,
+            "max": daily_range[1].strftime('%Y-%m-%d') if daily_range else None
+        }
+        quarter_range_str = {
+            "min": quarter_range[0].strftime('%Y-%m-%d') if quarter_range else None,
+            "max": quarter_range[1].strftime('%Y-%m-%d') if quarter_range else None
+        }
+        annual_range_str = {
+            "min": annual_range[0].strftime('%Y-%m-%d') if annual_range else None,
+            "max": annual_range[1].strftime('%Y-%m-%d') if annual_range else None
+        }
 
         return jsonify({
-            #"securities": securities,
-            #"dailyRange": daily_range, 
-            #"quarterRange": quarter_range, 
-            #"annualRange": annual_range,
+            "ranges": {
+                "daily": daily_range_str,
+                "quarter": quarter_range_str,
+                "annual": annual_range_str
+            },
+            "securities": securities,
             "daily": daily,
             "quarter": quarterly,
             "annual": annual
