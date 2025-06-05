@@ -198,9 +198,11 @@ export default function Ror() {
         borderColor: color,
         borderWidth: 2,
         backgroundColor: color,
-        //cubicInterpolationMode: 'monotone',
         tension: 0,
+        pointRadius: 0,        
+        pointHoverRadius: 0,    
       };
+      
     });
   
     setChartData({ datasets });
