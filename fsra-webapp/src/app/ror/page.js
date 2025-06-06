@@ -54,7 +54,6 @@ export default function Ror() {
   const [error, setError] = useState("");
   const [backendData, setBackendData] = useState(null);
 
-  // --- State for First Chart (ROR Chart) ---
   const [frequency, setFrequency] = useState("daily");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -62,28 +61,23 @@ export default function Ror() {
   const [chartData, setChartData] = useState(null);
   const chartRef = useRef();
 
-  // --- State for Second Chart (Weighted ROR Chart) ---
   const [weightedFrequency, setWeightedFrequency] = useState("daily");
   const [weightedStartDate, setWeightedStartDate] = useState("");
   const [weightedEndDate, setWeightedEndDate] = useState("");
   const [weightedSecurities, setWeightedSecurities] = useState([]);
-  const [weights, setWeights] = useState({}); // Weights specific to the weighted chart
+  const [weights, setWeights] = useState({});
   const [weightedChartData, setWeightedChartData] = useState(null);
   const weightedChartRef = useRef();
 
-
-  // Effect for the first chart (Rate of Return Chart)
   useEffect(() => {
     prepareChartData();
   }, [backendData, frequency, selectedSecurities, startDate, endDate]);
 
-  // Handle file input
   const excelChange = (e) => {
     setExcel(e.target.files[0]);
     setError("");
   };
 
-  // Submit file to backend
   const fileSubmit = async () => {
     if (!excel) {
       setError("Please upload a file.");
@@ -102,19 +96,17 @@ export default function Ror() {
       const data = await response.json();
       setBackendData(data);
 
-      // Initialize states for BOTH charts after backend data is received
       const defaultDailyRange = data.ranges?.daily || {};
       setStartDate(defaultDailyRange.min || "");
       setEndDate(defaultDailyRange.max || "");
-      setSelectedSecurities([]); // Reset for first chart
+      setSelectedSecurities([]); 
 
-      // Initialize states for the second chart
-      setWeightedFrequency("daily"); // Default for weighted
+      setWeightedFrequency("daily"); 
       setWeightedStartDate(defaultDailyRange.min || "");
       setWeightedEndDate(defaultDailyRange.max || "");
-      setWeightedSecurities([]); // Reset for weighted chart
-      setWeights({}); // Clear any previous weights
-      setWeightedChartData(null); // Clear previous weighted chart
+      setWeightedSecurities([]); 
+      setWeights({}); 
+      setWeightedChartData(null); 
       
     } catch (error) {
       console.error("Error uploading file:", error);
@@ -122,7 +114,6 @@ export default function Ror() {
     }
   };
 
-  // --- Handlers for First Chart Controls ---
   const handleFrequencyChange = (e) => {
     const newFreq = e.target.value;
     setFrequency(newFreq);
@@ -143,7 +134,6 @@ export default function Ror() {
     setSelectedSecurities(allSelected ? [] : [...backendData.securities]);
   };
 
-  // --- Handlers for Second Chart Controls ---
   const handleWeightedFrequencyChange = (e) => {
     const newFreq = e.target.value;
     setWeightedFrequency(newFreq);
@@ -171,7 +161,6 @@ export default function Ror() {
     }));
   };
 
-  // --- Export Functions ---
   const exportChart = () => {
     if (chartRef.current) {
       const base64Image = chartRef.current.toBase64Image();
@@ -192,15 +181,11 @@ export default function Ror() {
     }
   };
 
-  // --- Chart Data Preparation Functions ---
-
-  // For the first chart (Rate of Return)
   const prepareChartData = () => {
     if (!backendData || !frequency) {
       setChartData(null);
       return;
     }
-    // If no securities are selected, clear the chart
     if (selectedSecurities.length === 0) {
       setChartData({ datasets: [] });
       return;
@@ -210,20 +195,19 @@ export default function Ror() {
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
 
-    let allYValues = []; // To collect all Y values for dynamic scaling
+    let allYValues = []; 
 
     const datasets = selectedSecurities.map((sec, index) => {
       let dataPoints = rawData[sec] || [];
 
       // Filter data points by date range
       if (start && end) {
-        dataPoints = dataPoints.filter(({ Date: dateString }) => { // FIX: Renamed 'Date' to 'dateString'
+        dataPoints = dataPoints.filter(({ Date: dateString }) => { 
           const d = new Date(dateString);
           return d >= start && d <= end;
         });
       }
 
-      // Determine the correct return key (handling 'quarter' specifically)
       let returnKey;
       if (frequency === 'quarter') {
         returnKey = 'QuarterlyReturn';
@@ -233,11 +217,11 @@ export default function Ror() {
       
       const data = dataPoints.map(point => {
         const yValue = point[returnKey] * 100;
-        if (typeof yValue === 'number' && !isNaN(yValue)) { // Ensure it's a valid number
-          allYValues.push(yValue); // Collect Y value
+        if (typeof yValue === 'number' && !isNaN(yValue)) { 
+          allYValues.push(yValue); 
         }
         return {
-          x: new Date(point.Date), // Assuming point.Date is a string like "YYYY-MM-DD"
+          x: new Date(point.Date), 
           y: yValue,
         };
       });
@@ -260,20 +244,17 @@ export default function Ror() {
         calculatedMinY = Math.min(...allYValues);
         calculatedMaxY = Math.max(...allYValues);
 
-        // Add a buffer to the min/max values
-        const buffer = (calculatedMaxY - calculatedMinY) * 0.15; // 15% buffer for better visibility
+        const buffer = (calculatedMaxY - calculatedMinY) * 0.15; 
         calculatedMinY = calculatedMinY - buffer;
         calculatedMaxY = calculatedMaxY + buffer;
     } else {
-        // If no data, let Chart.js auto-scale by not providing min/max
         calculatedMinY = undefined;
         calculatedMaxY = undefined;
     }
 
-    setChartData({ datasets, calculatedMinY, calculatedMaxY }); // Store min/max with datasets
+    setChartData({ datasets, calculatedMinY, calculatedMaxY }); 
   };
 
-  // For the second chart (Weighted Rate of Return) - triggered by button
   const generateWeightedChart = () => {
     if (!backendData || !weightedSecurities.length) {
       alert("Please select at least one security for the weighted chart.");
@@ -281,10 +262,6 @@ export default function Ror() {
       return;
     }
 
-    // Validate total weight *only if* showing an aggregated portfolio.
-    // If showing individual weighted lines, the sum to 100% is less critical
-    // for rendering, but good practice for conceptual understanding.
-    // I'll keep the validation as it's still about a "portfolio" even if showing components.
     const totalWeight = weightedSecurities.reduce(
       (sum, sec) => sum + (weights[sec] || 0),
       0
@@ -292,8 +269,6 @@ export default function Ror() {
 
     if (weightedSecurities.length > 0 && (totalWeight < 99.9 || totalWeight > 100.1)) { // Allow for small float inaccuracies
       alert(`For a true portfolio, weights should add to 100%. Current total: ${totalWeight.toFixed(2)}%`);
-      // You can decide if you want to prevent rendering here or just show the alert
-      // For now, I'll allow rendering but keep the alert.
     }
 
 
@@ -308,14 +283,12 @@ export default function Ror() {
       returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
     }
 
-    let allWeightedYValues = []; // To collect all Y values for dynamic scaling of this chart
+    let allWeightedYValues = []; 
 
-    // Create datasets for each selected security, scaled by their weight
     const datasets = weightedSecurities.map((sec, index) => {
         const weightFraction = (weights[sec] || 0) / 100;
         let dataPoints = rawData[sec] || [];
 
-        // Filter data points by date range
         if (start && end) {
             dataPoints = dataPoints.filter(({ Date: dateString }) => {
                 const d = new Date(dateString);
@@ -325,7 +298,7 @@ export default function Ror() {
 
         const data = dataPoints.map(point => {
             const originalYValue = point[returnKey];
-            const weightedYValue = originalYValue * weightFraction * 100; // Multiply by weight and 100 for percentage
+            const weightedYValue = originalYValue * weightFraction * 100; 
             if (typeof weightedYValue === 'number' && !isNaN(weightedYValue)) {
                 allWeightedYValues.push(weightedYValue);
             }
@@ -336,7 +309,7 @@ export default function Ror() {
         });
 
         return {
-            label: `${sec} (Weight: ${(weightFraction * 100).toFixed(2)}%)`, // Label including the weight
+            label: `${sec} (Weight: ${(weightFraction * 100).toFixed(2)}%)`,
             data: data,
             fill: false,
             borderColor: distinctColors[index % distinctColors.length],
@@ -362,7 +335,7 @@ export default function Ror() {
     }
 
     setWeightedChartData({
-        datasets: datasets, // Now an array of datasets, one per security
+        datasets: datasets, 
         calculatedMinY: calculatedWeightedMinY,
         calculatedMaxY: calculatedWeightedMaxY,
     });
@@ -466,13 +439,13 @@ export default function Ror() {
                     data={chartData}
                     options={{
                       responsive: true,
-                      maintainAspectRatio: true, // Allows flexible height
-                      aspectRatio: 1.2, // You can adjust this for wider/taller charts
+                      maintainAspectRatio: true,
+                      aspectRatio: 1.2, 
                       plugins: {
                         title: { display: true, text: "Individual Rate of Return", font: { size: 18 } },
                         tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`, }, },
                         legend: {
-                          onClick: null, // Disables legend click to toggle visibility
+                          onClick: null, 
                           labels: { usePointStyle: true, boxWidth: 12, boxHeight: 12, color: "#000" }
                         },
                         zoom: {
@@ -483,8 +456,8 @@ export default function Ror() {
                       scales: {
                         x: { type: "time", time: { unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
                         y: {
-                          min: chartData?.calculatedMinY, // Use the calculated min Y
-                          max: chartData?.calculatedMaxY, // Use the calculated max Y
+                          min: chartData?.calculatedMinY,
+                          max: chartData?.calculatedMaxY,
                           ticks: {
                             callback: (value) => `${value}%`,
                           },
@@ -591,21 +564,21 @@ export default function Ror() {
                     options={{
                       responsive: true,
                       maintainAspectRatio: true,
-                      aspectRatio: 1.2, // You can adjust this for wider/taller charts
+                      aspectRatio: 1.2, 
                       plugins: {
                         title: {
                           display: true,
-                          text: "Weighted Individual Securities Return", // Updated title
+                          text: "Weighted Individual Securities Return", 
                           font: { size: 18 },
                         },
                         tooltip: {
                           callbacks: {
-                            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`, // Tooltip for each security
+                            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`, 
                           },
                         },
                         legend: {
-                          display: true, // ENABLE LEGEND
-                          onClick: null, // Disables legend click to toggle visibility
+                          display: true,
+                          onClick: null, 
                           labels: {
                             usePointStyle: true,
                             boxWidth: 12,
@@ -621,8 +594,8 @@ export default function Ror() {
                       scales: {
                         x: { type: "time", time: { unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
                         y: {
-                          min: weightedChartData?.calculatedMinY, // Use the calculated min Y
-                          max: weightedChartData?.calculatedMaxY, // Use the calculated max Y
+                          min: weightedChartData?.calculatedMinY, 
+                          max: weightedChartData?.calculatedMaxY, 
                           ticks: {
                             callback: (value) => `${value}%`,
                           },
