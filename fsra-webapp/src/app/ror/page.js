@@ -458,8 +458,8 @@ export default function Ror() {
                       scales: {
                         x: { type: "time", time: { unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
                         y: {
-                          min: chartData?.calculatedMinY,
-                          max: chartData?.calculatedMaxY,
+                          min: Math.ceil(chartData?.calculatedMinY * 100) / 100,
+                          max: Math.ceil(chartData?.calculatedMaxY * 100) / 100,
                           ticks: {
                             callback: (value) => `${value}%`,
                           },
@@ -596,8 +596,8 @@ export default function Ror() {
                       scales: {
                         x: { type: "time", time: { unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
                         y: {
-                          min: weightedChartData?.calculatedMinY, 
-                          max: weightedChartData?.calculatedMaxY, 
+                          min: Math.ceil(weightedChartData?.calculatedMinY * 100) / 100,
+                          max: Math.ceil(weightedChartData?.calculatedMaxY * 100) / 100,
                           ticks: {
                             callback: (value) => `${value}%`,
                           },
