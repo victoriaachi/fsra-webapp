@@ -41,7 +41,7 @@ def calculate_daily_ror(file):
         df = df.iloc[:, :2] 
         df.columns = ['Date', 'Price']
 
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna()
 
@@ -71,7 +71,7 @@ def get_daily_date_range(file):
         df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df = df.dropna(subset=['Date'])
 
         if not df.empty:
@@ -104,7 +104,7 @@ def get_quarterly_date_range(file):
         df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
         df['QuarterEnd'] = df['Date'] + QuarterEnd(0)
@@ -141,7 +141,7 @@ def get_annual_date_range(file):
         df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
         df['YearEnd'] = df['Date'] + YearEnd(0)
@@ -216,7 +216,7 @@ def calculate_annual_ror(file):
         df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
-        df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
