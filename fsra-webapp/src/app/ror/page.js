@@ -297,45 +297,37 @@ export default function Ror() {
       returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
     }
 
-    let allWeightedYValues = []; 
+    const portfolioDataMap = new Map(); // Map to store combined returns for each date
 
-    const datasets = weightedSecurities.map((sec, index) => {
-        const weightFraction = (weights[sec] || 0) / 100;
-        let dataPoints = rawData[sec] || [];
+    weightedSecurities.forEach(sec => {
+      const weightFraction = (weights[sec] || 0) / 100;
+      let dataPoints = rawData[sec] || [];
 
-        if (start && end) {
-            dataPoints = dataPoints.filter(({ Date: dateString }) => {
-                const d = new Date(dateString);
-                return d >= start && d <= end;
-            });
-        }
-
-        const data = dataPoints.map(point => {
-            const originalYValue = point[returnKey];
-            const weightedYValue = originalYValue * weightFraction * 100; 
-            if (typeof weightedYValue === 'number' && !isNaN(weightedYValue)) {
-                allWeightedYValues.push(weightedYValue);
-            }
-            return {
-                x: new Date(point.Date),
-                y: weightedYValue,
-            };
+      if (start && end) {
+        dataPoints = dataPoints.filter(({ Date: dateString }) => {
+          const d = new Date(dateString);
+          return d >= start && d <= end;
         });
+      }
 
-        return {
-            label: `${sec} (Weight: ${(weightFraction * 100).toFixed(2)}%)`,
-            data: data,
-            fill: false,
-            borderColor: distinctColors[index % distinctColors.length],
-            backgroundColor: distinctColors[index % distinctColors.length],
-            borderWidth: 2,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            hoverRadius: 10,         
-            hitRadius: 10,
-            tension: 0,
-        };
+      dataPoints.forEach(point => {
+        const dateString = point.Date;
+        const originalYValue = point[returnKey];
+
+        // Ensure originalYValue is a number before weighting
+        if (typeof originalYValue === 'number' && !isNaN(originalYValue)) {
+          const weightedYValue = originalYValue * weightFraction * 100; // Keep % for consistency
+          portfolioDataMap.set(dateString, (portfolioDataMap.get(dateString) || 0) + weightedYValue);
+        }
+      });
     });
+
+    // Convert map to array of objects and sort by date
+    const sortedPortfolioData = Array.from(portfolioDataMap.entries())
+      .map(([date, value]) => ({ x: new Date(date), y: value }))
+      .sort((a, b) => a.x.getTime() - b.x.getTime());
+
+    let allWeightedYValues = sortedPortfolioData.map(point => point.y); // Use values from the combined data
 
     let calculatedWeightedMinY, calculatedWeightedMaxY;
     if (allWeightedYValues.length > 0) {
@@ -351,9 +343,21 @@ export default function Ror() {
     }
 
     setWeightedChartData({
-        datasets: datasets, 
-        calculatedMinY: calculatedWeightedMinY,
-        calculatedMaxY: calculatedWeightedMaxY,
+      datasets: [
+        {
+          label: "Weighted Portfolio Return",
+          data: sortedPortfolioData, // Use the correctly computed combined data
+          fill: false,
+          borderColor: "#4363d8", // A single color for the portfolio line
+          backgroundColor: "#4363d8",
+          borderWidth: 2,
+          pointRadius: 0, // Typically no points for a portfolio line
+          pointHoverRadius: 6,
+          tension: 0, // Straight lines
+        }
+      ],
+      calculatedMinY: calculatedWeightedMinY, // Pass calculated Y-axis limits
+      calculatedMaxY: calculatedWeightedMaxY,
     });
   };
 
