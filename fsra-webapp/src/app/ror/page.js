@@ -15,7 +15,6 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import 'chartjs-adapter-date-fns';
-import zoomPlugin from 'chartjs-plugin-zoom';
 
 const whiteBackgroundPlugin = {
   id: 'whiteBackground',
@@ -29,7 +28,6 @@ const whiteBackgroundPlugin = {
 };
 
 ChartJS.register(
-  zoomPlugin,
   whiteBackgroundPlugin,
   LineElement,
   PointElement,
@@ -68,6 +66,18 @@ export default function Ror() {
   const [weights, setWeights] = useState({});
   const [weightedChartData, setWeightedChartData] = useState(null);
   const weightedChartRef = useRef();
+
+  useEffect(() => {
+    // Dynamically import the zoom plugin module
+    import('chartjs-plugin-zoom')
+      .then((mod) => {
+        // Register the zoom plugin only on the client side, once
+        ChartJS.register(mod.default); // mod.default is the actual plugin object
+      })
+      .catch(error => {
+        console.error("Failed to load Chart.js Zoom plugin:", error);
+      });
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   useEffect(() => {
     prepareChartData();

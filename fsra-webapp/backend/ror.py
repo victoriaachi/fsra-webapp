@@ -254,8 +254,8 @@ def ror():
         
 
         # Print it for debugging (convert to string so dates print nicely)
-        print(json.dumps(quarterly, indent=2, default=str))
-        print("quarter range:", quarter_range)
+        #print(json.dumps(quarterly, indent=2, default=str))
+        #print("quarter range:", quarter_range)
 
         xls = pd.ExcelFile(file)
         filtered_sheets = []
