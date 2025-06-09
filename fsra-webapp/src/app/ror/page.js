@@ -210,7 +210,7 @@ export default function Ror() {
 
       let returnKey;
       if (frequency === 'quarter') {
-        returnKey = 'QuarterlyReturn';
+        returnKey = 'QuarterReturn';
       } else {
         returnKey = `${frequency.charAt(0).toUpperCase() + frequency.slice(1)}Return`;
       }
@@ -275,10 +275,12 @@ export default function Ror() {
     const rawData = backendData[weightedFrequency];
     const start = weightedStartDate ? new Date(weightedStartDate) : null;
     const end = weightedEndDate ? new Date(weightedEndDate) : null;
+    console.log("Weighted Frequency:", weightedFrequency);
+    console.log("Raw Data for selected frequency:", rawData); // Check if rawData is available for 'quarter'
 
     let returnKey;
     if (weightedFrequency === 'quarter') {
-      returnKey = 'QuarterlyReturn';
+      returnKey = 'QuarterReturn';
     } else {
       returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
     }
