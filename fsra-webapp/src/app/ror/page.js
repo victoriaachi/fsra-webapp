@@ -366,7 +366,7 @@ export default function Ror() {
       {backendData && (
         <>
           {/* First Chart Section: Individual Rate of Return Chart */}
-          <div className="ror-chart-section" style={{ marginBottom: "50px", borderBottom: "1px solid #eee", paddingBottom: "30px" }}>
+          <div className="ror-chart-section" style={{ marginBottom: "50px", borderBottom: "1px solid #eee", paddingBottom: "30px" , paddingLeft: "50px", paddingRight: "50px"}}>
             <h2>Individual Securities Rate of Return Chart</h2>
             <div className="customize-section" style={{ marginTop: "20px", background: "#f9f9f9", padding: "20px", borderRadius: "8px" }}>
               <h3>Customize Chart</h3>
@@ -451,14 +451,14 @@ export default function Ror() {
                           labels: { usePointStyle: true, boxWidth: 12, boxHeight: 12, color: "#000" }
                         },
                         zoom: {
-                          pan: { enabled: true, mode: 'xy' },
-                          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy', },
+                          pan: { enabled: true, mode: 'x' },
+                          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
                         },
                       },
                       scales: {
                         x: { type: "time", time: { unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
                         y: {
-                          min: Math.ceil(chartData?.calculatedMinY * 100) / 100,
+                          min: Math.floor(chartData?.calculatedMinY * 100) / 100,
                           max: Math.ceil(chartData?.calculatedMaxY * 100) / 100,
                           ticks: {
                             callback: (value) => `${value}%`,
@@ -476,7 +476,7 @@ export default function Ror() {
           </div>
   
           {/* Second Chart Section: Weighted Rate of Return Chart */}
-          <div className="weighted-ror-chart-section" style={{ marginTop: "50px" }}>
+          <div className="weighted-ror-chart-section" style={{ marginTop: "50px" , paddingLeft: "50px" , paddingRight: "50px"}}>
             <h2>Weighted Portfolio Rate of Return Chart</h2> {/* Changed title for clarity */}
             <div className="customize-section" style={{ marginTop: "20px", background: "#f9f9f9", padding: "20px", borderRadius: "8px" }}>
               <h3>Customize Weighted Chart</h3>
@@ -589,14 +589,14 @@ export default function Ror() {
                           }
                         },
                         zoom: {
-                          pan: { enabled: true, mode: 'xy' },
-                          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'xy', },
+                          pan: { enabled: true, mode: 'x' },
+                          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
                         },
                       },
                       scales: {
                         x: { type: "time", time: { unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
                         y: {
-                          min: Math.ceil(weightedChartData?.calculatedMinY * 100) / 100,
+                          min: Math.floor(weightedChartData?.calculatedMinY * 100) / 100,
                           max: Math.ceil(weightedChartData?.calculatedMaxY * 100) / 100,
                           ticks: {
                             callback: (value) => `${value}%`,
