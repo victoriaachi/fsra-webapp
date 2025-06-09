@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request
 from fuzzywuzzy import fuzz
 from doc_download import get_pba_docx
 from gemini import call_gemini_pba
+import re
 
 feature3_bp = Blueprint('feature3', __name__)
 
@@ -28,6 +29,21 @@ def extract_chunks_with_sections(doc):
             })
 
     return chunks, section_map
+
+
+def extract_relevant_sentences(text, keyword, window=1):
+    sentences = re.split(r'(?<=[.!?]) +', text)
+    keyword = keyword.lower()
+    relevant = []
+
+    for i, sentence in enumerate(sentences):
+        if keyword in sentence.lower():
+            start = max(i - window, 0)
+            end = min(i + window + 1, len(sentences))
+            relevant.extend(sentences[start:end])
+            break  # only take first match for brevity
+
+    return ' '.join(relevant) if relevant else ''
 
 # Find the best match (only one) based on fuzzy score
 def find_best_chunk(chunks, keyword, threshold=70):
@@ -72,8 +88,12 @@ def submit_keyword():
         big_chunk = best_match["chunk"]
         section_text = "\n".join(section_map.get(section_name, []))
 
+        limited_chunk = extract_relevant_sentences(big_chunk, keyword)
+        if not limited_chunk:
+            limited_chunk = big_chunk[:500]  # fallback if keyword isn't found
+
         prompt = (
-            f"""Summarize the word '{keyword}' in the following text in 1-2 sentences:\n\n{big_chunk}. 
+            f"""Summarize the word '{keyword}' in the following text in 1-2 sentences:\n\n{limited_chunk}. 
             If the keyword doesn't appear in the chunk, return "NULL"
             """
         )
