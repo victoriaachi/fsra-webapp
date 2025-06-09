@@ -235,7 +235,9 @@ export default function Ror() {
         backgroundColor: distinctColors[index % distinctColors.length],
         tension: 0,
         pointRadius: 0,
-        pointHoverRadius: 0,
+        pointHoverRadius: 6,
+        hoverRadius: 10,         
+        hitRadius: 10,
       };
     });
 
@@ -318,7 +320,9 @@ export default function Ror() {
             backgroundColor: distinctColors[index % distinctColors.length],
             borderWidth: 2,
             pointRadius: 0,
-            pointHoverRadius: 0,
+            pointHoverRadius: 6,
+            hoverRadius: 10,         
+            hitRadius: 10,
             tension: 0,
         };
     });
@@ -451,9 +455,17 @@ export default function Ror() {
                           labels: { usePointStyle: true, boxWidth: 12, boxHeight: 12, color: "#000" }
                         },
                         zoom: {
-                          pan: { enabled: true, mode: 'x' },
+                          pan: { enabled: true, mode: 'x',  },
                           zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
+                          limits: {
+                            x: {
+                              min: startDate ? new Date(startDate).getTime() : undefined,
+                              max: endDate ? new Date(endDate).getTime() : undefined,
+                            }
+                          }
                         },
+                        
+                        
                       },
                       scales: {
                         x: { type: "time", time: { unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
@@ -591,6 +603,12 @@ export default function Ror() {
                         zoom: {
                           pan: { enabled: true, mode: 'x' },
                           zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
+                          limits: {
+                            x: {
+                              min: startDate ? new Date(startDate).getTime() : undefined,
+                              max: endDate ? new Date(endDate).getTime() : undefined,
+                            }
+                          }
                         },
                       },
                       scales: {
