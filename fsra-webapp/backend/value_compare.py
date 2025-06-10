@@ -38,8 +38,8 @@ def extract_num(s):
 def val_equal(str1, str2, tol=1e-9):
     num1 = extract_num(str1)
     num2 = extract_num(str2)
-    print(num1);
-    print(num2);
+    #print(num1);
+    #print(num2);
     
     if num1 is None and num2 is None:
         return True

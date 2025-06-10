@@ -120,6 +120,7 @@ def compare_route():
         print(not_null)
         print(null)
 
+
 #         prompt = f"""
 # You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
 # If you cannot find a field or if does not contain numbers, return "". If the value is a date, please return it in YYYYMMDD format.
