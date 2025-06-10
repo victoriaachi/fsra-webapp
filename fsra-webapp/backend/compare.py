@@ -60,7 +60,6 @@ def compare_route():
                 field_val = field.field_value
                 field_name = field.field_name
                 print(f"{field_count} {field_name} {field_val}")
-                print(f"field_count={field_count}, length={len(ais_vals)}")
                 if field_name in seen_fields:
                     print("seen")
                     
@@ -133,13 +132,19 @@ def compare_route():
         print(found)
         print(ais_found_fields)
         print(not_num)
-        print(not_null)
         print(null)
 
+        # ais_found = found + not_found + not_num
+
+        for i in range(383, 390):
+            compare[i] = 1
+
+        not_found = 0
         for i, val in enumerate(compare):
             if ais_vals[i] != "NULL" and ais_vals[i] and val == 0:
+                not_found += 1
                 print(ais_vals[i])
-
+        print(not_found)
 
 #         prompt = f"""
 # You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
