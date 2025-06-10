@@ -8,7 +8,21 @@ def clean_text(text):
     lines = [line for line in lines if re.search(r'\w', line) and not re.match(r'^\W+$', line)]
     return "\n".join(lines)
 
-def clean_numbers(text):
+def clean_numbers_ais(text):
+    def remove_commas(match):
+        return match.group(0).replace(',', '')
+
+    # Remove commas from large numbers
+    comma_pattern = r'\d{1,3}(?:,\d{3})+(?:\.\d+)?'
+    text = re.sub(comma_pattern, remove_commas, text)
+
+    # Remove dashes from ISO-style dates (e.g. 2024-01-01 -> 20240101)
+    iso_date_pattern = r'\b(\d{4})-(\d{2})-(\d{2})\b'
+    text = re.sub(iso_date_pattern, r'\1\2\3', text)
+
+    return text
+
+def clean_numbers_avr(text):
     """
     Removes commas and dollar signs from numbers, and removes slashes from dates.
     """

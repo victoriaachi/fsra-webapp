@@ -11,7 +11,7 @@ import copy
 import array
 from value_compare import val_equal, extract_num
 from template import key_map, titles, exclude
-from clean_text import clean_text, clean_numbers
+from clean_text import clean_text, clean_numbers_avr, clean_numbers_ais
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -74,11 +74,12 @@ def compare_route():
                 
                 elif field_name not in seen_fields:
                     print("valid")
+                    field_val = clean_numbers_ais(field_val)
                     ais_text += f"{field_count} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
                     #ais_vals[field_count] = extracted_val
                     #ais_found[field_count] = 1
-                    ais_vals[field_count] = clean_numbers(field_val)
+                    ais_vals[field_count] = clean_numbers_ais(field_val)
                     seen_fields.add(field_name)
                     field_count += 1
                     # #print(f"{keys[field_count]}: {extracted_val}")
@@ -108,7 +109,7 @@ def compare_route():
             for page in avr_pdf.pages:
                 avr_text += page.extract_text() + "\n"
 
-        avr_text = clean_numbers(clean_text(avr_text));
+        avr_text = clean_numbers_avr(clean_text(avr_text));
 
         found = 0; 
         for i, val in enumerate(ais_vals):
@@ -117,6 +118,7 @@ def compare_route():
                 found += 1
         not_null = len(key_map) - ais_vals.count("NULL")        
         print(found)
+        print(ais_found_fields)
         print(not_null)
         print(null)
 
