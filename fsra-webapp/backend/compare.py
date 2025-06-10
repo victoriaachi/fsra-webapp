@@ -34,6 +34,10 @@ def compare_route():
     ais_vals = [""]*len(key_map);
     avr_vals = [""]*len(key_map);
 
+    # value metadata - percent, negative, etc
+    ais_meta = [""]*len(key_map);
+    avr_meta = [""]*len(key_map);
+
     # boolean array to keep track of values that are found
     ais_found = [0]*len(key_map);
     avr_found = [0]*len(key_map);
@@ -74,12 +78,12 @@ def compare_route():
                 
                 elif field_name not in seen_fields:
                     print("valid")
-                    field_val = clean_numbers_ais(field_val)
+                    field_val = clean_numbers_ais(field_val, ais_meta, field_count)
                     ais_text += f"{field_count} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
                     #ais_vals[field_count] = extracted_val
                     #ais_found[field_count] = 1
-                    ais_vals[field_count] = clean_numbers_ais(field_val)
+                    ais_vals[field_count] = clean_numbers_ais(field_val, ais_meta, field_count)
                     seen_fields.add(field_name)
                     field_count += 1
                     # #print(f"{keys[field_count]}: {extracted_val}")
@@ -112,15 +116,29 @@ def compare_route():
         avr_text = clean_numbers_avr(clean_text(avr_text));
 
         found = 0; 
+        not_num = 0;
         for i, val in enumerate(ais_vals):
+            if val != "NULL" and val and extract_num(val) is None:
+                print("not num")
+                print(val)
+                not_num += 1
+                compare[i] = 1
+                continue  
+
             if val != "NULL" and val and val in avr_text:
                 #print(f"Found value at index {i}: {val}")
                 found += 1
+                compare[i] = 1
         not_null = len(key_map) - ais_vals.count("NULL")        
         print(found)
         print(ais_found_fields)
+        print(not_num)
         print(not_null)
         print(null)
+
+        for i, val in enumerate(compare):
+            if ais_vals[i] != "NULL" and ais_vals[i] and val == 0:
+                print(ais_vals[i])
 
 
 #         prompt = f"""

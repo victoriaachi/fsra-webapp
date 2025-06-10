@@ -8,7 +8,16 @@ def clean_text(text):
     lines = [line for line in lines if re.search(r'\w', line) and not re.match(r'^\W+$', line)]
     return "\n".join(lines)
 
-def clean_numbers_ais(text):
+def clean_numbers_ais(text, arr, index):
+
+    if text.startswith('(') and text.endswith(')'):
+        arr[index] += "-"
+        text = text[1:-1].strip()
+
+    # Check for minus sign
+    if text.startswith('-'):
+        arr[index] += "-"
+        text = text[1:].strip()
     def remove_commas(match):
         return match.group(0).replace(',', '')
 
@@ -46,7 +55,7 @@ def clean_numbers_avr(text):
             return match.group(0) 
 
     written_date_pattern = r'\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b'
-    text = re.sub(written_date_pattern, replace_written_date, text)
+    text = re.sub(written_date_pattern, replace_written_date, text, flags=re.IGNORECASE)
 
     def replace_percent(match):
         number = match.group(1)
