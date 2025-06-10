@@ -392,3 +392,8 @@ key_map = {
 }
 
 titles = ["Pension Plan Name", "Registration Number", "Other Registration Number", "Valuation Date", "Valuation End Date"]
+
+exclude = ["C003", "F006", "F0065", "F0067", "F0063", "F0062", "F0064", "F0066", "F006Other", "I020", "I021", "I20other", "I21other",
+            "I036a", "I036ai", "l036aii", "I036aiii", "I036aiiiOther", "I036bi", "I036biim", "I036biif", "I037_includ",
+            "I037_sep", "I037_no", "I038ai", "I038ae", "I038aei", "I038bi", "I038be", "I038bei", "I039", "I040", "I041",
+            "K102", "K103", "L110", "M135", "M136", "M136a", "O137", "O138e", "O1391", "O1394", "O1399a", "O1399b", "O141", "O144.(i)", "O144.(ii)"]
