@@ -9,7 +9,6 @@ def clean_text(text):
     return "\n".join(lines)
 
 def clean_numbers_ais(text, arr, index):
-
     if text.startswith('(') and text.endswith(')'):
         arr[index] += "-"
         text = text[1:-1].strip()
@@ -18,10 +17,11 @@ def clean_numbers_ais(text, arr, index):
     if text.startswith('-'):
         arr[index] += "-"
         text = text[1:].strip()
+
+    # Remove commas from large numbers
     def remove_commas(match):
         return match.group(0).replace(',', '')
 
-    # Remove commas from large numbers
     comma_pattern = r'\d{1,3}(?:,\d{3})+(?:\.\d+)?'
     text = re.sub(comma_pattern, remove_commas, text)
 
@@ -29,6 +29,14 @@ def clean_numbers_ais(text, arr, index):
     iso_date_pattern = r'\b(\d{4})-(\d{2})-(\d{2})\b'
     text = re.sub(iso_date_pattern, r'\1\2\3', text)
 
+    # 🧹 Remove leading/trailing zeros
+    if re.fullmatch(r'\d+(\.\d+)?', text):
+        if '.' in text:
+            # For floats: strip trailing zeros & leading zeros
+            text = str(float(text)).rstrip('0').rstrip('.')  # '001.2000' -> '1.2'
+        else:
+            # For ints: remove leading zeros
+            text = str(int(text))  # '000123' -> '123'
     return text
 
 def clean_numbers_avr(text):

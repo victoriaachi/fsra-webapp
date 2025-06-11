@@ -9,6 +9,7 @@ import json
 import re
 import copy
 import array
+from rapidfuzz, import fuzz
 from value_compare import val_equal, extract_num
 from template import key_map, titles, exclude
 from clean_text import clean_text, clean_numbers_avr, clean_numbers_ais
@@ -129,10 +130,7 @@ def compare_route():
                 found += 1
                 compare[i] = 1
         not_null = len(key_map) - ais_vals.count("NULL")        
-        print(found)
-        print(ais_found_fields)
-        print(not_num)
-        print(null)
+
 
         # ais_found = found + not_found + not_num
 
@@ -143,8 +141,13 @@ def compare_route():
         for i, val in enumerate(compare):
             if ais_vals[i] != "NULL" and ais_vals[i] and val == 0:
                 not_found += 1
-                print(ais_vals[i])
-        print(not_found)
+                print(f"metadata: {ais_meta[i]}")
+                print(f"not found: {keys[i]} {ais_vals[i]}")
+        print(f"found: {found}")
+        print(f"total fields: {ais_found_fields}")
+        print(f"words: {not_num}")
+        print(f"null/excluded fields: {null}")
+        print(f"not found: {not_found}")
 
 #         prompt = f"""
 # You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
