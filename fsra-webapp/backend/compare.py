@@ -9,10 +9,11 @@ import json
 import re
 import copy
 import array
-from rapidfuzz, import fuzz
+from rapidfuzz import fuzz
 from value_compare import val_equal, extract_num
-from template import key_map, titles, exclude
+from template import key_map, titles, exclude, ratios, rounding
 from clean_text import clean_text, clean_numbers_avr, clean_numbers_ais
+from word_match import find_nearest_word, find_nearest_number, avr_match_dec
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -60,30 +61,31 @@ def compare_route():
             for field in page.widgets():
                 field_val = field.field_value
                 field_name = field.field_name
-                print(f"{field_count} {field_name} {field_val}")
+                #print(f"{field_count} {field_name} {field_val}")
                 if field_name in seen_fields:
-                    print("seen")
+                    continue
+                    #print("seen")
                     
                 elif field_name in exclude:
-                    print("excluded")
+                    #print("excluded")
                     field_count += 1
                     seen_fields.add(field_name)
 
                 elif field_val is None or field_val == "":
-                    print("null")
+                    #print("null")
                     ais_vals[field_count] = "NULL"
                     null += 1
                     field_count += 1;
                     seen_fields.add(field_name)
                 
                 elif field_name not in seen_fields:
-                    print("valid")
+                    #print("valid")
                     field_val = clean_numbers_ais(field_val, ais_meta, field_count)
                     ais_text += f"{field_count} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
                     #ais_vals[field_count] = extracted_val
                     #ais_found[field_count] = 1
-                    ais_vals[field_count] = clean_numbers_ais(field_val, ais_meta, field_count)
+                    ais_vals[field_count] = field_val
                     seen_fields.add(field_name)
                     field_count += 1
                     # #print(f"{keys[field_count]}: {extracted_val}")
@@ -114,21 +116,51 @@ def compare_route():
                 avr_text += page.extract_text() + "\n"
 
         avr_text = clean_numbers_avr(clean_text(avr_text));
+        print(avr_text)
 
         found = 0; 
         not_num = 0;
+        # Combine the sets/lists of indices you want special rounding matching for
+        special_rounding_indices = set(ratios) | set(rounding)
+
         for i, val in enumerate(ais_vals):
+            #print(f"Processing field {i} ({keys[i]}): {val} (type: {type(val)})")
             if val != "NULL" and val and extract_num(val) is None:
-                print("not num")
-                print(val)
+                #print("not num")
+                #print(val)
                 not_num += 1
                 compare[i] = 1
-                continue  
+                continue  # Skip to next index
 
-            if val != "NULL" and val and val in avr_text:
-                #print(f"Found value at index {i}: {val}")
-                found += 1
-                compare[i] = 1
+            if val != "NULL" and val:
+                #print("special number checking")
+                if i in special_rounding_indices:
+                    # Here, call a flexible matching function that:
+                    # - compares val as decimal to val*100 (percent),
+                    # - compares rounded versions to handle many decimals,
+                    # - uses your fuzzy matching to find closest in avr_text
+                    variants = avr_match_dec(val)  # Make sure this generates variants e.g. val, val*100, rounded etc.
+
+                    matched = False
+                    for variant in variants:
+                        match, score = find_nearest_number(avr_text, variant, threshold=100, decimals=1)
+                        if match:
+                            found += 1
+                            compare[i] = 1
+                            matched = True
+                            break
+                    if not matched:
+                        compare[i] = 0
+                else:
+                    #print("regular number checking")
+                    # Regular fuzzy number match
+                    match, score = find_nearest_number(avr_text, val, threshold=100)
+                    if match:
+                        found += 1
+                        compare[i] = 1
+
+
+
         not_null = len(key_map) - ais_vals.count("NULL")        
 
 
@@ -137,11 +169,71 @@ def compare_route():
         for i in range(383, 390):
             compare[i] = 1
 
+        print("Checking scale phrases in AVR text...")
+        print(f"AVR text snippet: {avr_text[:500]}")  # print first 500 chars for context
+
+        thousands_phrases = ["in thousands", "in thousand", "thousands of dollars"]
+        millions_phrases = ["in millions", "in million", "millions of dollars"]
+
+        found_thousands = False
+        found_millions = False
+
+        for phrase in thousands_phrases:
+            score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
+            print(f"Checking thousands phrase '{phrase}': score = {score}")
+            if score > 80:
+                found_thousands = True
+                break
+
+        for phrase in millions_phrases:
+            score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
+            print(f"Checking millions phrase '{phrase}': score = {score}")
+            if score > 80:
+                found_millions = True
+                break
+
+        scale = None
+        if found_thousands:
+            scale = 1000
+        elif found_millions:
+            scale = 1000000
+
+        print(f"Scale detected: {scale}")
+
+        if scale == 1000 or scale == 1000000:
+            for i, val in enumerate(ais_vals):
+                if compare[i] == 0 and val != "NULL" and val:
+                    num = extract_num(val)
+                    print(str(num))
+                    if num is None:
+                        continue
+
+                    scaled_val = clean_numbers_ais(str(num * scale), [], 0)
+                    print(scaled_val)
+
+                    # For ratios, optionally try also dividing to cover cases like 107 vs 0.107
+                    # variants = [scaled_val]
+                    # if i in ratios:
+                    #     variants.append(str(num / scale))
+
+                    matched = False
+                    for variant in variants:
+                        match, score = find_nearest_number(avr_text, variant, threshold=100)
+                        if match:
+                            compare[i] = 1
+                            matched = True
+                            print(f"Scaled match for index {i}, val {val}, variant {variant}")
+                            break
+        else:
+            print("No scale phrase detected, skipping scaled matching")
+            
+
+
         not_found = 0
         for i, val in enumerate(compare):
             if ais_vals[i] != "NULL" and ais_vals[i] and val == 0:
                 not_found += 1
-                print(f"metadata: {ais_meta[i]}")
+                #print(f"metadata: {ais_meta[i]}")
                 print(f"not found: {keys[i]} {ais_vals[i]}")
         print(f"found: {found}")
         print(f"total fields: {ais_found_fields}")

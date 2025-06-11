@@ -47,6 +47,13 @@ def clean_numbers_avr(text):
     def replace_number(match):
         matched_str = match.group(0)
         cleaned = matched_str.replace('$', '').replace(',', '')
+
+        # Strip leading/trailing zeros
+        if re.fullmatch(r'\d+(\.\d+)?', cleaned):
+            if '.' in cleaned:
+                cleaned = str(float(cleaned)).rstrip('0').rstrip('.')  # '001.2000' -> '1.2'
+            else:
+                cleaned = str(int(cleaned))  # '000123' -> '123'
         return cleaned
 
     # This pattern *includes* the dollar sign in the match
@@ -60,7 +67,7 @@ def clean_numbers_avr(text):
             date_obj = datetime.strptime(match.group(0), '%B %d, %Y')
             return date_obj.strftime('%Y%m%d')
         except ValueError:
-            return match.group(0) 
+            return match.group(0)
 
     written_date_pattern = r'\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b'
     text = re.sub(written_date_pattern, replace_written_date, text, flags=re.IGNORECASE)
