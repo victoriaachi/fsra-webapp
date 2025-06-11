@@ -8,7 +8,7 @@ def clean_text(text):
     lines = [line for line in lines if re.search(r'\w', line) and not re.match(r'^\W+$', line)]
     return "\n".join(lines)
 
-def clean_numbers_ais(text, arr, index):
+def clean_numbers_val(text, arr, index):
     if text.startswith('(') and text.endswith(')'):
         arr[index] += "-"
         text = text[1:-1].strip()
@@ -39,7 +39,7 @@ def clean_numbers_ais(text, arr, index):
             text = str(int(text))  # '000123' -> '123'
     return text
 
-def clean_numbers_avr(text):
+def clean_numbers_pdf(text):
     """
     Removes commas and dollar signs from numbers, and removes slashes from dates.
     """

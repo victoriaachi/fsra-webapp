@@ -12,7 +12,7 @@ import array
 from rapidfuzz import fuzz
 from value_compare import val_equal, extract_num
 from template import key_map, titles, exclude, ratios, rounding
-from clean_text import clean_text, clean_numbers_avr, clean_numbers_ais
+from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
 from word_match import find_nearest_word, find_nearest_number, avr_match_dec
 
 compare_bp = Blueprint('compare', __name__)
@@ -45,7 +45,7 @@ def compare_route():
     avr_found = [0]*len(key_map);
     compare = [0]*len(key_map);
 
-    titles_str = ", ".join(titles)
+    #titles_str = ", ".join(titles)
     print(f"Exclude set before loop: {exclude}")
 
 
@@ -80,7 +80,7 @@ def compare_route():
                 
                 elif field_name not in seen_fields:
                     #print("valid")
-                    field_val = clean_numbers_ais(field_val, ais_meta, field_count)
+                    field_val = clean_numbers_val(field_val, ais_meta, field_count)
                     ais_text += f"{field_count} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
                     #ais_vals[field_count] = extracted_val
@@ -115,7 +115,7 @@ def compare_route():
             for page in avr_pdf.pages:
                 avr_text += page.extract_text() + "\n"
 
-        avr_text = clean_numbers_avr(clean_text(avr_text));
+        avr_text = clean_numbers_pdf(clean_text(avr_text));
         print(avr_text)
 
         found = 0; 
@@ -139,7 +139,8 @@ def compare_route():
                     # - compares val as decimal to val*100 (percent),
                     # - compares rounded versions to handle many decimals,
                     # - uses your fuzzy matching to find closest in avr_text
-                    variants = avr_match_dec(val)  # Make sure this generates variants e.g. val, val*100, rounded etc.
+                    variants = avr_match_dec(val, is_percent=('%' in ais_meta[i]))
+ # Make sure this generates variants e.g. val, val*100, rounded etc.
 
                     matched = False
                     for variant in variants:
@@ -204,11 +205,11 @@ def compare_route():
             for i, val in enumerate(ais_vals):
                 if compare[i] == 0 and val != "NULL" and val:
                     num = extract_num(val)
-                    print(str(num))
+                    #print(str(num))
                     if num is None:
                         continue
 
-                    scaled_val = clean_numbers_ais(str(num * scale), [], 0)
+                    scaled_val = clean_numbers_val(str(num / scale), [], 0)
                     print(scaled_val)
 
                     # For ratios, optionally try also dividing to cover cases like 107 vs 0.107
@@ -217,6 +218,7 @@ def compare_route():
                     #     variants.append(str(num / scale))
 
                     matched = False
+                    variants = [scaled_val]
                     for variant in variants:
                         match, score = find_nearest_number(avr_text, variant, threshold=100)
                         if match:
