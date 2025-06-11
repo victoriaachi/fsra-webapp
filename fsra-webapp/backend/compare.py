@@ -120,7 +120,7 @@ def compare_route():
 
         found = 0; 
         not_num = 0;
-        # Combine the sets/lists of indices you want special rounding matching for
+
         special_rounding_indices = set(ratios) | set(rounding)
 
         for i, val in enumerate(ais_vals):
