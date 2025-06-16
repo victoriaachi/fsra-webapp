@@ -121,3 +121,60 @@ def avr_match_dec(val, is_percent=False):
 
     return variants
 
+# def find_sentence(text, keyword, title, threshold=100, decimals=None, fuzz_threshold=80):
+#     """
+#     Looks for a sentence that contains a number matching 'keyword',
+#     and also contains or fuzzily matches the 'title'.
+#     """
+#     # First get the best matching number in the text
+#     match, score = find_nearest_number(text, keyword, threshold=threshold, decimals=decimals)
+#     if not match:
+#         return None, 0, None  # No match found
+
+#     # Split text into sentences or lines
+#     sentences = re.split(r'(?<=[\.\n])\s+', text)
+    
+#     for sentence in sentences:
+#         if str(match) in sentence:
+#             # Check if the title is contextually close to the sentence
+#             fuzz_score = fuzz.partial_ratio(title.lower(), sentence.lower())
+#             if title.lower() in sentence.lower() or fuzz_score >= fuzz_threshold:
+#                 return sentence.strip(), fuzz_score, match  # return the sentence, score, and number match
+
+#     return None, 0, match  # found number, but no sentence with good title match
+
+def find_sentence(text, keyword, title, threshold=100, decimals=None, fuzz_threshold=80):
+    """
+    Looks for a sentence that contains a number matching 'keyword',
+    and also contains or fuzzily matches the 'title'.
+
+    Parameters:
+        - text: The entire AVR text
+        - keyword: The number you're trying to find
+        - title: The field name you're trying to match contextually
+        - threshold: Numeric matching threshold (should be 100 for exact match)
+        - decimals: Optional, how many decimal places to normalize numbers to
+        - fuzz_threshold: Fuzzy text threshold for matching title in sentence
+    """
+    # Step 1: Find the number (strict match)
+    match, number_score = find_nearest_number(text, keyword, threshold=threshold, decimals=decimals)
+    if not match:
+        return None, 0, None  # No number match found
+
+    # Step 2: Split text into sentences or lines
+    sentences = re.split(r'(?<=[\.\n])\s+', text)
+
+    # Step 3: Search for sentence with both the number and good fuzzy title match
+    for i, sentence in enumerate(sentences):
+        if str(match) in sentence:
+            # Combine this sentence with previous and next ones for context
+            start = max(i - 5, 0)  # 1 sentence before  i-N, i+N+1
+            end = min(i + 6, len(sentences))  # 1 sentence after (exclusive)
+            combined = ' '.join(sentences[start:end]).strip()
+
+            fuzz_score = fuzz.partial_ratio(title.lower(), combined.lower())
+            if title.lower() in combined.lower() or fuzz_score >= fuzz_threshold:
+                return combined, fuzz_score, match
+
+    # Step 4: Number matched, but no sentence with good title
+    return None, 0, match

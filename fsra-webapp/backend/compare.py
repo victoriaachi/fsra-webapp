@@ -13,7 +13,7 @@ from rapidfuzz import fuzz
 from value_compare import val_equal, extract_num
 from template import key_map, titles, exclude, ratios, rounding
 from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
-from word_match import find_nearest_word, find_nearest_number, avr_match_dec
+from word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -46,7 +46,7 @@ def compare_route():
     compare = [0]*len(key_map);
 
     #titles_str = ", ".join(titles)
-    print(f"Exclude set before loop: {exclude}")
+    #print(f"Exclude set before loop: {exclude}")
 
 
     try:
@@ -116,7 +116,7 @@ def compare_route():
                 avr_text += page.extract_text() + "\n"
 
         avr_text = clean_numbers_pdf(clean_text(avr_text));
-        print(avr_text)
+        #print(avr_text)
 
         found = 0; 
         not_num = 0;
@@ -140,25 +140,30 @@ def compare_route():
                     # - compares rounded versions to handle many decimals,
                     # - uses your fuzzy matching to find closest in avr_text
                     variants = avr_match_dec(val, is_percent=('%' in ais_meta[i]))
- # Make sure this generates variants e.g. val, val*100, rounded etc.
 
                     matched = False
                     for variant in variants:
-                        match, score = find_nearest_number(avr_text, variant, threshold=100, decimals=1)
-                        if match:
+                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
+                        if sentence:
                             found += 1
                             compare[i] = 1
                             matched = True
+                            #print(f"✅ Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
                             break
+
                     if not matched:
                         compare[i] = 0
                 else:
-                    #print("regular number checking")
-                    # Regular fuzzy number match
-                    match, score = find_nearest_number(avr_text, val, threshold=100)
-                    if match:
+                    matched = False
+                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=60)
+                    if sentence:
                         found += 1
                         compare[i] = 1
+                        matched = True
+                        #print(f"✅ Regular Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
+                    if not matched:
+                        compare[i] = 0
+                        print(f"not matched: {titles[i]} {val}")
 
 
 
@@ -171,7 +176,6 @@ def compare_route():
             compare[i] = 1
 
         print("Checking scale phrases in AVR text...")
-        print(f"AVR text snippet: {avr_text[:500]}")  # print first 500 chars for context
 
         thousands_phrases = ["in thousands", "in thousand", "thousands of dollars"]
         millions_phrases = ["in millions", "in million", "millions of dollars"]
@@ -181,14 +185,14 @@ def compare_route():
 
         for phrase in thousands_phrases:
             score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
-            print(f"Checking thousands phrase '{phrase}': score = {score}")
+            #print(f"Checking thousands phrase '{phrase}': score = {score}")
             if score > 80:
                 found_thousands = True
                 break
 
         for phrase in millions_phrases:
             score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
-            print(f"Checking millions phrase '{phrase}': score = {score}")
+            #print(f"Checking millions phrase '{phrase}': score = {score}")
             if score > 80:
                 found_millions = True
                 break
@@ -210,7 +214,7 @@ def compare_route():
                         continue
 
                     scaled_val = clean_numbers_val(str(num / scale), [], 0)
-                    print(scaled_val)
+                    #print(scaled_val)
 
                     # For ratios, optionally try also dividing to cover cases like 107 vs 0.107
                     # variants = [scaled_val]
@@ -224,10 +228,10 @@ def compare_route():
                         if match:
                             compare[i] = 1
                             matched = True
-                            print(f"Scaled match for index {i}, val {val}, variant {variant}")
+                            #print(f"Scaled match for index {i}, val {val}, variant {variant}")
                             break
-        else:
-            print("No scale phrase detected, skipping scaled matching")
+        #else:
+            #print("No scale phrase detected, skipping scaled matching")
             
 
 
@@ -242,6 +246,11 @@ def compare_route():
         print(f"words: {not_num}")
         print(f"null/excluded fields: {null}")
         print(f"not found: {not_found}")
+
+        for i, val in enumerate(compare):
+            if val == 1:
+                #print(f"found value: {ais_vals[i]}")
+                continue
 
 #         prompt = f"""
 # You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
