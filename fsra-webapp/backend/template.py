@@ -813,3 +813,7 @@ dates_excl = [14, 15, 16, 17, 18, 19, 20, 21]
 table_other = [105, 159, 161]
 
 table_check = [104, 158, 160]
+
+gc_mortality = ["A", "B", "C", "D", "E", "F", "G"]
+
+solv_mortality = ["1994 UP Generational", "CPM2014Priv", "CPM2014", "CPM2014Publ"]

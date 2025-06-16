@@ -11,7 +11,7 @@ import copy
 import array
 from rapidfuzz import fuzz
 from value_compare import val_equal, extract_num
-from template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other
+from template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality
 from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
 from word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence
 
@@ -130,18 +130,61 @@ def compare_route():
 
         for i, val in enumerate(ais_vals):
 
+            # other text for tables    
+            if i + 1 in table_other and ais_vals[i+1] != "NULL": 
+                print(f"{i} table other: {val}")
+                print(f"{i+1} table other: {ais_vals[i+1]}")
 
+                target = ais_vals[i+1].lower()
+                matched = False
+
+                for sentence in avr_text.split('\n'):
+                    score = fuzz.partial_ratio(target, sentence.lower())
+                    if score >= 40:
+                        compare[i] = 1
+                        compare[i+1] = 1
+                        found += 2
+                        matched = True
+                        print(f"✅ Fuzzy match (score={score}): '{target}' in '{sentence.strip()}'")
+                        break
+
+                if not matched:
+                    compare[i] = 0
+                    print("❌ Not found")
+            
+            
+            # checkmark in tables
+            elif i in table_check:
+                print(f"{i} table check: {val}")
+                if i == 104:
+                    if gc_mortality[int(val) - 2] in avr_text:
+                        print("found")
+                        compare[i] = 1;
+                        found += 1;
+                    else:
+                        compare[i] = 0
+                        print("not found")
+                else:
+                    if solv_mortality[int(val) - 1] in avr_text:
+                        print("found")
+                        compare[i] = 1;
+                        found += 1;
+                    else:
+                        print("not found")
+                        compare[i] = 0
             #print(f"Processing field {i} ({keys[i]}): {val} (type: {type(val)})")
-            if val != "NULL" and val and extract_num(val) is None:
+            # words only value -- remove
+            elif val != "NULL" and val and extract_num(val) is None:
                 #print("not num")
                 #print(val)
                 not_num += 1
                 compare[i] = 1
                 continue  # Skip to next index
 
-            if val != "NULL" and val:
+            # has numbers    
+            elif val != "NULL" and val:
 
-                #print("special number checking")
+                # date
                 if i in dates_excl:
                     compare[i] = 1
                     not_num += 1
@@ -152,6 +195,7 @@ def compare_route():
                     else:
                         compare[i] = 0
 
+                # percentage / rounded numbers
                 elif i in special_rounding_indices:
                     # Here, call a flexible matching function that:
                     # - compares val as decimal to val*100 (percent),
@@ -168,9 +212,11 @@ def compare_route():
                             matched = True
                             #print(f"✅ Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
                             break
-
+                
                     if not matched:
                         compare[i] = 0
+                
+                # regular number checking
                 else:
                     matched = False
                     sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=20)
