@@ -59,6 +59,8 @@ export default function Ror() {
   const [chartData, setChartData] = useState(null);
   const chartRef = useRef();
 
+
+
   const [weightedFrequency, setWeightedFrequency] = useState("daily");
   const [weightedStartDate, setWeightedStartDate] = useState("");
   const [weightedEndDate, setWeightedEndDate] = useState("");
@@ -105,6 +107,7 @@ export default function Ror() {
 
       const data = await response.json();
       setBackendData(data);
+      console.log("Sample backendData:", data);
 
       const defaultDailyRange = data.ranges?.daily || {};
       setStartDate(defaultDailyRange.min || "");
@@ -263,7 +266,7 @@ export default function Ror() {
         calculatedMinY = undefined;
         calculatedMaxY = undefined;
     }
-
+    
     setChartData({ datasets, calculatedMinY, calculatedMaxY }); 
   };
 
@@ -361,6 +364,48 @@ export default function Ror() {
     });
   };
 
+  const calculateTotalReturns = () => {
+    if (!backendData || selectedSecurities.length === 0) return [];
+  
+    const rawData = backendData["daily"]; // always use daily price data
+  
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+  
+    const returns = selectedSecurities.map((sec) => {
+      let dataPoints = rawData[sec] || [];
+  
+      if (start && end) {
+        dataPoints = dataPoints.filter(({ Date: dateString }) => {
+          const d = new Date(dateString);
+          return d >= start && d <= end;
+        });
+      }
+  
+      if (dataPoints.length < 2) return { sec, totalReturn: "N/A" };
+  
+      const startPrice = dataPoints[0].Price;
+      const endPrice = dataPoints[dataPoints.length - 1].Price;
+  
+      if (
+        typeof startPrice !== "number" ||
+        typeof endPrice !== "number" ||
+        isNaN(startPrice) ||
+        isNaN(endPrice)
+      ) {
+        return { sec, totalReturn: "N/A" };
+      }
+  
+      const totalReturn = ((endPrice / startPrice) - 1) * 100;
+  
+      return { sec, totalReturn: totalReturn.toFixed(2) + "%" };
+    });
+  
+    return returns;
+  };
+  
+  
+
 
   return (
     <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
@@ -440,6 +485,19 @@ export default function Ror() {
                   </div>
                 </div>
               )}
+              {selectedSecurities.length > 0 && (
+            <div style={{ marginTop: '20px' }}>
+              <h3>Total Return by Security (Selected Time Period)</h3>
+              <ul>
+                {calculateTotalReturns().map(({ sec, totalReturn }, idx) => (
+                  <li key={idx}>
+                    <strong>{sec}</strong>: {totalReturn}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
     
               <div style={{ marginTop: "20px" }}>
                 <button onClick={() => chartRef.current?.resetZoom()} style={{ marginRight: "10px" }}>

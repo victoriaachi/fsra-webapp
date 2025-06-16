@@ -49,7 +49,8 @@ def calculate_daily_ror(file):
         df['DailyReturn'] = df['Price'].pct_change()
         df = df.dropna()
 
-        result[sheet_name] = df[['Date', 'DailyReturn']].to_dict(orient='records')
+        result[sheet_name] = df[['Date', 'Price', 'DailyReturn']].to_dict(orient='records')
+
 
     return result
 
@@ -193,7 +194,7 @@ def calculate_quarterly_ror(file):
         last_per_quarter['QuarterReturn'] = last_per_quarter['Price'].pct_change()
         last_per_quarter = last_per_quarter.dropna()
 
-        result[sheet_name] = last_per_quarter[['QuarterEnd', 'QuarterReturn']].rename(
+        result[sheet_name] = last_per_quarter[['QuarterEnd', 'Price', 'QuarterReturn']].rename(
             columns={'QuarterEnd': 'Date'}).to_dict(orient='records')
 
     return result
@@ -230,7 +231,7 @@ def calculate_annual_ror(file):
         last_per_year['AnnualReturn'] = last_per_year['Price'].pct_change()
         last_per_year = last_per_year.dropna()
 
-        result[sheet_name] = last_per_year[['YearEnd', 'AnnualReturn']].rename(
+        result[sheet_name] = last_per_year[['YearEnd', 'Price', 'AnnualReturn']].rename(
             columns={'YearEnd': 'Date'}).to_dict(orient='records')
 
     return result
