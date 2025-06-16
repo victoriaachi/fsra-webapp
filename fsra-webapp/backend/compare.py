@@ -11,7 +11,7 @@ import copy
 import array
 from rapidfuzz import fuzz
 from value_compare import val_equal, extract_num
-from template import key_map, titles, exclude, ratios, rounding, dates
+from template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other
 from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
 from word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence
 
@@ -32,6 +32,7 @@ def compare_route():
 
     # variable names
     keys = list(key_map.keys());
+    titles = copy.deepcopy(field_names);
     # values in ais
     ais_vals = [""]*len(key_map);
     avr_vals = [""]*len(key_map);
@@ -81,7 +82,7 @@ def compare_route():
                 elif field_name not in seen_fields:
                     #print("valid")
                     field_val = clean_numbers_val(field_val, ais_meta, field_count)
-                    ais_text += f"{field_count} {field_name}: {field_val} {ais_found_fields}\n"
+                    ais_text += f"{titles[field_count]} {field_count} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
                     #ais_vals[field_count] = extracted_val
                     #ais_found[field_count] = 1
@@ -105,6 +106,10 @@ def compare_route():
 
         ais_doc.close()
 
+        titles[204] = ais_vals[203]
+        titles[206] = ais_vals[205]
+
+       
         # for i, val in enumerate(ais_vals):
         #     print(f"Index: {i}, Value: {val}")
 
@@ -124,6 +129,8 @@ def compare_route():
         special_rounding_indices = set(ratios) | set(rounding)
 
         for i, val in enumerate(ais_vals):
+
+
             #print(f"Processing field {i} ({keys[i]}): {val} (type: {type(val)})")
             if val != "NULL" and val and extract_num(val) is None:
                 #print("not num")
@@ -133,8 +140,12 @@ def compare_route():
                 continue  # Skip to next index
 
             if val != "NULL" and val:
+
                 #print("special number checking")
-                if i in dates:
+                if i in dates_excl:
+                    compare[i] = 1
+                    not_num += 1
+                elif i in dates:
                     if val in avr_text:
                         compare[i] = 1;
                         found += 1;
@@ -160,7 +171,7 @@ def compare_route():
 
                     if not matched:
                         compare[i] = 0
-                elif i not in dates:
+                else:
                     matched = False
                     sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=20)
                     if sentence:

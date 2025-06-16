@@ -391,7 +391,7 @@ key_map = {
     "EmailAddress": ""
 }
 
-titles = [
+field_names = [
     "pension plan name",
     "registration number",
     "other registration number",
@@ -426,30 +426,30 @@ titles = [
     "period 2 special payments for going concern unfunded liability and solvency deficiency employer",
     "period 1 normal cost defined benefit provision explicit expense allowance",
     "period 1 normal cost money purchase provision members",
-    "period 1 normal cost money purcahse provision employer",
+    "period 1 normal cost money purchase provision employer",
     "period 1 special payments for going concern unfunded liability and solvency deficiency members",
     "period 1 fixed contributions employer and member defined benefit provision",
     "period 2 normal cost defined benefit provision explicit expense allowance",
     "period 2 normal cost money purchase provision members",
-    "period 2 normal cost money purcahse provision employer",
+    "period 2 normal cost money purchase provision employer",
     "period 2 special payments for going concern unfunded liability and solvency deficiency members",
     "period 2 fixed contributions employer and member defined benefit provision",
     "period 3 normal cost defined benefit provision explicit expense allowance",
     "period 3 normal cost money purchase provision members",
-    "period 3 normal cost money purcahse provision employer",
+    "period 3 normal cost money purchase provision employer",
     "period 3 special payments for going concern unfunded liability and solvency deficiency employer",
     "period 3 special payments for going concern unfunded liability and solvency deficiency members",
     "period 3 fixed contributions employer and member defined benefit provision",
     "period 4 normal cost defined benefit provision explicit expense allowance",
     "period 4 normal cost money purchase provision members",
-    "period 4 normal cost money purcahse provision employer",
+    "period 4 normal cost money purchase provision employer",
     "period 4 special payments for going concern unfunded liability and solvency deficiency employer",
     "period 4 special payments for going concern unfunded liability and solvency deficiency members",
     "period 4 fixed contributions employer and member defined benefit provision",
-    "period 1 fixed contributions employer and member money purcahse provision",
-    "period 2 fixed contributions employer and member money purcahse provision",
-    "period 3 fixed contributions employer and member money purcahse provision",
-    "period 4 fixed contributions employer and member money purcahse provision",
+    "period 1 fixed contributions employer and member money purchase provision",
+    "period 2 fixed contributions employer and member money purchase provision",
+    "period 3 fixed contributions employer and member money purchase provision",
+    "period 4 fixed contributions employer and member money purchase provision",
     "number of active members",
     "active members average age",
     "active members average pensionable service",
@@ -483,7 +483,7 @@ titles = [
     "",
     "",
     "",
-    "don't know all this in between",
+    "",
     "",
     "",
     "",
@@ -497,7 +497,7 @@ titles = [
     "*",
     "year income tax regulations maximum pension limit escalation commences",
     "mortality table",
-    "* other",
+    "mortality table other",
     "",
     "",
     "",
@@ -548,7 +548,7 @@ titles = [
     "benefits to be settled by purchase of immediate annuity select period",
     "benefits to be settled by purchase of immediate annuity ultimate rate",
     "*",
-    "don't know",
+    "*",
     "*",
     "mortality table lump sum",
     "mortality table lump sum other",
@@ -595,11 +595,11 @@ titles = [
     "actuarial gain or loss due to withdrawal experience",
     "actuarial gain or loss due to salary increase experience",
     "actuarial gain or loss due to optional ancillary contributions forfeited",
-    "* ask ai",
-    "ai",
-    "ai",
-    "ai",
-    "ai",
+    "*",
+    "*",
+    "*",
+    "*",
+    "*",
     "",
     "",
     "",
@@ -798,7 +798,7 @@ titles = [
 ]
 
 exclude = ["C003", "F006", "F0065", "F0067", "F0063", "F0062", "F0064", "F0066", "F006Other", "I020", "I021", "I20other", "I21other",
-            "I036a", "I036ai", "l036aii", "I036aiii", "I036aiiiOther", "I036bi", "I036biim", "I036biif", "I037_includ",
+            "I036a", "I036ai", "l036aii", "I036aiii", "I036bi", "I036biim", "I036biif", "I037_includ",
             "I037_sep", "I037_no", "I038ai", "I038ae", "I038aei", "I038bi", "I038be", "I038bei", "I039", "I040", "I041",
             "K102", "K103", "L110", "M135", "M136", "M136a", "O137", "O138e", "O1391", "O1393", "O1394", "O1399a", "O1399b", "O141", "O144.(i)", "O144.(ii)"]
 
@@ -806,4 +806,10 @@ ratios = [273, 282]
 
 rounding = [59, 64, 67, 126, 175]
 
-dates = [3, 4, 14, 15, 16, 17, 18, 19, 20, 21]
+dates = [3, 4]
+
+dates_excl = [14, 15, 16, 17, 18, 19, 20, 21]
+
+table_other = [105, 159, 161]
+
+table_check = [104, 158, 160]
