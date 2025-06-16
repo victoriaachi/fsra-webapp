@@ -8,8 +8,11 @@ export default function compare() {
 
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
+
+  const [filteredTitles, setFilteredTitles] = useState([]);
+  const [filteredValues, setFilteredValues] = useState([]);
   //const [geminiText, setGeminiText] = useState("");
-  const [geminiFields, setGeminiFields] = useState([]);
+  //const [geminiFields, setGeminiFields] = useState([]);
 
   // const [ollamaText, setOllamaText] = useState("");
   // const [excelPreview, setExcelPreview] = useState([]);
@@ -46,9 +49,12 @@ export default function compare() {
 
     setAisText(data.ais_text);
     setAvrText(data.avr_text);
+
+    setFilteredTitles(data.titles);
+    setFilteredValues(data.values);
     //setGeminiText(data.gemini_text);
     //setGeminiFields(data.gemini_fields); // structured JSON 🎯
-    setGeminiFields(data.gemini_fields);
+    //setGeminiFields(data.gemini_fields);
     //setOllamaText(data.ollama_text);
     //setExcelPreview(data.excel_Preview);
     //console.log("Excel preview:", data.excel_preview);
@@ -79,20 +85,28 @@ export default function compare() {
           onChange={avrChange}
         />
       </div>
+      
       {error && <p style={{ color: "red" }}>{error}</p>}
       <button onClick={fileSubmit}>Submit</button>
         <h2>Extracted AIS Fields</h2>
       <pre>{aisText}</pre>
       
+      {filteredTitles.map((title, idx) => {
+      const value = filteredValues[idx];
+      if (title != null && value != null) {
+        return (
+          <p key={idx}>
+            {title}: {value}
+          </p>
+        );
+      }
+      return null; // Skip rendering
+    })}
       <h2>Extracted AVR Text</h2>
       <pre>{avrText}</pre>
 
-      {/* <h2>Ollama Summary</h2>
-      <pre>{ollamaText}</pre> */}
-      <h2>Gemini Extracted Fields</h2>
-      <h2>Gemini Field Comparison</h2>
+      
 
-  <p>No field data available.</p>
 
 
     </div>

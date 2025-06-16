@@ -11,7 +11,7 @@ import copy
 import array
 from rapidfuzz import fuzz
 from value_compare import val_equal, extract_num
-from template import key_map, titles, exclude, ratios, rounding
+from template import key_map, titles, exclude, ratios, rounding, dates
 from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
 from word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence
 
@@ -134,7 +134,14 @@ def compare_route():
 
             if val != "NULL" and val:
                 #print("special number checking")
-                if i in special_rounding_indices:
+                if i in dates:
+                    if val in avr_text:
+                        compare[i] = 1;
+                        found += 1;
+                    else:
+                        compare[i] = 0
+
+                elif i in special_rounding_indices:
                     # Here, call a flexible matching function that:
                     # - compares val as decimal to val*100 (percent),
                     # - compares rounded versions to handle many decimals,
@@ -143,7 +150,7 @@ def compare_route():
 
                     matched = False
                     for variant in variants:
-                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
+                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=20)
                         if sentence:
                             found += 1
                             compare[i] = 1
@@ -153,9 +160,9 @@ def compare_route():
 
                     if not matched:
                         compare[i] = 0
-                else:
+                elif i not in dates:
                     matched = False
-                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=60)
+                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=20)
                     if sentence:
                         found += 1
                         compare[i] = 1
@@ -252,6 +259,8 @@ def compare_route():
                 #print(f"found value: {ais_vals[i]}")
                 continue
 
+        filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
+        filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
 #         prompt = f"""
 # You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
 # If you cannot find a field or if does not contain numbers, return "". If the value is a date, please return it in YYYYMMDD format.
@@ -324,6 +333,8 @@ def compare_route():
             "ais_text": ais_text,
             "avr_length": len(avr_text),
             "avr_text": avr_text,
+            "titles": filtered_titles, 
+            "values": filtered_values
             #"gemini_fields": gemini_fields
 
         })
