@@ -59,6 +59,9 @@ export default function Ror() {
   const [selectedSecurities, setSelectedSecurities] = useState([]);
   const [chartData, setChartData] = useState(null);
   const chartRef = useRef();
+  // NEW: State for individual chart errors
+  const [individualChartError, setIndividualChartError] = useState("");
+
 
   // New: portfolios state for multiple portfolios
   const [portfolios, setPortfolios] = useState([
@@ -71,7 +74,7 @@ export default function Ror() {
   const weightedChartRef = useRef();
   // New state for portfolio total returns
   const [portfolioTotalReturns, setPortfolioTotalReturns] = useState([]);
-  // NEW: State to manage weight errors per portfolio
+  // State to manage weight errors per portfolio
   const [portfolioWeightErrors, setPortfolioWeightErrors] = useState({});
 
 
@@ -88,14 +91,7 @@ export default function Ror() {
   }, [backendData, frequency, selectedSecurities, startDate, endDate]);
 
   // Rebuild weighted chart data when backendData or weightedFrequency changes
-  // NOT on portfolio changes directly, as requested by user for alert behavior
   useEffect(() => {
-    // This useEffect will now only trigger `generateWeightedChart` on initial load
-    // or when backendData/weightedFrequency changes.
-    // The explicit button click will handle portfolio changes and validation.
-    // We explicitly call generateWeightedChart only on backendData/weightedFrequency change here
-    // to ensure initial chart load if data is ready and no validation issues from start.
-    // Validation errors will be cleared/set by the explicit button click.
     generateWeightedChart();
   }, [backendData, weightedFrequency]);
 
@@ -137,6 +133,7 @@ export default function Ror() {
       setWeightedChartData(null);
       setPortfolioTotalReturns([]); // Reset total returns
       setPortfolioWeightErrors({}); // Reset portfolio weight errors
+      setIndividualChartError(""); // Clear individual chart error on new data load
     } catch (error) {
       console.error("Error uploading file:", error);
       setError("Error uploading file");
@@ -159,7 +156,7 @@ export default function Ror() {
     });
   };
 
-  // NEW: Handle portfolio name change
+  // Handle portfolio name change
   const handlePortfolioNameChange = (portfolioId, newName) => {
     setPortfolios(prev =>
       prev.map(p =>
@@ -253,14 +250,19 @@ export default function Ror() {
 
   // Prepare data for single securities chart
   const prepareChartData = () => {
-    if (!backendData || !frequency) {
+    if (!backendData) {
+      setIndividualChartError("Please upload an Excel file to get data.");
       setChartData(null);
       return;
     }
     if (selectedSecurities.length === 0) {
-      setChartData({ datasets: [] });
+      setIndividualChartError("Please select at least one security to display the chart.");
+      setChartData({ datasets: [] }); // Set datasets to empty for the empty state
       return;
     }
+
+    // Clear error if conditions for error are not met
+    setIndividualChartError("");
 
     const rawData = backendData[frequency];
     const start = startDate ? new Date(startDate) : null;
@@ -807,9 +809,13 @@ export default function Ror() {
               </div>
             </div>
 
-            {chartData && (
+            {/* NEW: Display individual chart error */}
+            {individualChartError && (
+                <p style={{ color: "red", textAlign: "center", marginTop: "10px" }}>{individualChartError}</p>
+            )}
+
+            {chartData && chartData.datasets.length > 0 && (
               <div style={{ marginTop: "30px" }}>
-                {chartData.datasets.length > 0 ? (
                   <Line
                     ref={chartRef}
                     data={chartData}
@@ -850,9 +856,6 @@ export default function Ror() {
                       },
                     }}
                   />
-                ) : (
-                  <p style={{ textAlign: 'center', color: '#555' }}>Please select securities to display the chart.</p>
-                )}
               </div>
             )}
           </div>
