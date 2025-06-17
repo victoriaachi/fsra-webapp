@@ -283,6 +283,8 @@ export default function Ror() {
       let returnKey;
       if (frequency === 'quarter') {
         returnKey = 'QuarterReturn';
+      } else if (frequency === 'monthly') { // Added monthly condition
+        returnKey = 'MonthlyReturn';
       } else {
         returnKey = `${frequency.charAt(0).toUpperCase() + frequency.slice(1)}Return`;
       }
@@ -374,6 +376,8 @@ export default function Ror() {
         let returnKey;
         if (weightedFrequency === 'quarter') {
           returnKey = 'QuarterReturn';
+        } else if (weightedFrequency === 'monthly') { // Added monthly condition
+          returnKey = 'MonthlyReturn';
         } else {
           returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
         }
@@ -737,6 +741,7 @@ export default function Ror() {
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={frequency} onChange={handleFrequencyChange}>
                   <option value="daily">Daily</option>
+                  <option value="monthly">Monthly</option>{/* Added monthly option */}
                   <option value="quarter">Quarterly</option>
                   <option value="annual">Annual</option>
                 </select>
@@ -844,7 +849,13 @@ export default function Ror() {
 
                       },
                       scales: {
-                        x: { type: "time", time: { unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
+                        x: {
+                            type: "time",
+                            time: {
+                                unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : (frequency === 'monthly' ? 'month' : 'year')) // Updated unit
+                            },
+                            title: { display: true, text: "Date" },
+                        },
                         y: {
                           min: Math.floor(chartData?.calculatedMinY * 100) / 100,
                           max: Math.ceil(chartData?.calculatedMaxY * 100) / 100,
@@ -869,6 +880,7 @@ export default function Ror() {
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
                   <option value="daily">Daily</option>
+                  <option value="monthly">Monthly</option>{/* Added monthly option */}
                   <option value="quarter">Quarterly</option>
                   <option value="annual">Annual</option>
                 </select>
@@ -979,7 +991,16 @@ export default function Ror() {
                 </button>
               </div>
             </div>
-
+            <div style={{ marginTop: '20px' }}>
+                      <h3>Portfolio Total Returns (Selected Time Period)</h3>
+                      <ul>
+                        {portfolioTotalReturns.map((p, idx) => (
+                          <li key={idx}>
+                            <strong>{p.name}</strong>: {p.totalReturn}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
             {weightedChartData && (
               <div style={{ marginTop: "30px" }}>
                 {weightedChartData.datasets.length > 0 ? (
@@ -1014,7 +1035,13 @@ export default function Ror() {
                           },
                         },
                         scales: {
-                          x: { type: "time", time: { unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
+                          x: {
+                            type: "time",
+                            time: {
+                                unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : (weightedFrequency === 'monthly' ? 'month' : 'year')) // Updated unit
+                            },
+                            title: { display: true, text: "Date" },
+                          },
                           y: {
                             min: Math.floor(weightedChartData?.calculatedMinY * 100) / 100,
                             max: Math.ceil(weightedChartData?.calculatedMaxY * 100) / 100,
@@ -1026,16 +1053,7 @@ export default function Ror() {
                         },
                       }}
                     />
-                    <div style={{ marginTop: '20px' }}>
-                      <h3>Portfolio Total Returns (Selected Time Period)</h3>
-                      <ul>
-                        {portfolioTotalReturns.map((p, idx) => (
-                          <li key={idx}>
-                            <strong>{p.name}</strong>: {p.totalReturn}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                   
                   </>
                 ) : (
                   <p style={{ textAlign: 'center', color: '#555' }}>Please select securities and weights for at least one portfolio to display the weighted chart.</p>

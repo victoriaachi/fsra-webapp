@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 import pandas as pd
-from pandas.tseries.offsets import YearEnd, QuarterEnd
+from pandas.tseries.offsets import YearEnd, QuarterEnd, MonthEnd
 import json
 
 ror_bp = Blueprint('ror', __name__)
@@ -53,6 +53,144 @@ def calculate_daily_ror(file):
 
 
     return result
+
+def calculate_monthly_ror(file):
+    xls = pd.ExcelFile(file)
+    result = {}
+
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
+        start_row = find_data_start(df)
+        if start_row is None:
+            continue
+
+        df = df.iloc[start_row:].reset_index(drop=True)
+        df = df.iloc[:, :2]
+        df.columns = ['Date', 'Price']
+
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+        df = df.dropna().sort_values(by='Date')
+
+        df['MonthEnd'] = df['Date'] + MonthEnd(0)
+        last_per_month = df[df['Date'] <= df['MonthEnd']].groupby('MonthEnd').last().reset_index()
+        last_per_month['MonthlyReturn'] = last_per_month['Price'].pct_change()
+        last_per_month = last_per_month.dropna()
+
+        result[sheet_name] = last_per_month[['MonthEnd', 'Price', 'MonthlyReturn']].rename(
+            columns={'MonthEnd': 'Date'}).to_dict(orient='records')
+
+    return result
+
+def calculate_quarterly_ror(file):
+    xls = pd.ExcelFile(file)
+    result = {}
+
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
+        start_row = find_data_start(df)
+        if start_row is None:
+            continue
+
+        df = df.iloc[start_row:].reset_index(drop=True)
+        df = df.iloc[:, :2]
+        df.columns = ['Date', 'Price']
+
+        # Specify the date format here to avoid the warning
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+        df = df.dropna().sort_values(by='Date')
+
+        # Step 1: Snap each date to the end of its quarter (but not past actual date)
+        df['QuarterEnd'] = df['Date'] + QuarterEnd(0)
+
+        # Step 2: For each quarter, keep the last available entry before or on quarter end
+        last_per_quarter = df[df['Date'] <= df['QuarterEnd']].groupby('QuarterEnd').last().reset_index()
+
+        # Step 3: Calculate ROR between quarters
+        last_per_quarter['QuarterReturn'] = last_per_quarter['Price'].pct_change()
+        last_per_quarter = last_per_quarter.dropna()
+
+        result[sheet_name] = last_per_quarter[['QuarterEnd', 'Price', 'QuarterReturn']].rename(
+            columns={'QuarterEnd': 'Date'}).to_dict(orient='records')
+
+    return result
+
+
+def calculate_annual_ror(file):
+    xls = pd.ExcelFile(file)
+    result = {}
+
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
+        start_row = find_data_start(df)
+        if start_row is None:
+            continue
+
+        df = df.iloc[start_row:].reset_index(drop=True)
+        df = df.iloc[:, :2]
+        df.columns = ['Date', 'Price']
+
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+        df = df.dropna().sort_values(by='Date')
+
+        # Step 1: Snap to calendar year end (but no future dates)
+        df['YearEnd'] = df['Date'] + YearEnd(0)
+
+        # Step 2: Keep last price before/on each year-end
+        last_per_year = df[df['Date'] <= df['YearEnd']].groupby('YearEnd').last().reset_index()
+
+        # Step 3: Calculate annual return
+        last_per_year['AnnualReturn'] = last_per_year['Price'].pct_change()
+        last_per_year = last_per_year.dropna()
+
+        result[sheet_name] = last_per_year[['YearEnd', 'Price', 'AnnualReturn']].rename(
+            columns={'YearEnd': 'Date'}).to_dict(orient='records')
+
+    return result
+
+def get_monthly_date_range(file):
+    xls = pd.ExcelFile(file)
+    min_dates = []
+    max_dates = []
+
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        if has_data_beyond_col3(df):
+            continue
+
+        start_row = find_data_start(df)
+        if start_row is None:
+            continue
+
+        df = df.iloc[start_row:].reset_index(drop=True)
+        df = df.iloc[:, :2]
+        df.columns = ['Date', 'Price']
+
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+        df = df.dropna().sort_values(by='Date')
+
+        df['MonthEnd'] = df['Date'] + MonthEnd(0)
+        last_per_month = df[df['Date'] <= df['MonthEnd']].groupby('MonthEnd').last().reset_index()
+
+        if not last_per_month.empty:
+            min_dates.append(last_per_month['MonthEnd'].min())
+            max_dates.append(last_per_month['MonthEnd'].max())
+
+    if not min_dates or not max_dates:
+        return None
+
+    return min(min_dates), max(max_dates)
 
 def get_daily_date_range(file):
     xls = pd.ExcelFile(file)
@@ -162,79 +300,7 @@ def get_annual_date_range(file):
 
 
 
-def calculate_quarterly_ror(file):
-    xls = pd.ExcelFile(file)
-    result = {}
 
-    for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
-            continue
-
-        start_row = find_data_start(df)
-        if start_row is None:
-            continue
-
-        df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
-        df.columns = ['Date', 'Price']
-
-        # Specify the date format here to avoid the warning
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
-        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-        df = df.dropna().sort_values(by='Date')
-
-        # Step 1: Snap each date to the end of its quarter (but not past actual date)
-        df['QuarterEnd'] = df['Date'] + QuarterEnd(0)
-
-        # Step 2: For each quarter, keep the last available entry before or on quarter end
-        last_per_quarter = df[df['Date'] <= df['QuarterEnd']].groupby('QuarterEnd').last().reset_index()
-
-        # Step 3: Calculate ROR between quarters
-        last_per_quarter['QuarterReturn'] = last_per_quarter['Price'].pct_change()
-        last_per_quarter = last_per_quarter.dropna()
-
-        result[sheet_name] = last_per_quarter[['QuarterEnd', 'Price', 'QuarterReturn']].rename(
-            columns={'QuarterEnd': 'Date'}).to_dict(orient='records')
-
-    return result
-
-
-def calculate_annual_ror(file):
-    xls = pd.ExcelFile(file)
-    result = {}
-
-    for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
-            continue
-
-        start_row = find_data_start(df)
-        if start_row is None:
-            continue
-
-        df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
-        df.columns = ['Date', 'Price']
-
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
-        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-        df = df.dropna().sort_values(by='Date')
-
-        # Step 1: Snap to calendar year end (but no future dates)
-        df['YearEnd'] = df['Date'] + YearEnd(0)
-
-        # Step 2: Keep last price before/on each year-end
-        last_per_year = df[df['Date'] <= df['YearEnd']].groupby('YearEnd').last().reset_index()
-
-        # Step 3: Calculate annual return
-        last_per_year['AnnualReturn'] = last_per_year['Price'].pct_change()
-        last_per_year = last_per_year.dropna()
-
-        result[sheet_name] = last_per_year[['YearEnd', 'Price', 'AnnualReturn']].rename(
-            columns={'YearEnd': 'Date'}).to_dict(orient='records')
-
-    return result
 
 def extract_raw_prices(file):
     xls = pd.ExcelFile(file)
@@ -272,9 +338,12 @@ def ror():
 
     try:
         daily = calculate_daily_ror(file)
+        monthly = calculate_monthly_ror(file)
         quarterly = calculate_quarterly_ror(file)
         annual = calculate_annual_ror(file)
+
         daily_range = get_daily_date_range(file)
+        monthly_range = get_monthly_date_range(file)
         quarter_range = get_quarterly_date_range(file)
         annual_range = get_annual_date_range(file)
         
@@ -296,6 +365,10 @@ def ror():
             "min": daily_range[0].strftime('%Y-%m-%d') if daily_range else None,
             "max": daily_range[1].strftime('%Y-%m-%d') if daily_range else None
         }
+        monthly_range_str = {
+            "min": monthly_range[0].strftime('%Y-%m-%d') if monthly_range else None,
+            "max": monthly_range[1].strftime('%Y-%m-%d') if monthly_range else None
+        }
         quarter_range_str = {
             "min": quarter_range[0].strftime('%Y-%m-%d') if quarter_range else None,
             "max": quarter_range[1].strftime('%Y-%m-%d') if quarter_range else None
@@ -310,12 +383,14 @@ def ror():
         return jsonify({
             "ranges": {
                 "daily": daily_range_str,
+                "monthly": monthly_range_str,
                 "quarter": quarter_range_str,
                 "annual": annual_range_str
             },
             "securities": securities,
             "daily": daily,
             "quarter": quarterly,
+            "monthly": monthly,
             "annual": annual,
             "rawPrices": raw_prices
             })
