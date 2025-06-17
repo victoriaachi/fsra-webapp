@@ -85,6 +85,14 @@ export default function Ror() {
     prepareChartData();
   }, [backendData, frequency, selectedSecurities, startDate, endDate]);
 
+  // NEW: Rebuild weighted chart data ONLY when backendData or weightedFrequency changes
+  // Changes to portfolios (securities, weights) or weightedStartDate/weightedEndDate
+  // will require a manual click on "Generate Weighted Chart".
+  useEffect(() => {
+    generateWeightedChart();
+  }, [backendData, weightedFrequency]);
+
+
   // Handle Excel file input change
   const excelChange = (e) => {
     setExcel(e.target.files[0]);
@@ -135,10 +143,7 @@ export default function Ror() {
 
   const handleRemovePortfolio = (idToRemove) => {
     setPortfolios(prev => prev.filter(p => p.id !== idToRemove));
-    // Re-generate chart data if a portfolio is removed and chart is visible
-    if (weightedChartData) {
-        generateWeightedChart(); 
-    }
+    // REMOVED: generateWeightedChart() call from here, as per new requirement for manual update
   };
 
   // Update selected securities for a specific portfolio
@@ -300,12 +305,16 @@ export default function Ror() {
 
   // Generate weighted portfolio chart data
   const generateWeightedChart = () => {
-    if (!backendData || portfolios.every(p => p.selectedSecurities.length === 0)) {
-      alert("Please select at least one security for at least one portfolio to generate the weighted chart.");
+    if (!backendData) { // Only return if backendData is not even loaded
       setWeightedChartData(null);
-      setPortfolioTotalReturns([]); // Clear total returns if no valid data
+      setPortfolioTotalReturns([]); 
       return;
     }
+    
+    // REMOVED THE INITIAL ALERT CONDITION HERE.
+    // The JSX will now handle showing the "Please select securities..." message
+    // if portfolios.every(p => p.selectedSecurities.length === 0) is true,
+    // leading to an empty allChartDatasets array.
 
     let allChartDatasets = [];
     let allYValuesAcrossPortfolios = [];
@@ -407,11 +416,8 @@ export default function Ror() {
       portfolio.selectedSecurities.forEach(sec => {
         const weightFraction = (portfolio.weights[sec] || 0) / 100;
         const allSecDailyData = backendData.daily[sec] || [];
-        console.log(allSecDailyData.slice(0, 5));
         const sortedData = [...allSecDailyData].sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime()); // Ensure sorted by time
-        sortedData.slice(0, 5).forEach((entry, i) => {
-          console.log(`${i}: Date = ${entry.Date}, Price = ${entry.Price}`);
-        });
+        
         let startPrice = null;
         let startPriceDate = null;
         let endPrice = null;
@@ -846,150 +852,140 @@ export default function Ror() {
                   />
                 </div>
               )}
-              
-              {/* Portfolio Management Section */}
-              <div style={{ marginBottom: "25px", borderTop: "1px solid #ccc", paddingTop: "20px" }}>
-                <h3>Manage Portfolios</h3>
-                <div style={{ marginBottom: "15px" }}>
-                  <button onClick={handleAddPortfolio} style={{ marginRight: "10px", padding: '8px 15px' }}>
-                    Add Portfolio
-                  </button>
-                </div>
-                
-                {portfolios.map((portfolio) => (
-                  <div key={portfolio.id} style={{ border: "1px solid #ddd", padding: "15px", borderRadius: "8px", marginBottom: "15px", background: '#fff' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                      <h4 style={{ margin: 0 }}>{portfolio.name}</h4>
+
+              <div style={{ marginBottom: "20px" }}>
+                {portfolios.map((portfolio, pIdx) => (
+                  <div key={portfolio.id} style={{ border: "1px solid #ccc", padding: "15px", marginBottom: "15px", borderRadius: "8px" }}>
+                    <h4 style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      {portfolio.name}
                       {portfolios.length > 1 && (
-                        <button onClick={() => handleRemovePortfolio(portfolio.id)} style={{ background: '#dc3545', color: 'white', border: 'none', padding: '5px 10px', borderRadius: '5px', cursor: 'pointer' }}>
+                        <button onClick={() => handleRemovePortfolio(portfolio.id)} style={{ background: "#dc3545", color: "#fff", border: "none", borderRadius: "4px", padding: "5px 10px", cursor: "pointer" }}>
                           Remove
                         </button>
                       )}
-                    </div>
-                    
+                    </h4>
                     {backendData.securities?.length > 0 && (
-                      <div style={{ marginBottom: "15px" }}>
-                        <label style={{ marginRight: "10px", verticalAlign: "top" }}>Securities and Weights:</label>
-                        <button onClick={() => handlePortfolioSelectAll(portfolio.id)} style={{ marginLeft: "10px" }}>
+                      <div style={{ marginBottom: "10px" }}>
+                         <button onClick={() => handlePortfolioSelectAll(portfolio.id)} style={{ marginBottom: "10px" }}>
                             {portfolio.selectedSecurities.length === backendData.securities.length
-                            ? "Unselect All"
-                            : "Select All"}
-                        </button>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
+                                ? "Unselect All"
+                                : "Select All"}
+                         </button>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                           {backendData.securities.map((sec) => (
-                            <div key={`portfolio-${portfolio.id}-${sec}`} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <input
-                                type="checkbox"
-                                checked={portfolio.selectedSecurities.includes(sec)}
-                                onChange={() => handlePortfolioSecurityToggle(portfolio.id, sec)}
-                              />
-                              <span>{sec}</span>
+                            <div key={`portfolio-${portfolio.id}-${sec}`} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", border: "1px solid #eee", padding: "8px", borderRadius: "5px", background: "#fff" }}>
+                              <label style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "5px" }}>
+                                <input
+                                  type="checkbox"
+                                  checked={portfolio.selectedSecurities.includes(sec)}
+                                  onChange={() => handlePortfolioSecurityToggle(portfolio.id, sec)}
+                                />
+                                <span>{sec}</span>
+                              </label>
                               {portfolio.selectedSecurities.includes(sec) && (
                                 <input
                                   type="number"
-                                  value={portfolio.weights[sec] || ""}
-                                  placeholder="%"
+                                  placeholder="Weight %"
+                                  value={portfolio.weights[sec] || ''}
                                   onChange={(e) => handlePortfolioWeightChange(portfolio.id, sec, e.target.value)}
-                                  style={{ width: "60px" }}
+                                  style={{ width: "80px", padding: "5px", borderRadius: "4px", border: "1px solid #ddd" }}
                                 />
                               )}
                             </div>
                           ))}
                         </div>
-                        <div style={{ marginTop: '10px', fontWeight: 'bold' }}>
-                          Total Weight: {portfolio.selectedSecurities.reduce((sum, sec) => sum + (portfolio.weights[sec] || 0), 0).toFixed(2)}%
-                        </div>
+                      </div>
+                    )}
+                    {portfolio.selectedSecurities.length > 0 && (
+                      <div style={{ marginTop: "10px" }}>
+                        <strong>Current Total Weight: </strong>
+                        {(portfolio.selectedSecurities.reduce(
+                          (sum, sec) => sum + (portfolio.weights[sec] || 0),
+                          0
+                        )).toFixed(2)}%
                       </div>
                     )}
                   </div>
                 ))}
+                <button onClick={handleAddPortfolio} style={{ background: "#28a745", color: "#fff", border: "none", borderRadius: "4px", padding: "8px 15px", cursor: "pointer", marginTop: "10px" }}>
+                  Add Portfolio
+                </button>
               </div>
 
+              {/* NEW: Manual trigger button for weighted chart */}
               <div style={{ marginTop: "20px" }}>
+                <button onClick={generateWeightedChart} style={{ marginRight: "10px", background: "#007bff", color: "#fff", border: "none", borderRadius: "4px", padding: "8px 15px", cursor: "pointer" }}>
+                  Generate Weighted Chart
+                </button>
                 <button onClick={() => weightedChartRef.current?.resetZoom()} style={{ marginRight: "10px" }}>
                   Reset Zoom
                 </button>
-                <button onClick={exportWeightedChart} style={{ marginRight: "10px" }}>
+                <button onClick={exportWeightedChart}>
                   Export Chart
-                </button>
-                <button onClick={generateWeightedChart}>
-                  Generate Weighted Portfolio Graph
                 </button>
               </div>
             </div>
-            
-            {/* New section for Portfolio Total Returns */}
-            {portfolioTotalReturns.length > 0 && (
-              <div style={{ marginTop: '20px' }}>
-                <h3>Total Return by Portfolio (Selected Time Period)</h3>
-                <ul>
-                  {portfolioTotalReturns.map((pReturn) => (
-                    <li key={pReturn.id}>
-                      <strong>{pReturn.name}</strong>: {pReturn.totalReturn}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-    
+            <div style={{ marginTop: '20px' }}>
+                      <h3>Portfolio Total Returns (Selected Time Period)</h3>
+                      <ul>
+                        {portfolioTotalReturns.map((p, idx) => (
+                          <li key={idx}>
+                            <strong>{p.name}</strong>: {p.totalReturn}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
             {weightedChartData && (
               <div style={{ marginTop: "30px" }}>
-                {weightedChartData.datasets.length > 0 ? ( 
-                  <Line
-                    ref={weightedChartRef}
-                    data={weightedChartData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: true,
-                      aspectRatio: 1.2, 
-                      plugins: {
-                        title: {
-                          display: true,
-                          text: "Weighted Portfolio Returns", 
-                          font: { size: 18 },
-                        },
-                        tooltip: {
-                          callbacks: {
-                            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`, 
+                {weightedChartData.datasets.length > 0 ? (
+                  <>
+                    <Line
+                      ref={weightedChartRef}
+                      data={weightedChartData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 1.2,
+                        plugins: {
+                          title: { display: true, text: "Weighted Portfolios Rate of Return", font: { size: 18 } },
+                          tooltip: {
+                            callbacks: {
+                              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
+                            },
                           },
-                        },
-                        legend: {
-                          display: true,
-                          onClick: null, 
-                          labels: {
-                            usePointStyle: true,
-                            boxWidth: 12,
-                            boxHeight: 12,
-                            color: "#000"
-                          }
-                        },
-                        zoom: {
-                          pan: { enabled: true, mode: 'x' },
-                          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
-                          limits: {
-                            x: {
-                              // Ensure min/max for zoom limits are based on selected range
-                              min: weightedStartDate ? new Date(weightedStartDate).getTime() : undefined,
-                              max: weightedEndDate ? new Date(weightedEndDate).getTime() : undefined,
+                          legend: {
+                            onClick: null,
+                            labels: { usePointStyle: true, boxWidth: 12, boxHeight: 12, color: "#000" }
+                          },
+                          zoom: {
+                            pan: { enabled: true, mode: 'x', },
+                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
+                            limits: {
+                                x: {
+                                    min: weightedStartDate ? new Date(weightedStartDate).getTime() : undefined,
+                                    max: weightedEndDate ? new Date(weightedEndDate).getTime() : undefined,
+                                }
                             }
-                          }
-                        },
-                      },
-                      scales: {
-                        x: { type: "time", time: { unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
-                        y: {
-                          min: Math.floor(weightedChartData?.calculatedMinY * 100) / 100,
-                          max: Math.ceil(weightedChartData?.calculatedMaxY * 100) / 100,
-                          ticks: {
-                            callback: (value) => `${value}%`,
                           },
-                          title: { display: true, text: "Return (%)" },
                         },
-                      },
-                    }}
-                  />
+                        scales: {
+                          x: { type: "time", time: { unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : 'year') }, title: { display: true, text: "Date" }, },
+                          y: {
+                            min: Math.floor(weightedChartData?.calculatedMinY * 100) / 100,
+                            max: Math.ceil(weightedChartData?.calculatedMaxY * 100) / 100,
+                            ticks: {
+                              callback: (value) => `${value}%`,
+                            },
+                            title: { display: true, text: "Return (%)" },
+                          },
+                        },
+                      }}
+                    />
+                   
+                  </>
                 ) : (
-                  <p style={{ textAlign: 'center', color: '#555' }}>No data to display for the weighted portfolio. Please select securities and click 'Generate Weighted Portfolio Graph'.</p>
+                  <p style={{ textAlign: 'center', color: '#555' }}>Please select securities and weights for at least one portfolio to display the weighted chart.</p>
                 )}
               </div>
             )}

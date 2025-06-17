@@ -236,6 +236,28 @@ def calculate_annual_ror(file):
 
     return result
 
+def extract_raw_prices(file):
+    xls = pd.ExcelFile(file)
+    result = {}
+
+    for sheet_name in xls.sheet_names:
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        start_row = find_data_start(df)
+        if start_row is None:
+            continue
+
+        df = df.iloc[start_row:].reset_index(drop=True)
+        df = df.iloc[:, :2]
+        df.columns = ['Date', 'Price']
+        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+        df = df.dropna().sort_values(by='Date')
+
+        result[sheet_name] = df[['Date', 'Price']].to_dict(orient='records')
+
+    return result
+
+
 @ror_bp.route('/ror', methods=['POST'])
 def ror():
     if 'file' not in request.files:
@@ -244,6 +266,9 @@ def ror():
     file = request.files['file']
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
+    
+
+
 
     try:
         daily = calculate_daily_ror(file)
@@ -280,6 +305,8 @@ def ror():
             "max": annual_range[1].strftime('%Y-%m-%d') if annual_range else None
         }
 
+        raw_prices = extract_raw_prices(file)
+
         return jsonify({
             "ranges": {
                 "daily": daily_range_str,
@@ -289,7 +316,8 @@ def ror():
             "securities": securities,
             "daily": daily,
             "quarter": quarterly,
-            "annual": annual
+            "annual": annual,
+            "rawPrices": raw_prices
             })
 
     except Exception as e:
