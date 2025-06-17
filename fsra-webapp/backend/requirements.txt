@@ -34,6 +34,7 @@ google-generativeai==0.8.5
 googleapis-common-protos==1.70.0
 grpcio==1.72.1
 grpcio-status==1.71.0
+gunicorn==23.0.0
 httplib2==0.22.0
 idna==3.10
 IMAPClient==2.1.0
