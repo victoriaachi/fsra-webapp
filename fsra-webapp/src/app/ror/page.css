@@ -1,0 +1,95 @@
+.ror-chart-section {
+    border-bottom: 1px solid #eee;
+    padding-bottom: 30px;
+    padding-left: 50px;
+    padding-right: 50px;
+}
+
+.customize-section {
+    margin-top: 20px;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.portfolio-name {
+    font-size: 1em;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+.portfolio-button {
+    color: #fff;
+    border-radius: 4px;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.add-portfolio {
+    background: #28a745;
+}
+
+.remove-portfolio {
+    background: #dc3545;
+}
+
+.generate-button {
+    margin-right: 10px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.chart-button {
+    margin-right: 10px;
+    margin-bottom: 10px;
+    background: #9acdff;
+    color: #000;
+    border: none;
+    border-radius: 4px;
+    padding: 8px;
+    cursor: pointer;
+}
+
+.weight-change {
+    width: 83px;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+.security-checkbox {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+  }
+  
+  .security-checkbox:hover {
+    background-color: #e6f0ff;
+  }
+  
+  .security-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #007bff; /* blue checkboxes */
+  }
+  
+  .security-checkbox span {
+    font-size: 14px;
+    color: #333;
+  }
+  

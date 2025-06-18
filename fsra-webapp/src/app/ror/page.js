@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import './page.css';
+import './page.css'
 import {
   Chart as ChartJS,
   LineElement,
@@ -291,6 +291,8 @@ export default function Ror() {
 
       const data = dataPoints.map(point => {
         const yValue = point[returnKey] * 100;
+        const xValue = new Date(point.Date);
+        console.log(`Security: ${sec}, Date: ${xValue.toISOString().slice(0, 10)}, Return: ${yValue.toFixed(2)}%`);
         if (typeof yValue === 'number' && !isNaN(yValue)) {
           allYValues.push(yValue);
         }
@@ -358,7 +360,7 @@ export default function Ror() {
 
       // Check for weight errors
       if (portfolio.selectedSecurities.length > 0 && (totalWeight < 99.9 || totalWeight > 100.1)) {
-        currentWeightErrors[portfolio.id] = `${portfolio.name}: Weights should add to 100%. Current total: ${totalWeight.toFixed(2)}%`;
+        currentWeightErrors[portfolio.id] = `Weights should add up to 100%. Current total: ${totalWeight.toFixed(2)}%`;
         hasAnyWeightError = true; // Set flag if error found
       } else {
         // Clear error if it was previously set and now is valid
@@ -609,7 +611,7 @@ export default function Ror() {
   const calculateTotalReturns = () => {
     if (!backendData || selectedSecurities.length === 0) return [];
 
-    const rawData = backendData["daily"];
+    const rawData = backendData["rawPrices"];
     const start = startDate ? new Date(startDate) : null;
     const end = endDate ? new Date(endDate) : null;
 
@@ -723,8 +725,9 @@ export default function Ror() {
           type="file"
           accept=".xls,.xlsx,.xlsm,.xlsb"
           onChange={excelChange}
+          
         />
-        <button onClick={fileSubmit} style={{ marginLeft: "10px" }}>
+        <button onClick={fileSubmit}>
           Submit
         </button>
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
@@ -733,9 +736,9 @@ export default function Ror() {
       {backendData && (
         <>
           {/* First Chart Section: Individual Rate of Return Chart */}
-          <div className="ror-chart-section" style={{ marginBottom: "50px", borderBottom: "1px solid #eee", paddingBottom: "30px" , paddingLeft: "50px", paddingRight: "50px"}}>
+          <div className="ror-chart-section" >
             <h2>Individual Securities Rate of Return Chart</h2>
-            <div className="customize-section" style={{ marginTop: "20px", background: "#f9f9f9", padding: "20px", borderRadius: "8px" }}>
+            <div className="customize-section">
               <h3>Customize Chart</h3>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
@@ -771,21 +774,23 @@ export default function Ror() {
               {backendData.securities?.length > 0 && (
                 <div style={{ marginBottom: "20px" }}>
                   <label style={{ marginRight: "10px", verticalAlign: "top" }}>Securities:</label>
-                  <button onClick={handleSelectAll} style={{ marginLeft: "10px" }}>
+                  <button onClick={handleSelectAll} className="chart-button">
                     {selectedSecurities.length === backendData.securities.length
                       ? "Unselect All"
                       : "Select All"}
                   </button>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
                     {backendData.securities.map((sec) => (
-                      <label key={`chart1-${sec}`} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                        <input
-                          type="checkbox"
-                          checked={selectedSecurities.includes(sec)}
-                          onChange={() => handleSecurityToggle(sec)}
-                        />
-                        <span>{sec}</span>
-                      </label>
+                  <label
+                  key={`chart1-${sec}`}
+                  className="security-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedSecurities.includes(sec)}
+                    onChange={() => handleSecurityToggle(sec)}
+                  />
+                  <span>{sec}</span>
+                </label>
                     ))}
                   </div>
                 </div>
@@ -805,10 +810,10 @@ export default function Ror() {
 
 
               <div style={{ marginTop: "20px" }}>
-                <button onClick={() => chartRef.current?.resetZoom()} style={{ marginRight: "10px" }}>
+                <button onClick={() => chartRef.current?.resetZoom()} className="chart-button">
                   Reset Zoom
                 </button>
-                <button onClick={exportChart}>
+                <button onClick={exportChart} className="chart-button">
                   Export Chart
                 </button>
               </div>
@@ -878,15 +883,15 @@ export default function Ror() {
           </div>
 
           {/* Second Chart Section: Weighted Rate of Return Chart */}
-          <div className="weighted-ror-chart-section" style={{ marginTop: "50px" , paddingLeft: "50px" , paddingRight: "50px"}}>
+          <div className="ror-chart-section">
             <h2>Weighted Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
-            <div className="customize-section" style={{ marginTop: "20px", background: "#f9f9f9", padding: "20px", borderRadius: "8px" }}>
+            <div className="customize-section">
               <h3>Customize Weighted Chart</h3>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
                   <option value="daily">Daily</option>
-                  <option value="monthly">Monthly</option>{/* Added monthly option */}
+                  <option value="monthly">Monthly</option>
                   <option value="quarter">Quarterly</option>
                   <option value="annual">Annual</option>
                 </select>
@@ -917,15 +922,14 @@ export default function Ror() {
                 {portfolios.map((portfolio, pIdx) => (
                   <div key={portfolio.id} style={{ border: "1px solid #ccc", padding: "15px", marginBottom: "15px", borderRadius: "8px" }}>
                     <h4 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                      {/* NEW: Input field for portfolio name */}
                       <input
                         type="text"
                         value={portfolio.name}
                         onChange={(e) => handlePortfolioNameChange(portfolio.id, e.target.value)}
-                        style={{ fontSize: "1em", padding: "5px", borderRadius: "4px", border: "1px solid #ddd", flexGrow: 1, marginRight: "10px" }}
+                        className="portfolio-name"
                       />
                       {portfolios.length > 1 && (
-                        <button onClick={() => handleRemovePortfolio(portfolio.id)} style={{ background: "#dc3545", color: "#fff", border: "none", borderRadius: "4px", padding: "5px 10px", cursor: "pointer" }}>
+                        <button onClick={() => handleRemovePortfolio(portfolio.id)} className="portfolio-button remove-portfolio">
                           Remove
                         </button>
                       )}
@@ -938,14 +942,14 @@ export default function Ror() {
                     )}
                     {backendData.securities?.length > 0 && (
                       <div style={{ marginBottom: "10px" }}>
-                         <button onClick={() => handlePortfolioSelectAll(portfolio.id)} style={{ marginBottom: "10px" }}>
+                         <button onClick={() => handlePortfolioSelectAll(portfolio.id)} className="chart-button">
                             {portfolio.selectedSecurities.length === backendData.securities.length
                                 ? "Unselect All"
                                 : "Select All"}
                          </button>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                           {backendData.securities.map((sec) => (
-                            <div key={`portfolio-${portfolio.id}-${sec}`} style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", border: "1px solid #eee", padding: "8px", borderRadius: "5px", background: "#fff" }}>
+                            <div key={`portfolio-${portfolio.id}-${sec}`} className="security-checkbox">
                               <label style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "5px" }}>
                                 <input
                                   type="checkbox"
@@ -960,7 +964,7 @@ export default function Ror() {
                                   placeholder="Weight %"
                                   value={portfolio.weights[sec] || ''}
                                   onChange={(e) => handlePortfolioWeightChange(portfolio.id, sec, e.target.value)}
-                                  style={{ width: "80px", padding: "5px", borderRadius: "4px", border: "1px solid #ddd" }}
+                                  className="weight-change"
                                 />
                               )}
                             </div>
@@ -979,20 +983,20 @@ export default function Ror() {
                     )}
                   </div>
                 ))}
-                <button onClick={handleAddPortfolio} style={{ background: "#28a745", color: "#fff", border: "none", borderRadius: "4px", padding: "8px 15px", cursor: "pointer", marginTop: "10px" }}>
+                <button onClick={handleAddPortfolio} className="portfolio-button add-portfolio">
                   Add Portfolio
                 </button>
               </div>
 
               {/* NEW: Manual trigger button for weighted chart */}
               <div style={{ marginTop: "20px" }}>
-                <button onClick={generateWeightedChart} style={{ marginRight: "10px", background: "#007bff", color: "#fff", border: "none", borderRadius: "4px", padding: "8px 15px", cursor: "pointer" }}>
+                <button onClick={generateWeightedChart} className="generate-button">
                   Generate Weighted Chart
                 </button>
-                <button onClick={() => weightedChartRef.current?.resetZoom()} style={{ marginRight: "10px" }}>
+                <button onClick={() => weightedChartRef.current?.resetZoom()} className="chart-button">
                   Reset Zoom
                 </button>
-                <button onClick={exportWeightedChart}>
+                <button onClick={exportWeightedChart} className="chart-button">
                   Export Chart
                 </button>
               </div>

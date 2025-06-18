@@ -39,6 +39,8 @@ def calculate_daily_ror(file):
         df['DailyReturn'] = df['Price'].pct_change()
         df = df.dropna()
 
+        # Convert Date to ISO format string
+        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = df[['Date', 'Price', 'DailyReturn']].to_dict(orient='records')
 
     return result
@@ -64,11 +66,15 @@ def calculate_monthly_ror(file):
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
+        # Snap to month end
         df['MonthEnd'] = df['Date'] + MonthEnd(0)
+        # Filter to keep only the last entry on or before the month end
         last_per_month = df[df['Date'] <= df['MonthEnd']].groupby('MonthEnd').last().reset_index()
         last_per_month['MonthlyReturn'] = last_per_month['Price'].pct_change()
         last_per_month = last_per_month.dropna()
 
+        # Convert Date to ISO format string
+        last_per_month['MonthEnd'] = last_per_month['MonthEnd'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = last_per_month[['MonthEnd', 'Price', 'MonthlyReturn']].rename(
             columns={'MonthEnd': 'Date'}).to_dict(orient='records')
 
@@ -91,21 +97,17 @@ def calculate_quarterly_ror(file):
         df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
-        # Specify the date format here to avoid the warning
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
-        # Step 1: Snap each date to the end of its quarter (but not past actual date)
         df['QuarterEnd'] = df['Date'] + QuarterEnd(0)
-
-        # Step 2: For each quarter, keep the last available entry before or on quarter end
         last_per_quarter = df[df['Date'] <= df['QuarterEnd']].groupby('QuarterEnd').last().reset_index()
-
-        # Step 3: Calculate ROR between quarters
         last_per_quarter['QuarterReturn'] = last_per_quarter['Price'].pct_change()
         last_per_quarter = last_per_quarter.dropna()
 
+        # Convert Date to ISO format string
+        last_per_quarter['QuarterEnd'] = last_per_quarter['QuarterEnd'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = last_per_quarter[['QuarterEnd', 'Price', 'QuarterReturn']].rename(
             columns={'QuarterEnd': 'Date'}).to_dict(orient='records')
 
@@ -133,16 +135,13 @@ def calculate_annual_ror(file):
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
-        # Step 1: Snap to calendar year end (but no future dates)
         df['YearEnd'] = df['Date'] + YearEnd(0)
-
-        # Step 2: Keep last price before/on each year-end
         last_per_year = df[df['Date'] <= df['YearEnd']].groupby('YearEnd').last().reset_index()
-
-        # Step 3: Calculate annual return
         last_per_year['AnnualReturn'] = last_per_year['Price'].pct_change()
         last_per_year = last_per_year.dropna()
 
+        # Convert Date to ISO format string
+        last_per_year['YearEnd'] = last_per_year['YearEnd'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = last_per_year[['YearEnd', 'Price', 'AnnualReturn']].rename(
             columns={'YearEnd': 'Date'}).to_dict(orient='records')
 
@@ -233,6 +232,7 @@ def get_quarterly_date_range(file):
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
         df['QuarterEnd'] = df['Date'] + QuarterEnd(0)
@@ -308,6 +308,8 @@ def extract_raw_prices(file):
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
         df = df.dropna().sort_values(by='Date')
 
+        # Convert Date to ISO format string
+        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = df[['Date', 'Price']].to_dict(orient='records')
 
     return result
@@ -361,6 +363,18 @@ def ror():
         }
 
         raw_prices = extract_raw_prices(file)
+        
+        # It's better to avoid printing sensitive debug info to console in production
+        # But for development, keep it
+        debug_output = {
+            "daily": {k: v[:5] for k, v in list(daily.items())[:5]},
+            "monthly": {k: v[:5] for k, v in list(monthly.items())[:5]},
+            "quarter": {k: v[:5] for k, v in list(quarterly.items())[:5]},
+            "annual": {k: v[:5] for k, v in list(annual.items())[:5]},
+            "rawPrices": {k: v[:5] for k, v in list(raw_prices.items())[:5]}
+        }
+        print("=== DEBUG: First 5 entries of each section ===")
+        print(json.dumps(debug_output, indent=2, default=str))
 
         return jsonify({
             "ranges": {
