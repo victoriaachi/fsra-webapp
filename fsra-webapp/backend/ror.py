@@ -19,7 +19,7 @@ def calculate_daily_ror(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
         
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -48,7 +48,7 @@ def calculate_monthly_ror(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
 
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -79,7 +79,7 @@ def calculate_quarterly_ror(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
 
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -117,7 +117,7 @@ def calculate_annual_ror(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
 
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -154,7 +154,7 @@ def get_monthly_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
 
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -187,7 +187,7 @@ def get_daily_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
 
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -220,7 +220,7 @@ def get_quarterly_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
 
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -257,7 +257,7 @@ def get_annual_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
 
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -293,7 +293,7 @@ def extract_raw_prices(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update":
+        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
             continue
             
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
@@ -337,8 +337,7 @@ def ror():
         xls = pd.ExcelFile(file)
         filtered_sheets = []
         for sheet_name in xls.sheet_names:
-            # Skip sheets named "since last update" (case-insensitive)
-            if sheet_name.strip().lower() == "since last update":
+            if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
                 continue
             filtered_sheets.append(sheet_name)
 

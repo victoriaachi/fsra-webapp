@@ -310,8 +310,8 @@ export default function Ror() {
         tension: 0,
         pointRadius: 0,
         pointHoverRadius: 6,
-        hoverRadius: 10,
-        hitRadius: 10,
+        hoverRadius: 15,
+        hitRadius: 15,
       };
     });
 
