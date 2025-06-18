@@ -14,24 +14,14 @@ def find_data_start(df):
             continue
     return None
 
-def has_data_beyond_col3(df):
-    if df.shape[1] <= 3:
-        return False
-
-    subset = df.iloc[:, 3:]
-
-    # Replace empty strings or strings with just spaces to NaN
-    subset = subset.replace(r'^\s*$', pd.NA, regex=True)
-
-    has_data = subset.notna().any().any()
-    return has_data
-
 def calculate_daily_ror(file):
     xls = pd.ExcelFile(file)
     result = {}
 
     for sheet_name in xls.sheet_names:
-        #sheet_name = xls.sheet_names[0]
+        if sheet_name.strip().lower() == "since last update":
+            continue
+        
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
@@ -51,7 +41,6 @@ def calculate_daily_ror(file):
 
         result[sheet_name] = df[['Date', 'Price', 'DailyReturn']].to_dict(orient='records')
 
-
     return result
 
 def calculate_monthly_ror(file):
@@ -59,10 +48,10 @@ def calculate_monthly_ror(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
+        if sheet_name.strip().lower() == "since last update":
             continue
 
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -90,10 +79,10 @@ def calculate_quarterly_ror(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
+        if sheet_name.strip().lower() == "since last update":
             continue
 
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -128,10 +117,10 @@ def calculate_annual_ror(file):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
+        if sheet_name.strip().lower() == "since last update":
             continue
 
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -165,10 +154,10 @@ def get_monthly_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
+        if sheet_name.strip().lower() == "since last update":
             continue
 
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -198,10 +187,10 @@ def get_daily_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
+        if sheet_name.strip().lower() == "since last update":
             continue
 
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -231,10 +220,10 @@ def get_quarterly_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
+        if sheet_name.strip().lower() == "since last update":
             continue
 
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -268,10 +257,10 @@ def get_annual_date_range(file):
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-        if has_data_beyond_col3(df):
+        if sheet_name.strip().lower() == "since last update":
             continue
 
+        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
@@ -299,14 +288,14 @@ def get_annual_date_range(file):
     return overall_min, overall_max
 
 
-
-
-
 def extract_raw_prices(file):
     xls = pd.ExcelFile(file)
     result = {}
 
     for sheet_name in xls.sheet_names:
+        if sheet_name.strip().lower() == "since last update":
+            continue
+            
         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
         start_row = find_data_start(df)
         if start_row is None:
@@ -333,9 +322,6 @@ def ror():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
     
-
-
-
     try:
         daily = calculate_daily_ror(file)
         monthly = calculate_monthly_ror(file)
@@ -348,16 +334,13 @@ def ror():
         annual_range = get_annual_date_range(file)
         
 
-        # Print it for debugging (convert to string so dates print nicely)
-        #print(json.dumps(quarterly, indent=2, default=str))
-        #print("quarter range:", quarter_range)
-
         xls = pd.ExcelFile(file)
         filtered_sheets = []
         for sheet_name in xls.sheet_names:
-            df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-            if not has_data_beyond_col3(df):
-                filtered_sheets.append(sheet_name)
+            # Skip sheets named "since last update" (case-insensitive)
+            if sheet_name.strip().lower() == "since last update":
+                continue
+            filtered_sheets.append(sheet_name)
 
         securities = filtered_sheets
 
