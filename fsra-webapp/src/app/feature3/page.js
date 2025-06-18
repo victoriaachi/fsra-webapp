@@ -27,7 +27,7 @@ export default function feature3() {
       setDefinitionText("searching...");
       setSectionName("");
       setSectionText("");
-      const response = await fetch("http://127.0.0.1:8080/feature3", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/feature3`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

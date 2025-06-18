@@ -5,12 +5,21 @@ import React, { useState, useEffect} from "react"
 
 export default function Home() {
   useEffect(() => {
-    fetch(process.env.NEXT_PUBLIC_BACKEND_URL)
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data);
-    })
-  }, [])
+    const url = process.env.NEXT_PUBLIC_BACKEND_URL;  // get the env var
+    console.log("Fetching from URL:", url);
+    fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/`)  // or your actual route
+    .then(res => res.text())
+    .then(console.log)
+    .catch(console.error);
+      fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log(data);
+      })
+      .catch((error) => {
+        console.error("Fetch error:", error);
+      });
+  }, []);
   return (
     /*
     <div className={styles.page}>
