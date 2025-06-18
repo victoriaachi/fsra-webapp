@@ -114,6 +114,7 @@ export default function Ror() {
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ror`, {
+        method: "POST", 
         body: formData,
       });
 
