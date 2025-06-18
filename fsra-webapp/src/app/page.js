@@ -5,7 +5,7 @@ import React, { useState, useEffect} from "react"
 
 export default function Home() {
   useEffect(() => {
-    fetch("http://localhost:8080/home")
+    fetch(process.env.NEXT_PUBLIC_BACKEND_URL)
     .then((response) => response.json())
     .then((data) => {
       console.log(data);

@@ -113,8 +113,7 @@ export default function Ror() {
     formData.append("file", excel);
 
     try {
-      const response = await fetch("http://127.0.0.1:8080/ror", {
-        method: "POST",
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/ror`, {
         body: formData,
       });
 
@@ -852,7 +851,13 @@ export default function Ror() {
                         x: {
                             type: "time",
                             time: {
-                                unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : (frequency === 'monthly' ? 'month' : 'year')) // Updated unit
+                                unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : (frequency === 'monthly' ? 'month' : 'year')), // Updated unit
+                                tooltipFormat: 'MMM dd, yyyy', 
+                                displayFormats: { 
+                                  year: 'yyyy',
+                                  month: 'MMM yyyy',
+                                  day: 'MMM dd, yyyy'
+                                }
                             },
                             title: { display: true, text: "Date" },
                         },
@@ -1038,8 +1043,14 @@ export default function Ror() {
                           x: {
                             type: "time",
                             time: {
-                                unit: weightedFrequency === 'daily' ? 'day' : (weightedFrequency === 'quarter' ? 'quarter' : (weightedFrequency === 'monthly' ? 'month' : 'year')) // Updated unit
-                            },
+                              unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : (frequency === 'monthly' ? 'month' : 'year')), // Updated unit
+                              tooltipFormat: 'MMM dd, yyyy', 
+                              displayFormats: { 
+                                year: 'yyyy',
+                                month: 'MMM yyyy',
+                                day: 'MMM dd, yyyy'
+                              }
+                          },
                             title: { display: true, text: "Date" },
                           },
                           y: {
