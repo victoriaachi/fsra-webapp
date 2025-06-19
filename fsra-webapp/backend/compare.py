@@ -11,8 +11,9 @@ import re
 import copy
 import array
 from rapidfuzz import fuzz
+from datetime import datetime
 from value_compare import val_equal, extract_num
-from template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality
+from template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date
 from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
 from word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence
 
@@ -329,6 +330,21 @@ def compare_route():
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
         filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
+
+        filtered_plan_info = [ais_vals[i] for i in plan_info]
+        for idx in [2, 3]:
+            date_str = filtered_plan_info[idx]
+            date_obj = datetime.strptime(date_str, "%Y%m%d")
+            filtered_plan_info[idx] = date_obj.strftime("%B %d, %Y")
+        filtered_plan_titles = [titles[i].title() for i in plan_info]
+        date_str = "-".join(ais_vals[i] for i in val_date)        
+        parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
+        filtered_val_date = parsed_date.strftime("%B %d, %Y")
+        filtered_plan_info.insert(2, filtered_val_date)
+        filtered_plan_titles.insert(2, "Valuation Date")
+        print(filtered_plan_info)
+        print(filtered_plan_titles)
+
         print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 #         prompt = f"""
 # You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
@@ -403,7 +419,9 @@ def compare_route():
             "avr_length": len(avr_text),
             "avr_text": avr_text,
             "titles": filtered_titles, 
-            "values": filtered_values
+            "values": filtered_values, 
+            "plan_info": filtered_plan_info, 
+            "plan_titles": filtered_plan_titles, 
             #"gemini_fields": gemini_fields
 
         })

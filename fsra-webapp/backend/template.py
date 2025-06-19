@@ -395,7 +395,7 @@ field_names = [
     "pension plan name",
     "registration number",
     "other registration number",
-    "valuation date start beginning",
+    "start date",
     "end date",
     "",
     "",
@@ -817,3 +817,7 @@ table_check = [104, 158, 160]
 gc_mortality = ["A", "B", "C", "D", "E", "F", "G"]
 
 solv_mortality = ["1994 UP Generational", "CPM2014Priv", "CPM2014", "CPM2014Publ"]
+
+plan_info = [0, 1, 3, 4, 386, 387, 388, 389]
+
+val_date = [384, 383, 385]

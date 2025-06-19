@@ -12,11 +12,15 @@ export default function Compare() {
   const [filteredTitles, setFilteredTitles] = useState([]);
   const [filteredValues, setFilteredValues] = useState([]);
 
+  const [filteredInfoTitles, setFilteredInfoTitles] = useState([]);
+  const [filteredInfoValues, setFilteredInfoValues] = useState([]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const aisChange = (e) => setAis(e.target.files[0]);
   const avrChange = (e) => setAvr(e.target.files[0]);
+
 
   const fileSubmit = async () => {
     if (!ais || !avr) {
@@ -42,6 +46,8 @@ export default function Compare() {
       setAvrText(data.avr_text);
       setFilteredTitles(data.titles);
       setFilteredValues(data.values);
+      setFilteredInfoTitles(data.plan_titles);
+      setFilteredInfoValues(data.plan_info);
     } catch (error) {
       console.error("Error uploading PDFs:", error);
     } finally {
@@ -88,10 +94,23 @@ export default function Compare() {
 
       {!loading && (
         <>
-          <div>
+        <div>
+          <h2> Plan Information</h2>
+          {filteredInfoTitles.map((title, idx) => {
+              const value = filteredInfoValues[idx];
+              return (
+                title && value && (
+                  <p key={idx}>
+                    {title}: {value}
+                  </p>
+                )
+              );
+            })}
+        </div>
+          {/* <div>
             <h2>Extracted AIS Fields</h2>
             <pre>{aisText}</pre>
-          </div>
+          </div> */}
 
           <div>
             <h2>Missing / Mismatched Fields</h2>
@@ -107,10 +126,10 @@ export default function Compare() {
             })}
           </div>
 
-          <div>
+          {/* <div>
             <h2>Extracted AVR Text</h2>
             <pre>{avrText}</pre>
-          </div>
+          </div> */}
         </>
       )}
     </div>
