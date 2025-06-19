@@ -69,7 +69,7 @@ pycryptodome==3.23.0
 pydantic==2.11.5
 pydantic_core==2.33.2
 pydot==4.0.0
-PyMuPDF==1.26.0
+PyMuPDF==1.26.1
 pyparsing==3.2.3
 pypdfium2==4.30.1
 python-dateutil==2.9.0.post0

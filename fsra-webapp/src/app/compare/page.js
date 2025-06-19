@@ -91,7 +91,7 @@ export default function compare() {
         <h2>Extracted AIS Fields</h2>
       <pre>{aisText}</pre>
       
-      {/* {filteredTitles.map((title, idx) => {
+       {filteredTitles.map((title, idx) => {
       const value = filteredValues[idx];
       if (title != null && value != null) {
         return (
@@ -101,7 +101,7 @@ export default function compare() {
         );
       }
       return null; // Skip rendering
-    })} */}
+    })} 
       <h2>Extracted AVR Text</h2>
       <pre>{avrText}</pre>
 

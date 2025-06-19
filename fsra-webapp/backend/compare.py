@@ -1,5 +1,6 @@
 # compare.py
 from flask import Blueprint, jsonify, request
+import psutil, os, gc
 import requests
 import fitz
 #import pandas as pd
@@ -19,6 +20,9 @@ compare_bp = Blueprint('compare', __name__)
 
 @compare_bp.route('/compare', methods=['GET', 'POST'])
 def compare_route():
+    process = psutil.Process(os.getpid())  # get current process info
+
+    print(f"[START] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
     if request.method == 'GET':
         return jsonify({"message": "Compare endpoint is live!"})
     if 'ais' not in request.files or 'avr' not in request.files:
@@ -53,6 +57,7 @@ def compare_route():
     try:
         # Extract text from AIS
         ais_doc = fitz.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
+        print(f"[After loading AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
         ais_text = ""
         field_count = 0
         ais_found_fields = 0;
@@ -105,6 +110,8 @@ def compare_route():
                     # field_count += 1
 
         ais_doc.close()
+        gc.collect()
+        print(f"[After closing AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
         titles[204] = ais_vals[203]
         titles[206] = ais_vals[205]
@@ -116,11 +123,15 @@ def compare_route():
 
 
         with pdfplumber.open(avr_file) as avr_pdf:
-            avr_text = ""
+            pages_text = []
             for page in avr_pdf.pages:
-                avr_text += page.extract_text() + "\n"
+                pages_text.append(page.extract_text() or "")
+            avr_text = "\n".join(pages_text)
+        print(f"[After loading AVR PDF text] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
         avr_text = clean_numbers_pdf(clean_text(avr_text));
+        gc.collect()
+        print(f"[After cleaning AVR text] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
         #print(avr_text)
 
         found = 0; 
@@ -318,6 +329,7 @@ def compare_route():
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
         filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
+        print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 #         prompt = f"""
 # You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
 # If you cannot find a field or if does not contain numbers, return "". If the value is a date, please return it in YYYYMMDD format.

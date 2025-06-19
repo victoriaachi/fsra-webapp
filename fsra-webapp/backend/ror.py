@@ -1,9 +1,10 @@
 from flask import Blueprint, request, jsonify
 import pandas as pd
 from pandas.tseries.offsets import YearEnd, QuarterEnd, MonthEnd
-import json
+import json, psutil, os, gc
 
 ror_bp = Blueprint('ror', __name__)
+process = psutil.Process(os.getpid())
 
 def find_data_start(df):
     for i, row in df.iterrows():
@@ -14,21 +15,19 @@ def find_data_start(df):
             continue
     return None
 
-def calculate_daily_ror(file):
-    xls = pd.ExcelFile(file)
+def calculate_daily_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
         
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2] 
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -45,21 +44,19 @@ def calculate_daily_ror(file):
 
     return result
 
-def calculate_monthly_ror(file):
-    xls = pd.ExcelFile(file)
+def calculate_monthly_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -68,7 +65,6 @@ def calculate_monthly_ror(file):
 
         # Snap to month end
         df['MonthEnd'] = df['Date'] + MonthEnd(0)
-        # Filter to keep only the last entry on or before the month end
         last_per_month = df[df['Date'] <= df['MonthEnd']].groupby('MonthEnd').last().reset_index()
         last_per_month['MonthlyReturn'] = last_per_month['Price'].pct_change()
         last_per_month = last_per_month.dropna()
@@ -80,21 +76,19 @@ def calculate_monthly_ror(file):
 
     return result
 
-def calculate_quarterly_ror(file):
-    xls = pd.ExcelFile(file)
+def calculate_quarterly_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -113,22 +107,19 @@ def calculate_quarterly_ror(file):
 
     return result
 
-
-def calculate_annual_ror(file):
-    xls = pd.ExcelFile(file)
+def calculate_annual_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -147,22 +138,20 @@ def calculate_annual_ror(file):
 
     return result
 
-def get_monthly_date_range(file):
-    xls = pd.ExcelFile(file)
+def get_monthly_date_range(xls):
     min_dates = []
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -180,22 +169,20 @@ def get_monthly_date_range(file):
 
     return min(min_dates), max(max_dates)
 
-def get_daily_date_range(file):
-    xls = pd.ExcelFile(file)
+def get_daily_date_range(xls):
     min_dates = []
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -213,22 +200,20 @@ def get_daily_date_range(file):
 
     return overall_min, overall_max
 
-def get_quarterly_date_range(file):
-    xls = pd.ExcelFile(file)
+def get_quarterly_date_range(xls):
     min_dates = []
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -250,23 +235,20 @@ def get_quarterly_date_range(file):
 
     return overall_min, overall_max
 
-
-def get_annual_date_range(file):
-    xls = pd.ExcelFile(file)
+def get_annual_date_range(xls):
     min_dates = []
     max_dates = []
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
 
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
@@ -287,22 +269,19 @@ def get_annual_date_range(file):
 
     return overall_min, overall_max
 
-
-def extract_raw_prices(file):
-    xls = pd.ExcelFile(file)
+def extract_raw_prices(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
+        if sheet_name.strip().lower() in ("since last update", "ror"):
             continue
             
-        df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
+        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
         start_row = find_data_start(df)
         if start_row is None:
             continue
 
         df = df.iloc[start_row:].reset_index(drop=True)
-        df = df.iloc[:, :2]
         df.columns = ['Date', 'Price']
         df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
         df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
@@ -325,23 +304,48 @@ def ror():
         return jsonify({"error": "No selected file"}), 400
     
     try:
-        daily = calculate_daily_ror(file)
-        monthly = calculate_monthly_ror(file)
-        quarterly = calculate_quarterly_ror(file)
-        annual = calculate_annual_ror(file)
+        print(f"[Memory before processing] {process.memory_info().rss / 1024**2:.2f} MB")
 
-        daily_range = get_daily_date_range(file)
-        monthly_range = get_monthly_date_range(file)
-        quarter_range = get_quarterly_date_range(file)
-        annual_range = get_annual_date_range(file)
-        
+        xls = pd.ExcelFile(file)  # Load once here
 
-        xls = pd.ExcelFile(file)
-        filtered_sheets = []
-        for sheet_name in xls.sheet_names:
-            if sheet_name.strip().lower() == "since last update" or sheet_name.strip().lower() == "ror":
-                continue
-            filtered_sheets.append(sheet_name)
+        daily = calculate_daily_ror(xls)
+        gc.collect()
+        print(f"[Memory after calculate_daily_ror] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        monthly = calculate_monthly_ror(xls)
+        gc.collect()
+        print(f"[Memory after calculate_monthly_ror] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        quarterly = calculate_quarterly_ror(xls)
+        gc.collect()
+        print(f"[Memory after calculate_quarterly_ror] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        annual = calculate_annual_ror(xls)
+        gc.collect()
+        print(f"[Memory after calculate_annual_ror] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        daily_range = get_daily_date_range(xls)
+        gc.collect()
+        print(f"[Memory after get_daily_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        monthly_range = get_monthly_date_range(xls)
+        gc.collect()
+        print(f"[Memory after get_monthly_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        quarter_range = get_quarterly_date_range(xls)
+        gc.collect()
+        print(f"[Memory after get_quarterly_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        annual_range = get_annual_date_range(xls)
+        gc.collect()
+        print(f"[Memory after get_annual_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        raw_prices = extract_raw_prices(xls)
+        gc.collect()
+        print(f"[Memory after extract_raw_prices] {process.memory_info().rss / 1024**2:.2f} MB")
+
+        filtered_sheets = [sheet_name for sheet_name in xls.sheet_names
+                           if sheet_name.strip().lower() not in ("since last update", "ror")]
 
         securities = filtered_sheets
 
@@ -362,10 +366,6 @@ def ror():
             "max": annual_range[1].strftime('%Y-%m-%d') if annual_range else None
         }
 
-        raw_prices = extract_raw_prices(file)
-        
-        # It's better to avoid printing sensitive debug info to console in production
-        # But for development, keep it
         debug_output = {
             "daily": {k: v[:5] for k, v in list(daily.items())[:5]},
             "monthly": {k: v[:5] for k, v in list(monthly.items())[:5]},
@@ -375,6 +375,8 @@ def ror():
         }
         print("=== DEBUG: First 5 entries of each section ===")
         print(json.dumps(debug_output, indent=2, default=str))
+        gc.collect()
+        print(f"[Memory before returning response] {process.memory_info().rss / 1024**2:.2f} MB")
 
         return jsonify({
             "ranges": {
