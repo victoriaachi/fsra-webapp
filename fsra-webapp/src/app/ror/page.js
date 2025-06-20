@@ -706,7 +706,7 @@ export default function Ror() {
           if (!merged[dateStr]) {
             merged[dateStr] = { Date: dateStr };
           }
-          merged[dateStr].Price = entry.Price; // last one will stick (same price per freq assumed)
+          merged[dateStr].Price = entry.Price; // last one will stick (assumed same price per freq)
           const returnKey = `${freq.charAt(0).toUpperCase() + freq.slice(1)} Return`;
           merged[dateStr][returnKey] = entry[`${freq.charAt(0).toUpperCase() + freq.slice(1)}Return`];
         });
@@ -714,6 +714,32 @@ export default function Ror() {
   
       const rows = Object.values(merged).sort((a, b) => new Date(a.Date) - new Date(b.Date));
       const ws = XLSX.utils.json_to_sheet(rows);
+  
+      // Find columns that contain returns, e.g. Daily Return, Monthly Return, etc.
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      const headerRow = 0; // headers are in the first row
+      const returnCols = [];
+  
+      // Find the column indexes of the return headers
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddress = XLSX.utils.encode_cell({ r: headerRow, c: C });
+        const cell = ws[cellAddress];
+        if (cell && typeof cell.v === 'string' && cell.v.includes('Return')) {
+          returnCols.push(C);
+        }
+      }
+  
+      // Apply percentage format to return columns, starting from row 1 (data rows)
+      for (const col of returnCols) {
+        for (let R = 1; R <= range.e.r; ++R) {
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: col });
+          const cell = ws[cellAddress];
+          if (cell && typeof cell.v === 'number') {
+            cell.z = '0.00%'; // two decimal percent format
+          }
+        }
+      }
+  
       XLSX.utils.book_append_sheet(wb, ws, security);
     });
   
@@ -721,69 +747,144 @@ export default function Ror() {
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), "Securities.xlsx");
   };
   
+  
+  // Helper function to get the correct return key from backend data
+  const getReturnKey = (frequency) => {
+    if (frequency === 'daily') return 'DailyReturn';
+    if (frequency === 'monthly') return 'MonthlyReturn';
+    if (frequency === 'quarter') return 'QuarterReturn';
+    if (frequency === 'annual') return 'AnnualReturn';
+    return null;
+  };
+  
   const exportPortfolios = (portfolios, backendData) => {
     const wb = XLSX.utils.book_new();
-    const allFrequencies = ["daily", "monthly", "quarter", "annual"];
   
     portfolios.forEach((portfolio) => {
       const sheetData = [];
   
-      // Asset mix
-      sheetData.push(["Asset Mix"]);
-      Object.entries(portfolio.weights).forEach(([sec, weight]) => {
-        sheetData.push([sec, `${weight}%`]);
-      });
-  
+      // 1. Portfolio name and Asset Mix
+      sheetData.push([`${portfolio.name || `Portfolio ${portfolio.id}`}`]);
+      sheetData.push([]);
+      sheetData.push(['Asset Mix:']);
+      if (Object.keys(portfolio.weights).length > 0) {
+        Object.entries(portfolio.weights).forEach(([sec, weight]) => {
+          sheetData.push([sec, `${parseFloat(weight).toFixed(2)}%`]);
+        });
+      } else {
+        sheetData.push(['No securities selected or weights defined.']);
+      }
       sheetData.push([]);
   
-      // Header row
-      sheetData.push([
-        "Date", "Security", "Price",
-        "Daily Return", "Monthly Return", "Quarterly Return", "Annual Return"
-      ]);
+      // 2. Collect all unique dates
+      const allDatesSet = new Set();
+      portfolio.selectedSecurities.forEach(sec => {
+        const rawPrices = backendData.rawPrices?.[sec] || [];
+        rawPrices.forEach(({ Date }) => allDatesSet.add(Date));
+      });
+      const allDates = Array.from(allDatesSet).sort((a, b) => new Date(a) - new Date(b));
   
-      const secList = portfolio.selectedSecurities;
+      // 3. Prepare price and returns maps per asset
+      const pricesByDateAndSec = {};
+      const returnsByFreqAndSec = {
+        daily: {},
+        monthly: {},
+        quarter: {},
+        annual: {},
+      };
   
-      secList.forEach((sec) => {
-        const merged = {};
-  
-        allFrequencies.forEach((freq) => {
-          const secData = backendData[freq][sec] || [];
-          secData.forEach(entry => {
-            const dateStr = entry.Date;
-            if (!merged[dateStr]) {
-              merged[dateStr] = { Date: dateStr, Security: sec };
-            }
-            merged[dateStr].Price = entry.Price;
-            const returnKey = `${freq.charAt(0).toUpperCase() + freq.slice(1)} Return`;
-            merged[dateStr][returnKey] = entry[`${freq.charAt(0).toUpperCase() + freq.slice(1)}Return`];
-          });
+      portfolio.selectedSecurities.forEach(sec => {
+        // Prices
+        const secPrices = {};
+        (backendData.rawPrices?.[sec] || []).forEach(({ Date, Price }) => {
+          secPrices[Date] = Price;
         });
+        pricesByDateAndSec[sec] = secPrices;
   
-        const rows = Object.values(merged).sort((a, b) => new Date(a.Date) - new Date(b.Date));
-        rows.forEach(row => {
-          sheetData.push([
-            row.Date,
-            row.Security,
-            row.Price ?? "",
-            row["Daily Return"] ?? "",
-            row["Monthly Return"] ?? "",
-            row["Quarter Return"] ?? "",
-            row["Annual Return"] ?? "",
-          ]);
+        // Returns for each frequency
+        ['daily', 'monthly', 'quarter', 'annual'].forEach(freq => {
+          const secReturns = {};
+          const returnKey = getReturnKey(freq);
+          (backendData[freq]?.[sec] || []).forEach(entry => {
+            if (entry[returnKey] != null) {
+              secReturns[entry.Date] = entry[returnKey];
+            }
+          });
+          returnsByFreqAndSec[freq][sec] = secReturns;
         });
       });
   
+      // 4. Header row: Date, Assets' Prices, then returns columns
+      const returnsHeaders = ['Daily Return', 'Monthly Return', 'Quarterly Return', 'Annual Return'];
+      const headers = ['Date', ...portfolio.selectedSecurities, ...returnsHeaders];
+      sheetData.push(headers);
+  
+      // 5. Build rows per date
+      allDates.forEach(date => {
+        const row = [date];
+  
+        // Asset prices for this date
+        portfolio.selectedSecurities.forEach(sec => {
+          const price = pricesByDateAndSec[sec]?.[date];
+          row.push(price != null ? price : '');
+        });
+  
+        // Calculate weighted portfolio returns per frequency
+        ['daily', 'monthly', 'quarter', 'annual'].forEach(freq => {
+          const weightSum = portfolio.selectedSecurities.reduce((sum, sec) => sum + (portfolio.weights[sec] || 0), 0);
+          let weightedReturn = 0;
+          let validData = true;
+  
+          portfolio.selectedSecurities.forEach(sec => {
+            const weight = portfolio.weights[sec] || 0;
+            const retVal = returnsByFreqAndSec[freq][sec]?.[date];
+            if (retVal == null) {
+              validData = false; // Missing return data for this freq/date
+            } else {
+              weightedReturn += retVal * (weight / 100);
+            }
+          });
+  
+          if (validData && weightSum > 0) {
+            row.push(weightedReturn); // decimal kept, formatted later
+          } else {
+            row.push('');  // <-- blank cell instead of "N/A"
+          }
+        });
+  
+        sheetData.push(row);
+      });
+  
+      // 6. Convert sheetData to worksheet
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
-      XLSX.utils.book_append_sheet(wb, ws, portfolio.name || `Portfolio-${portfolio.id}`);
+  
+      // 7. Format the return columns as percentages with 2 decimal places visible
+      const range = XLSX.utils.decode_range(ws['!ref']);
+  
+      // Return columns start after: Date + number of assets
+      const firstReturnColIndex = 1 + portfolio.selectedSecurities.length;
+      const lastRow = range.e.r;
+  
+      for (let c = firstReturnColIndex; c <= firstReturnColIndex + 3; c++) { // 4 return columns
+        for (let r = 4 + Object.keys(portfolio.weights).length; r <= lastRow; r++) {
+          const cellAddress = XLSX.utils.encode_cell({ r, c });
+          const cell = ws[cellAddress];
+          if (cell && typeof cell.v === 'number') {
+            // Format as percentage with two decimals visible, keep decimal for formula
+            cell.z = '0.00%';
+          }
+        }
+      }
+  
+      // 8. Append worksheet
+      const sheetName = portfolio.name ? portfolio.name.substring(0, 31) : `Portfolio ${portfolio.id}`;
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
     });
   
-    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([wbout], { type: "application/octet-stream" }), "Portfolios.xlsx");
+    // 9. Write file and trigger download
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'Portfolios_Data.xlsx');
   };
-  
-  
-  
   
 
   // Export weighted chart functionality
@@ -1091,7 +1192,7 @@ export default function Ror() {
                 <button onClick={exportWeightedChart} className="chart-button">
                   Export Chart
                 </button>
-                <button onClick={() => exportPortfolios(portfolios, backendData.rawPrices, frequency, backendData)}
+                <button onClick={() => exportPortfolios(portfolios, backendData)}
                  className="chart-button"
                  disabled={!weightedChartData || weightedChartData.datasets.length === 0}
                  >
