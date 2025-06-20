@@ -18,6 +18,7 @@ import 'chartjs-adapter-date-fns';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
+
 const whiteBackgroundPlugin = {
   id: 'whiteBackground',
   beforeDraw: (chart) => {
@@ -48,6 +49,10 @@ const distinctColors = [
   "#9A6324", "#fffac8", "#800000", "#aaffc3", "#808000", "#ffd8b1",
   "#000075", "#808080"
 ];
+
+function formatDateUTC(date) {
+  return date.toISOString().split('T')[0]; // Gives 'YYYY-MM-DD'
+}
 
 export default function Ror() {
   const [excel, setExcel] = useState(null);
@@ -299,7 +304,8 @@ export default function Ror() {
           allYValues.push(yValue);
         }
         return {
-          x: new Date(point.Date),
+          //x: new Date(point.Date),
+          x: formatDateUTC(point.Date),
           y: yValue,
         };
       });
@@ -498,7 +504,7 @@ export default function Ror() {
   
 
   const calculatePortfolioReturns = (portfolio, backendData, startDate, endDate) => {
-    const start = startDate ? new Date(startDate) : null;
+    const start = startDate ? new Date(new Date(startDate).getTime() - 24 * 60 * 60 * 1000) : null;
     const end = endDate ? new Date(endDate) : null;
   
     let simpleWeightedPortfolioReturn = 0;
@@ -582,85 +588,89 @@ export default function Ror() {
   // Calculate total returns for selected securities (daily data)
   const calculateIndividualReturns = () => {
     if (!backendData || selectedSecurities.length === 0) return [];
-
+  
     const rawData = backendData["rawPrices"];
-    const start = startDate ? new Date(startDate) : null;
+    const start = startDate ? new Date(new Date(startDate).getTime() - 24 * 60 * 60 * 1000) : null;
     const end = endDate ? new Date(endDate) : null;
-
+  
     console.log(`--- Calculating Individual Security Total Returns ---`);
     console.log(`  Individual Chart Date Range: Start = ${startDate}, End = ${endDate}`);
-
+  
     return selectedSecurities.map(sec => {
       const allData = rawData[sec] || [];
-      const sortedData = [...allData].sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime()); // Ensure sorted by time
-
-      if (sortedData.length === 0) return { sec, totalReturn: "N/A" };
-
+      const sortedData = [...allData].sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime());
+  
+      if (sortedData.length === 0) {
+        console.log(`  ${sec}: No price data available`);
+        return { sec, totalReturn: "N/A" };
+      }
+  
       let startPrice = null;
       let startPriceDate = null;
       let endPrice = null;
       let endPriceDate = null;
-
+  
       // Find start price
-      if (sortedData.length > 0) {
-          if (start) {
-              let foundStartDataPoint = null;
-              for (let i = sortedData.length - 1; i >= 0; i--) {
-                  const dataPointDate = new Date(sortedData[i].Date);
-                  if (dataPointDate <= start) {
-                      foundStartDataPoint = sortedData[i];
-                      break;
-                  }
-              }
-              if (foundStartDataPoint) {
-                  startPrice = foundStartDataPoint.Price;
-                  startPriceDate = foundStartDataPoint.Date;
-              } else {
-                  startPrice = sortedData[0].Price; // Use the very first existing stock date
-                  startPriceDate = sortedData[0].Date;
-              }
-          } else {
-              startPrice = sortedData[0].Price;
-              startPriceDate = sortedData[0].Date;
+      if (start) {
+        let foundStartDataPoint = null;
+        for (let i = sortedData.length - 1; i >= 0; i--) {
+          const dataPointDate = new Date(sortedData[i].Date);
+          if (dataPointDate <= start) {
+            foundStartDataPoint = sortedData[i];
+            break;
           }
+        }
+        if (foundStartDataPoint) {
+          startPrice = foundStartDataPoint.Price;
+          startPriceDate = foundStartDataPoint.Date;
+        } else {
+          startPrice = sortedData[0].Price;
+          startPriceDate = sortedData[0].Date;
+        }
+      } else {
+        startPrice = sortedData[0].Price;
+        startPriceDate = sortedData[0].Date;
       }
-
+  
       // Find end price
-      if (sortedData.length > 0) {
-          if (end) {
-              let foundEndDataPoint = null;
-              for (let i = sortedData.length - 1; i >= 0; i--) {
-                  const dataPointDate = new Date(sortedData[i].Date);
-                  if (dataPointDate <= end) {
-                      foundEndDataPoint = sortedData[i];
-                      break;
-                  }
-              }
-              if (foundEndDataPoint) {
-                  endPrice = foundEndDataPoint.Price;
-                  endPriceDate = foundEndDataPoint.Date;
-              }
-          } else {
-              endPrice = sortedData[sortedData.length - 1].Price;
-              endPriceDate = sortedData[sortedData.length - 1].Date;
+      if (end) {
+        let foundEndDataPoint = null;
+        for (let i = sortedData.length - 1; i >= 0; i--) {
+          const dataPointDate = new Date(sortedData[i].Date);
+          if (dataPointDate <= end) {
+            foundEndDataPoint = sortedData[i];
+            break;
           }
+        }
+        if (foundEndDataPoint) {
+          endPrice = foundEndDataPoint.Price;
+          endPriceDate = foundEndDataPoint.Date;
+        }
+      } else {
+        endPrice = sortedData[sortedData.length - 1].Price;
+        endPriceDate = sortedData[sortedData.length - 1].Date;
       }
-
+  
+      // 🔍 Logging start/end date and price info
+      console.log(`  ${sec}:`);
+      console.log(`    Start Date Used: ${startPriceDate}, Start Price: ${startPrice}`);
+      console.log(`    End Date Used:   ${endPriceDate}, End Price:   ${endPrice}`);
+  
       if (
-        typeof startPrice !== "number" ||
-        typeof endPrice !== "number" ||
+        startPrice === null || endPrice === null ||
+        typeof startPrice !== "number" || typeof endPrice !== "number" ||
         isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
       ) {
-        console.log(`  Security: ${sec} - SKIPPED (Invalid start/end price or not enough data)`);
-        console.log(`    Attempted Start Date: ${startPriceDate || 'N/A'}, Price: ${startPrice}`);
-        console.log(`    Attempted End Date: ${endPriceDate || 'N/A'}, Price: ${endPrice}`);
         return { sec, totalReturn: "N/A" };
       }
-
-      const totalReturn = ((endPrice / startPrice) - 1) * 100;
-      return { sec, totalReturn: totalReturn.toFixed(2) + "%" };
+  
+      const totalReturnDecimal = (endPrice / startPrice) - 1;
+      const totalReturn = (totalReturnDecimal * 100).toFixed(2) + "%";
+  
+      return { sec, totalReturn };
     });
   };
+  
 
 
 
@@ -938,7 +948,8 @@ export default function Ror() {
                                   year: 'yyyy',
                                   month: 'MMM yyyy',
                                   day: 'MMM dd, yyyy'
-                                }
+                                },
+                               
                             },
                             title: { display: true, text: "Date" },
                         },
