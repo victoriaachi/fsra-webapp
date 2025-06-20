@@ -51,8 +51,14 @@ const distinctColors = [
 ];
 
 function formatDateUTC(date) {
-  return date.toISOString().split('T')[0]; // Gives 'YYYY-MM-DD'
+  const d = new Date(date);
+  return d.toISOString().split('T')[0]; // Gives 'YYYY-MM-DD'
 }
+
+// function formatDateUTC(dateInput) {
+//   const d = new Date(dateInput);
+//   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+// }
 
 export default function Ror() {
   const [excel, setExcel] = useState(null);
@@ -437,7 +443,7 @@ export default function Ror() {
         });
   
         const sortedPortfolioData = Array.from(portfolioDataMap.entries())
-          .map(([date, value]) => ({ x: new Date(date), y: value }))
+          .map(([date, value]) => ({ x: formatDateUTC(date), y: value }))
           .sort((a, b) => a.x - b.x);
   
         const portfolioYValues = sortedPortfolioData.map(point => point.y);
