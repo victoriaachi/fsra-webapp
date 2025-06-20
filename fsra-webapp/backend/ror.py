@@ -15,128 +15,119 @@ def find_data_start(df):
             continue
     return None
 
+def read_and_clean_sheet(xls, sheet_name):
+    if sheet_name.strip().lower() in ("since last update", "ror"):
+        return None
+
+    df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
+    start_row = find_data_start(df)
+    if start_row is None:
+        return None
+
+    df = df.iloc[start_row:].reset_index(drop=True)
+    df.columns = ['Date', 'Price']
+
+    df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
+    df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
+    df = df.dropna().sort_values(by='Date')
+
+    # If it's a Bloomberg-style sheet, shift price forward
+    # if sheet_name.strip().upper().startswith("BB"):
+    #     df = df.copy()
+    #     df['Price'] = df['Price'].shift(-1)
+    #     return df.dropna(subset=['Price'])
+
+    return df
 def calculate_daily_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() in ("since last update", "ror"):
-            continue
-        
-        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
-        start_row = find_data_start(df)
-        if start_row is None:
+        df = read_and_clean_sheet(xls, sheet_name)
+        if df is None:
             continue
 
-        df = df.iloc[start_row:].reset_index(drop=True)
-        df.columns = ['Date', 'Price']
-
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
-        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-        df = df.dropna()
-
-        df = df.sort_values(by='Date')
         df['DailyReturn'] = df['Price'].pct_change()
         df = df.dropna()
 
-        # Convert Date to ISO format string
         df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = df[['Date', 'Price', 'DailyReturn']].to_dict(orient='records')
 
     return result
 
+
 def calculate_monthly_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() in ("since last update", "ror"):
+        df = read_and_clean_sheet(xls, sheet_name)
+        if df is None:
             continue
 
-        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
-        start_row = find_data_start(df)
-        if start_row is None:
-            continue
-
-        df = df.iloc[start_row:].reset_index(drop=True)
-        df.columns = ['Date', 'Price']
-
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
-        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-        df = df.dropna().sort_values(by='Date')
-
-        # Snap to month end
         df['MonthEnd'] = df['Date'] + MonthEnd(0)
         last_per_month = df[df['Date'] <= df['MonthEnd']].groupby('MonthEnd').last().reset_index()
         last_per_month['MonthlyReturn'] = last_per_month['Price'].pct_change()
         last_per_month = last_per_month.dropna()
 
-        # Convert Date to ISO format string
         last_per_month['MonthEnd'] = last_per_month['MonthEnd'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = last_per_month[['MonthEnd', 'Price', 'MonthlyReturn']].rename(
             columns={'MonthEnd': 'Date'}).to_dict(orient='records')
 
     return result
 
+
 def calculate_quarterly_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() in ("since last update", "ror"):
+        df = read_and_clean_sheet(xls, sheet_name)
+        if df is None:
             continue
-
-        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
-        start_row = find_data_start(df)
-        if start_row is None:
-            continue
-
-        df = df.iloc[start_row:].reset_index(drop=True)
-        df.columns = ['Date', 'Price']
-
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
-        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-        df = df.dropna().sort_values(by='Date')
 
         df['QuarterEnd'] = df['Date'] + QuarterEnd(0)
         last_per_quarter = df[df['Date'] <= df['QuarterEnd']].groupby('QuarterEnd').last().reset_index()
         last_per_quarter['QuarterReturn'] = last_per_quarter['Price'].pct_change()
         last_per_quarter = last_per_quarter.dropna()
 
-        # Convert Date to ISO format string
         last_per_quarter['QuarterEnd'] = last_per_quarter['QuarterEnd'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = last_per_quarter[['QuarterEnd', 'Price', 'QuarterReturn']].rename(
             columns={'QuarterEnd': 'Date'}).to_dict(orient='records')
 
     return result
 
+
 def calculate_annual_ror(xls):
     result = {}
 
     for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() in ("since last update", "ror"):
+        df = read_and_clean_sheet(xls, sheet_name)
+        if df is None:
             continue
-
-        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
-        start_row = find_data_start(df)
-        if start_row is None:
-            continue
-
-        df = df.iloc[start_row:].reset_index(drop=True)
-        df.columns = ['Date', 'Price']
-
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
-        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-        df = df.dropna().sort_values(by='Date')
 
         df['YearEnd'] = df['Date'] + YearEnd(0)
         last_per_year = df[df['Date'] <= df['YearEnd']].groupby('YearEnd').last().reset_index()
         last_per_year['AnnualReturn'] = last_per_year['Price'].pct_change()
         last_per_year = last_per_year.dropna()
 
-        # Convert Date to ISO format string
         last_per_year['YearEnd'] = last_per_year['YearEnd'].dt.strftime('%Y-%m-%d')
         result[sheet_name] = last_per_year[['YearEnd', 'Price', 'AnnualReturn']].rename(
             columns={'YearEnd': 'Date'}).to_dict(orient='records')
 
     return result
+
+
+def extract_raw_prices(xls):
+    result = {}
+
+    for sheet_name in xls.sheet_names:
+        df = read_and_clean_sheet(xls, sheet_name)
+        if df is None:
+            continue
+
+        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
+        result[sheet_name] = df[['Date', 'Price']].to_dict(orient='records')
+
+    return result
+
 
 def get_monthly_date_range(xls):
     min_dates = []
@@ -269,29 +260,6 @@ def get_annual_date_range(xls):
 
     return overall_min, overall_max
 
-def extract_raw_prices(xls):
-    result = {}
-
-    for sheet_name in xls.sheet_names:
-        if sheet_name.strip().lower() in ("since last update", "ror"):
-            continue
-            
-        df = pd.read_excel(xls, sheet_name=sheet_name, usecols=[0,1], header=None)
-        start_row = find_data_start(df)
-        if start_row is None:
-            continue
-
-        df = df.iloc[start_row:].reset_index(drop=True)
-        df.columns = ['Date', 'Price']
-        df['Date'] = pd.to_datetime(df['Date'], format='%m/%d/%Y', errors='coerce')
-        df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
-        df = df.dropna().sort_values(by='Date')
-
-        # Convert Date to ISO format string
-        df['Date'] = df['Date'].dt.strftime('%Y-%m-%d')
-        result[sheet_name] = df[['Date', 'Price']].to_dict(orient='records')
-
-    return result
 
 
 @ror_bp.route('/ror', methods=['POST'])
@@ -373,8 +341,8 @@ def ror():
             "annual": {k: v[:5] for k, v in list(annual.items())[:5]},
             "rawPrices": {k: v[:5] for k, v in list(raw_prices.items())[:5]}
         }
-        print("=== DEBUG: First 5 entries of each section ===")
-        print(json.dumps(debug_output, indent=2, default=str))
+        #print("=== DEBUG: First 5 entries of each section ===")
+        #print(json.dumps(debug_output, indent=2, default=str))
         gc.collect()
         print(f"[Memory before returning response] {process.memory_info().rss / 1024**2:.2f} MB")
 

@@ -15,6 +15,8 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import 'chartjs-adapter-date-fns';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const whiteBackgroundPlugin = {
   id: 'whiteBackground',
@@ -87,7 +89,7 @@ export default function Ror() {
 
   // Rebuild chart data whenever dependencies change
   useEffect(() => {
-    prepareChartData();
+    generateIndividualChart();
   }, [backendData, frequency, selectedSecurities, startDate, endDate]);
 
   // Rebuild weighted chart data when backendData or weightedFrequency changes
@@ -249,7 +251,7 @@ export default function Ror() {
   };
 
   // Prepare data for single securities chart
-  const prepareChartData = () => {
+  const generateIndividualChart = () => {
     if (!backendData) {
       setIndividualChartError("Please upload an Excel file to get data.");
       setChartData(null);
@@ -333,7 +335,6 @@ export default function Ror() {
     setChartData({ datasets, calculatedMinY, calculatedMaxY });
   };
 
-  // Generate weighted portfolio chart data
   const generateWeightedChart = () => {
     if (!backendData) {
       setWeightedChartData(null);
@@ -341,227 +342,116 @@ export default function Ror() {
       setPortfolioWeightErrors({});
       return;
     }
-
+  
     let allChartDatasets = [];
     let allYValuesAcrossPortfolios = [];
     let tempPortfolioTotalReturns = [];
     let currentWeightErrors = {};
     let hasAnyWeightError = false; // Flag to track if any portfolio has an error
-
+  
     console.log(`--- Generating Weighted Chart for Portfolios ---`);
     console.log(`  Weighted Chart Input Date Range: Start = ${weightedStartDate}, End = ${weightedEndDate}`);
-
-
+  
     portfolios.forEach((portfolio, portfolioIndex) => {
       const totalWeight = portfolio.selectedSecurities.reduce(
         (sum, sec) => sum + (portfolio.weights[sec] || 0),
         0
       );
-
+  
       // Check for weight errors
       if (portfolio.selectedSecurities.length > 0 && (totalWeight < 99.9 || totalWeight > 100.1)) {
         currentWeightErrors[portfolio.id] = `Weights should add up to 100%. Current total: ${totalWeight.toFixed(2)}%`;
         hasAnyWeightError = true; // Set flag if error found
       } else {
-        // Clear error if it was previously set and now is valid
         if (portfolioWeightErrors[portfolio.id]) {
           delete currentWeightErrors[portfolio.id];
         }
       }
-
-      // If there are no weight errors for THIS portfolio, proceed with data processing
+  
       if (!currentWeightErrors[portfolio.id]) {
         const rawData = backendData[weightedFrequency];
         const start = weightedStartDate ? new Date(weightedStartDate) : null;
         const end = weightedEndDate ? new Date(weightedEndDate) : null;
-
+  
         let returnKey;
         if (weightedFrequency === 'quarter') {
           returnKey = 'QuarterReturn';
-        } else if (weightedFrequency === 'monthly') { // Added monthly condition
+        } else if (weightedFrequency === 'monthly') {
           returnKey = 'MonthlyReturn';
         } else {
           returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
         }
-
+  
         const portfolioDataMap = new Map();
-
-        // This section calculates the chart points (time series of weighted returns)
+  
         portfolio.selectedSecurities.forEach(sec => {
           const weightFraction = (portfolio.weights[sec] || 0) / 100;
-          let secDataForChart = rawData[sec] || []; // All data for current frequency for this security
-
+          let secDataForChart = rawData[sec] || [];
+  
           let effectiveChartStartDate = start;
-
-          // Find the closest start date for the chart data for this specific security
+  
           if (start) {
-              const sortedSecDataForChart = [...secDataForChart].sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime());
-              let foundChartStartDataPoint = null;
-              for (let i = sortedSecDataForChart.length - 1; i >= 0; i--) {
-                  const dataPointDate = new Date(sortedSecDataForChart[i].Date);
-                  if (dataPointDate <= start) {
-                      foundChartStartDataPoint = sortedSecDataForChart[i];
-                      break;
-                  }
+            const sortedSecDataForChart = [...secDataForChart].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+            let foundChartStartDataPoint = null;
+            for (let i = sortedSecDataForChart.length - 1; i >= 0; i--) {
+              const dataPointDate = new Date(sortedSecDataForChart[i].Date);
+              if (dataPointDate <= start) {
+                foundChartStartDataPoint = sortedSecDataForChart[i];
+                break;
               }
-              if (foundChartStartDataPoint) {
-                  effectiveChartStartDate = new Date(foundChartStartDataPoint.Date);
-              } else if (sortedSecDataForChart.length > 0) {
-                  // If no date before or on 'start' is found, use the very first available date
-                  effectiveChartStartDate = new Date(sortedSecDataForChart[0].Date);
-              } else {
-                  effectiveChartStartDate = null; // No data points at all for this security
-              }
+            }
+            if (foundChartStartDataPoint) {
+              effectiveChartStartDate = new Date(foundChartStartDataPoint.Date);
+            } else if (sortedSecDataForChart.length > 0) {
+              effectiveChartStartDate = new Date(sortedSecDataForChart[0].Date);
+            } else {
+              effectiveChartStartDate = null;
+            }
           }
-
-          // Filter data points based on the effective start date for the chart
+  
           let filteredChartDataPoints = [];
           if (effectiveChartStartDate && end) {
-              filteredChartDataPoints = secDataForChart.filter(({ Date: dateString }) => {
-                  const d = new Date(dateString);
-                  return d >= effectiveChartStartDate && d <= end;
-              });
+            filteredChartDataPoints = secDataForChart.filter(({ Date: dateString }) => {
+              const d = new Date(dateString);
+              return d >= effectiveChartStartDate && d <= end;
+            });
           } else if (secDataForChart.length > 0) {
-              // If no start/end specified, use all available data
-              filteredChartDataPoints = secDataForChart;
+            filteredChartDataPoints = secDataForChart;
           }
-
+  
           filteredChartDataPoints.forEach(point => {
             const dateString = point.Date;
             const originalYValue = point[returnKey];
-
+  
             if (typeof originalYValue === 'number' && !isNaN(originalYValue)) {
               const weightedYValue = originalYValue * weightFraction * 100;
               portfolioDataMap.set(dateString, (portfolioDataMap.get(dateString) || 0) + weightedYValue);
             }
           });
         });
-
+  
         const sortedPortfolioData = Array.from(portfolioDataMap.entries())
           .map(([date, value]) => ({ x: new Date(date), y: value }))
-          .sort((a, b) => a.x.getTime() - b.x.getTime());
-
+          .sort((a, b) => a.x - b.x);
+  
         const portfolioYValues = sortedPortfolioData.map(point => point.y);
         allYValuesAcrossPortfolios.push(...portfolioYValues);
+  
+        // Use helper here:
+        const portfolioCalculatedReturn = calculatePortfolioReturns(
+          portfolio,
+          backendData,
+          weightedStartDate,
+          weightedEndDate
+        );
 
-        // --- START OF SIMPLE WEIGHTED AVERAGE (TOTAL RETURN) CALCULATION ---
-        // This section uses the "closest date before start" logic for start/end price for the total return summary.
-        let simpleWeightedPortfolioReturn = 0;
-        let allSecuritiesHaveValidPrices = true;
-
-        console.log(`--- Calculating Simple Weighted Average for ${portfolio.name} ---`);
-
-        portfolio.selectedSecurities.forEach(sec => {
-          const weightFraction = (portfolio.weights[sec] || 0) / 100;
-          const allSecDailyData = backendData.daily[sec] || [];
-          const sortedData = [...allSecDailyData].sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime()); // Ensure sorted by time
-
-          let startPrice = null;
-          let startPriceDate = null;
-          let endPrice = null;
-          let endPriceDate = null;
-
-          // Find start price
-          if (sortedData.length > 0) {
-              if (start) {
-                  // Find the latest data point on or before the 'start' date
-                  let foundStartDataPoint = null;
-                  for (let i = sortedData.length - 1; i >= 0; i--) {
-                      const dataPointDate = new Date(sortedData[i].Date);
-                      if (dataPointDate <= start) {
-                          foundStartDataPoint = sortedData[i];
-                          break;
-                      }
-                  }
-                  // If a point is found on or before 'start', use its price
-                  // Otherwise, if 'start' is before the very first data point, use the very first data point's price
-                  if (foundStartDataPoint) {
-                      startPrice = foundStartDataPoint.Price;
-                      startPriceDate = foundStartDataPoint.Date;
-                  } else {
-                      startPrice = sortedData[0].Price; // Use the very first existing stock date
-                      startPriceDate = sortedData[0].Date;
-                  }
-              } else {
-                  // If no 'start' date is specified, use the very first existing stock date
-                  startPrice = sortedData[0].Price;
-                  startPriceDate = sortedData[0].Date;
-              }
-          }
-
-          // Find end price
-          if (sortedData.length > 0) {
-              if (end) {
-                  // Find the latest data point on or before the 'end' date
-                  let foundEndDataPoint = null;
-                  for (let i = sortedData.length - 1; i >= 0; i--) {
-                      const dataPointDate = new Date(sortedData[i].Date);
-                      if (dataPointDate <= end) {
-                          foundEndDataPoint = sortedData[i];
-                          break;
-                      }
-                  }
-                  if (foundEndDataPoint) {
-                      endPrice = foundEndDataPoint.Price;
-                      endPriceDate = foundEndDataPoint.Date;
-                  } else {
-                      // If no data point found on or before 'end', endPrice remains null,
-                      // which will lead to "N/A" for return, which is appropriate.
-                  }
-              } else {
-                  // If no 'end' date is specified, use the very last existing stock date
-                  endPrice = sortedData[sortedData.length - 1].Price;
-                  endPriceDate = sortedData[sortedData.length - 1].Date;
-              }
-          }
-
-          if (
-            startPrice === null || endPrice === null ||
-            typeof startPrice !== "number" || typeof endPrice !== "number" ||
-            isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
-          ) {
-            allSecuritiesHaveValidPrices = false;
-            console.log(`  Security: ${sec} - SKIPPED (Invalid start/end price or not enough data)`);
-            console.log(`    Attempted Start Date: ${startPriceDate || 'N/A'}, Price: ${startPrice}`);
-            console.log(`    Attempted End Date: ${endPriceDate || 'N/A'}, Price: ${endPrice}`);
-            return;
-          }
-
-          const securityTotalReturn = ((endPrice / startPrice) - 1); // As decimal
-          const weightedContribution = (securityTotalReturn * weightFraction);
-          simpleWeightedPortfolioReturn += weightedContribution;
-
-          console.log(`  Security: ${sec}`);
-          console.log(`    Start Price (from ${startPriceDate}): ${startPrice}`);
-          console.log(`    End Price (from ${endPriceDate}): ${endPrice}`);
-          console.log(`    Weight Fraction: ${weightFraction.toFixed(4)}`);
-          console.log(`    Security Total Return (decimal): ${securityTotalReturn.toFixed(4)}`);
-          console.log(`    Weighted Contribution: ${weightedContribution.toFixed(4)}`);
-        });
-
-
-        let portfolioCalculatedReturn = "N/A";
-        if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
-            portfolioCalculatedReturn = (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%";
-            console.log(`Total Simple Weighted Portfolio Return for ${portfolio.name}: ${portfolioCalculatedReturn}`);
-        } else if (portfolio.selectedSecurities.length === 0) {
-            portfolioCalculatedReturn = "N/A (No securities selected)";
-            console.log(`Total Simple Weighted Portfolio Return for ${portfolio.name}: ${portfolioCalculatedReturn}`);
-        } else {
-            portfolioCalculatedReturn = "N/A (Missing price data or invalid range for some securities)";
-            console.log(`Total Simple Weighted Portfolio Return for ${portfolio.name}: ${portfolioCalculatedReturn}`);
-        }
-        console.log(`--- End Calculation for ${portfolio.name} ---`);
-
-
-        // Add to temporary array for total returns
+  
         tempPortfolioTotalReturns.push({
-            id: portfolio.id,
-            name: portfolio.name,
-            totalReturn: portfolioCalculatedReturn
+          id: portfolio.id,
+          name: portfolio.name,
+          totalReturn: portfolioCalculatedReturn
         });
-        // --- END OF SIMPLE WEIGHTED AVERAGE (TOTAL RETURN) CALCULATION ---
-
+  
         if (sortedPortfolioData.length > 0) {
           allChartDatasets.push({
             label: portfolio.name,
@@ -577,27 +467,26 @@ export default function Ror() {
         }
       }
     });
-
-    setPortfolioWeightErrors(currentWeightErrors); // Update the errors state once all portfolios are processed
-
-    // If any portfolio has a weight error, clear the chart data and total returns
+  
+    setPortfolioWeightErrors(currentWeightErrors);
+  
     if (hasAnyWeightError) {
       setWeightedChartData(null);
       setPortfolioTotalReturns([]);
-    } else { // Only set chart data if no errors across any portfolio
+    } else {
       let calculatedWeightedMinY, calculatedWeightedMaxY;
       if (allYValuesAcrossPortfolios.length > 0) {
         calculatedWeightedMinY = Math.min(...allYValuesAcrossPortfolios);
         calculatedWeightedMaxY = Math.max(...allYValuesAcrossPortfolios);
-
+  
         const weightedBuffer = (calculatedWeightedMaxY - calculatedWeightedMinY) * 0.15;
-        calculatedWeightedMinY = calculatedWeightedMinY - weightedBuffer;
-        calculatedWeightedMaxY = calculatedWeightedMaxY + weightedBuffer;
+        calculatedWeightedMinY -= weightedBuffer;
+        calculatedWeightedMaxY += weightedBuffer;
       } else {
         calculatedWeightedMinY = undefined;
         calculatedWeightedMaxY = undefined;
       }
-
+  
       setWeightedChartData({
         datasets: allChartDatasets,
         calculatedMinY: calculatedWeightedMinY,
@@ -606,9 +495,92 @@ export default function Ror() {
       setPortfolioTotalReturns(tempPortfolioTotalReturns);
     }
   };
+  
+
+  const calculatePortfolioReturns = (portfolio, backendData, startDate, endDate) => {
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+  
+    let simpleWeightedPortfolioReturn = 0;
+    let allSecuritiesHaveValidPrices = true;
+  
+    portfolio.selectedSecurities.forEach(sec => {
+      const weightFraction = (portfolio.weights[sec] || 0) / 100;
+      const allSecDailyData = backendData.daily[sec] || [];
+      const sortedData = [...allSecDailyData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+  
+      let startPrice = null;
+      let startPriceDate = null;
+      let endPrice = null;
+      let endPriceDate = null;
+  
+      if (sortedData.length > 0) {
+        if (start) {
+          let foundStartDataPoint = null;
+          for (let i = sortedData.length - 1; i >= 0; i--) {
+            if (new Date(sortedData[i].Date) <= start) {
+              foundStartDataPoint = sortedData[i];
+              break;
+            }
+          }
+          if (foundStartDataPoint) {
+            startPrice = foundStartDataPoint.Price;
+            startPriceDate = foundStartDataPoint.Date;
+          } else {
+            startPrice = sortedData[0].Price;
+            startPriceDate = sortedData[0].Date;
+          }
+        } else {
+          startPrice = sortedData[0].Price;
+          startPriceDate = sortedData[0].Date;
+        }
+      }
+  
+      if (sortedData.length > 0) {
+        if (end) {
+          let foundEndDataPoint = null;
+          for (let i = sortedData.length - 1; i >= 0; i--) {
+            if (new Date(sortedData[i].Date) <= end) {
+              foundEndDataPoint = sortedData[i];
+              break;
+            }
+          }
+          if (foundEndDataPoint) {
+            endPrice = foundEndDataPoint.Price;
+            endPriceDate = foundEndDataPoint.Date;
+          }
+        } else {
+          endPrice = sortedData[sortedData.length - 1].Price;
+          endPriceDate = sortedData[sortedData.length - 1].Date;
+        }
+      }
+  
+      if (
+        startPrice === null || endPrice === null ||
+        typeof startPrice !== "number" || typeof endPrice !== "number" ||
+        isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
+      ) {
+        allSecuritiesHaveValidPrices = false;
+        return;
+      }
+  
+      const securityTotalReturn = (endPrice / startPrice) - 1;
+      const weightedContribution = securityTotalReturn * weightFraction;
+      simpleWeightedPortfolioReturn += weightedContribution;
+    });
+  
+    if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
+      return (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%";
+    } else if (portfolio.selectedSecurities.length === 0) {
+      return "N/A (No securities selected)";
+    } else {
+      return "N/A (Missing price data or invalid range for some securities)";
+    }
+  };
+  
 
   // Calculate total returns for selected securities (daily data)
-  const calculateTotalReturns = () => {
+  const calculateIndividualReturns = () => {
     if (!backendData || selectedSecurities.length === 0) return [];
 
     const rawData = backendData["rawPrices"];
@@ -701,6 +673,102 @@ export default function Ror() {
       link.click();
     }
   };
+  const exportSecurities = (data) => {
+    const wb = XLSX.utils.book_new();
+  
+    const allFrequencies = ["daily", "monthly", "quarter", "annual"];
+  
+    // Assume all frequencies have the same security keys
+    Object.keys(data["daily"]).forEach((security) => {
+      // Collect data from all frequencies for this security
+      const merged = {};
+  
+      allFrequencies.forEach((freq) => {
+        const freqData = data[freq][security] || [];
+        freqData.forEach(entry => {
+          const dateStr = entry.Date;
+          if (!merged[dateStr]) {
+            merged[dateStr] = { Date: dateStr };
+          }
+          merged[dateStr].Price = entry.Price; // last one will stick (same price per freq assumed)
+          const returnKey = `${freq.charAt(0).toUpperCase() + freq.slice(1)} Return`;
+          merged[dateStr][returnKey] = entry[`${freq.charAt(0).toUpperCase() + freq.slice(1)}Return`];
+        });
+      });
+  
+      const rows = Object.values(merged).sort((a, b) => new Date(a.Date) - new Date(b.Date));
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, security);
+    });
+  
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), "Securities.xlsx");
+  };
+  
+  const exportPortfolios = (portfolios, backendData) => {
+    const wb = XLSX.utils.book_new();
+    const allFrequencies = ["daily", "monthly", "quarter", "annual"];
+  
+    portfolios.forEach((portfolio) => {
+      const sheetData = [];
+  
+      // Asset mix
+      sheetData.push(["Asset Mix"]);
+      Object.entries(portfolio.weights).forEach(([sec, weight]) => {
+        sheetData.push([sec, `${weight}%`]);
+      });
+  
+      sheetData.push([]);
+  
+      // Header row
+      sheetData.push([
+        "Date", "Security", "Price",
+        "Daily Return", "Monthly Return", "Quarterly Return", "Annual Return"
+      ]);
+  
+      const secList = portfolio.selectedSecurities;
+  
+      secList.forEach((sec) => {
+        const merged = {};
+  
+        allFrequencies.forEach((freq) => {
+          const secData = backendData[freq][sec] || [];
+          secData.forEach(entry => {
+            const dateStr = entry.Date;
+            if (!merged[dateStr]) {
+              merged[dateStr] = { Date: dateStr, Security: sec };
+            }
+            merged[dateStr].Price = entry.Price;
+            const returnKey = `${freq.charAt(0).toUpperCase() + freq.slice(1)} Return`;
+            merged[dateStr][returnKey] = entry[`${freq.charAt(0).toUpperCase() + freq.slice(1)}Return`];
+          });
+        });
+  
+        const rows = Object.values(merged).sort((a, b) => new Date(a.Date) - new Date(b.Date));
+        rows.forEach(row => {
+          sheetData.push([
+            row.Date,
+            row.Security,
+            row.Price ?? "",
+            row["Daily Return"] ?? "",
+            row["Monthly Return"] ?? "",
+            row["Quarter Return"] ?? "",
+            row["Annual Return"] ?? "",
+          ]);
+        });
+      });
+  
+      const ws = XLSX.utils.aoa_to_sheet(sheetData);
+      XLSX.utils.book_append_sheet(wb, ws, portfolio.name || `Portfolio-${portfolio.id}`);
+    });
+  
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), "Portfolios.xlsx");
+  };
+  
+  
+  
+  
 
   // Export weighted chart functionality
   const exportWeightedChart = () => {
@@ -711,6 +779,7 @@ export default function Ror() {
       link.click();
     }
   };
+
 
 
   return (
@@ -799,7 +868,7 @@ export default function Ror() {
             <div style={{ marginTop: '20px' }}>
               <h3>Total Return by Security (Selected Time Period)</h3>
               <ul>
-                {calculateTotalReturns().map(({ sec, totalReturn }, idx) => (
+                {calculateIndividualReturns().map(({ sec, totalReturn }, idx) => (
                   <li key={idx}>
                     <strong>{sec}</strong>: {totalReturn}
                   </li>
@@ -816,6 +885,12 @@ export default function Ror() {
                 <button onClick={exportChart} className="chart-button">
                   Export Chart
                 </button>
+                <button onClick={() => exportSecurities(backendData, frequency)} 
+                className="chart-button"
+                disabled={!backendData || selectedSecurities.length === 0}>
+                  Download Excel File
+                </button>
+
               </div>
             </div>
 
@@ -999,18 +1074,27 @@ export default function Ror() {
                 <button onClick={exportWeightedChart} className="chart-button">
                   Export Chart
                 </button>
+                <button onClick={() => exportPortfolios(portfolios, backendData.rawPrices, frequency, backendData)}
+                 className="chart-button"
+                 disabled={!weightedChartData || weightedChartData.datasets.length === 0}
+                 >
+                  Download Excel File
+                </button>
               </div>
             </div>
             <div style={{ marginTop: '20px' }}>
-                      <h3>Portfolio Total Returns (Selected Time Period)</h3>
-                      <ul>
-                        {portfolioTotalReturns.map((p, idx) => (
-                          <li key={idx}>
-                            <strong>{p.name}</strong>: {p.totalReturn}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+            {portfolioTotalReturns.length > 0 && (
+              <div style={{ marginTop: "20px" }}>
+                  <h3>Portfolio Total Returns:</h3>
+                  {portfolioTotalReturns.map((p, idx) => ( // Change here: iterate over portfolioTotalReturns
+                      <p key={idx}>
+                          <strong>{p.name}:</strong> {p.totalReturn}
+                      </p>
+                  ))}
+              </div>
+          )}
+            </div>
+            
             {weightedChartData && (
               <div style={{ marginTop: "30px" }}>
                 {weightedChartData.datasets.length > 0 ? (
