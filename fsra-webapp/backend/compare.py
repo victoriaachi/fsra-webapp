@@ -1,15 +1,9 @@
 # compare.py
 from flask import Blueprint, jsonify, request
 import psutil, os, gc
-import requests
-import fitz
-#import pandas as pd
 from gemini import call_gemini_compare
-import pdfplumber
-import json
-import re
-import copy
-import array
+import json, requests, re, copy, array
+import fitz, pdfplumber
 from rapidfuzz import fuzz
 from datetime import datetime
 from value_compare import val_equal, extract_num
@@ -62,7 +56,7 @@ def compare_route():
         ais_text = ""
         field_count = 0
         ais_found_fields = 0;
-        seen_fields = set()  # track field names we already processed
+        seen_fields = set()  
         null = 0
         for page in ais_doc:
             for field in page.widgets():
@@ -72,13 +66,8 @@ def compare_route():
                 if field_name in seen_fields:
                     continue
                     #print("seen")
-                    
-                elif field_name in exclude:
-                    #print("excluded")
-                    field_count += 1
-                    seen_fields.add(field_name)
 
-                elif field_val is None or field_val == "":
+                elif field_val in exclude or field_val is None or field_val == "":
                     #print("null")
                     ais_vals[field_count] = "NULL"
                     null += 1
@@ -152,7 +141,7 @@ def compare_route():
 
                 for sentence in avr_text.split('\n'):
                     score = fuzz.partial_ratio(target, sentence.lower())
-                    if score >= 40:
+                    if score >= 60:
                         compare[i] = 1
                         compare[i+1] = 1
                         found += 2
@@ -186,7 +175,7 @@ def compare_route():
                         compare[i] = 0
             #print(f"Processing field {i} ({keys[i]}): {val} (type: {type(val)})")
             # words only value -- remove
-            elif val != "NULL" and val and extract_num(val) is None:
+            elif val != "NULL" and val and (extract_num(val) is None or extract_num(val) == ""):
                 #print("not num")
                 #print(val)
                 not_num += 1
@@ -217,7 +206,7 @@ def compare_route():
 
                     matched = False
                     for variant in variants:
-                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=20)
+                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
                         if sentence:
                             found += 1
                             compare[i] = 1
@@ -231,7 +220,7 @@ def compare_route():
                 # regular number checking
                 else:
                     matched = False
-                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=20)
+                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=60)
                     if sentence:
                         found += 1
                         compare[i] = 1
@@ -317,11 +306,7 @@ def compare_route():
                 not_found += 1
                 #print(f"metadata: {ais_meta[i]}")
                 print(f"not found: {keys[i]} {ais_vals[i]}")
-        print(f"found: {found}")
-        print(f"total fields: {ais_found_fields}")
-        print(f"words: {not_num}")
-        print(f"null/excluded fields: {null}")
-        print(f"not found: {not_found}")
+ 
 
         for i, val in enumerate(compare):
             if val == 1:
@@ -333,15 +318,40 @@ def compare_route():
 
         filtered_plan_info = [ais_vals[i] for i in plan_info]
         for idx in [2, 3]:
-            date_str = filtered_plan_info[idx]
-            date_obj = datetime.strptime(date_str, "%Y%m%d")
-            filtered_plan_info[idx] = date_obj.strftime("%B %d, %Y")
+            try:
+                date_str = filtered_plan_info[idx]
+                print(f"Original date at index {idx}: {date_str}")
+                date_obj = datetime.strptime(date_str, "%Y%m%d")
+                filtered_plan_info[idx] = date_obj.strftime("%B %d, %Y")
+                print(f"Formatted date at index {idx}: {filtered_plan_info[idx]}")
+            except Exception as e:
+                print(f"Error parsing date at index {idx}: {e}")
+
+        # Format plan titles
         filtered_plan_titles = [titles[i].title() for i in plan_info]
-        date_str = "-".join(ais_vals[i] for i in val_date)        
-        parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
-        filtered_val_date = parsed_date.strftime("%B %d, %Y")
-        filtered_plan_info.insert(2, filtered_val_date)
-        filtered_plan_titles.insert(2, "Valuation Date")
+        print("Filtered plan titles:", filtered_plan_titles)
+
+        # Handle valuation date
+        try:
+            date_str = "-".join(ais_vals[i] for i in val_date)
+            print("Raw valuation date string:", date_str)
+            for i, val in enumerate(ais_vals):
+                print(f"{i} {val}")
+            print(f"null/excluded fields: {null}")
+            print(f"fields: {ais_found_fields}")
+            print(f"found: {found}")
+            print(f"not found: {not_found}")
+            print(f"not num: {not_num}")
+            parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
+            filtered_val_date = parsed_date.strftime("%B %d, %Y")
+            print("Formatted valuation date:", filtered_val_date)
+
+            # Insert into results
+            filtered_plan_info.insert(2, filtered_val_date)
+            filtered_plan_titles.insert(2, "Valuation Date")
+        except Exception as e:
+            print(f"Error parsing valuation date: {e}")
+        
         print(filtered_plan_info)
         print(filtered_plan_titles)
 

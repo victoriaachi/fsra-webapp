@@ -779,7 +779,7 @@ field_names = [
     "month of report",
     "year of report",
     "actuary name",
-    "name of firm",
+    "firm name",
     "actuary phone number",
     "actuary email address",
     "",
