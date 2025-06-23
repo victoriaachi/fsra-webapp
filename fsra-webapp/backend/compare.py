@@ -151,6 +151,7 @@ def compare_route():
 
                 if not matched:
                     compare[i] = 0
+                    compare[i+1] = 0
                     print("❌ Not found")
             
             
@@ -184,7 +185,6 @@ def compare_route():
 
             # has numbers    
             elif val != "NULL" and val:
-
                 # date
                 if i in dates_excl:
                     compare[i] = 1
@@ -206,7 +206,7 @@ def compare_route():
 
                     matched = False
                     for variant in variants:
-                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
+                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=40)
                         if sentence:
                             found += 1
                             compare[i] = 1
@@ -220,7 +220,7 @@ def compare_route():
                 # regular number checking
                 else:
                     matched = False
-                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=60)
+                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=40)
                     if sentence:
                         found += 1
                         compare[i] = 1
@@ -239,6 +239,7 @@ def compare_route():
 
         for i in range(383, 390):
             compare[i] = 1
+            null += 1
 
         print("Checking scale phrases in AVR text...")
 
@@ -289,12 +290,16 @@ def compare_route():
                     matched = False
                     variants = [scaled_val]
                     for variant in variants:
-                        match, score = find_nearest_number(avr_text, variant, threshold=100)
-                        if match:
+                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=40)
+                        if sentence:
+                            found += 1
                             compare[i] = 1
                             matched = True
-                            #print(f"Scaled match for index {i}, val {val}, variant {variant}")
+                            #print(f"✅ Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
                             break
+                
+                    if not matched:
+                        compare[i] = 0
         #else:
             #print("No scale phrase detected, skipping scaled matching")
             
