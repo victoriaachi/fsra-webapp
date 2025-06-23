@@ -369,116 +369,102 @@ export default function Ror() {
         (sum, sec) => sum + (portfolio.weights[sec] || 0),
         0
       );
-  
-      // Check for weight errors
+    
       if (portfolio.selectedSecurities.length > 0 && (totalWeight < 99.9 || totalWeight > 100.1)) {
         currentWeightErrors[portfolio.id] = `Weights should add up to 100%. Current total: ${totalWeight.toFixed(2)}%`;
-        hasAnyWeightError = true; // Set flag if error found
-      } else {
-        if (portfolioWeightErrors[portfolio.id]) {
-          delete currentWeightErrors[portfolio.id];
-        }
+        hasAnyWeightError = true;
+        return;
       }
-  
-      if (!currentWeightErrors[portfolio.id]) {
-        const rawData = backendData[weightedFrequency];
-        const start = weightedStartDate ? new Date(weightedStartDate) : null;
-        const end = weightedEndDate ? new Date(weightedEndDate) : null;
-  
-        let returnKey;
-        if (weightedFrequency === 'quarter') {
-          returnKey = 'QuarterReturn';
-        } else if (weightedFrequency === 'monthly') {
-          returnKey = 'MonthlyReturn';
-        } else {
-          returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
-        }
-  
-        const portfolioDataMap = new Map();
-  
-        portfolio.selectedSecurities.forEach(sec => {
-          const weightFraction = (portfolio.weights[sec] || 0) / 100;
-          let secDataForChart = rawData[sec] || [];
-  
-          let effectiveChartStartDate = start;
-  
-          if (start) {
-            const sortedSecDataForChart = [...secDataForChart].sort((a, b) => new Date(a.Date) - new Date(b.Date));
-            let foundChartStartDataPoint = null;
-            for (let i = sortedSecDataForChart.length - 1; i >= 0; i--) {
-              const dataPointDate = new Date(sortedSecDataForChart[i].Date);
-              if (dataPointDate <= start) {
-                foundChartStartDataPoint = sortedSecDataForChart[i];
-                break;
-              }
-            }
-            if (foundChartStartDataPoint) {
-              effectiveChartStartDate = new Date(foundChartStartDataPoint.Date);
-            } else if (sortedSecDataForChart.length > 0) {
-              effectiveChartStartDate = new Date(sortedSecDataForChart[0].Date);
-            } else {
-              effectiveChartStartDate = null;
-            }
-          }
-  
-          let filteredChartDataPoints = [];
-          if (effectiveChartStartDate && end) {
-            filteredChartDataPoints = secDataForChart.filter(({ Date: dateString }) => {
-              const d = new Date(dateString);
-              return d >= effectiveChartStartDate && d <= end;
-            });
-          } else if (secDataForChart.length > 0) {
-            filteredChartDataPoints = secDataForChart;
-          }
-  
-          filteredChartDataPoints.forEach(point => {
-            const dateString = point.Date;
-            const originalYValue = point[returnKey];
-  
-            if (typeof originalYValue === 'number' && !isNaN(originalYValue)) {
-              const weightedYValue = originalYValue * weightFraction * 100;
-              portfolioDataMap.set(dateString, (portfolioDataMap.get(dateString) || 0) + weightedYValue);
-            }
-          });
+    
+      if (portfolioWeightErrors[portfolio.id]) {
+        delete currentWeightErrors[portfolio.id];
+      }
+    
+      const rawData = backendData[weightedFrequency];
+      let returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
+      if (weightedFrequency === 'monthly') returnKey = 'MonthlyReturn';
+      if (weightedFrequency === 'quarter') returnKey = 'QuarterReturn';
+    
+      // 🔍 Determine overlap window
+      const allDatesPerSec = portfolio.selectedSecurities.map(sec => {
+        const secData = rawData[sec] || [];
+        const sorted = secData.sort((a, b) => new Date(a.Date) - new Date(b.Date));
+        return sorted.length > 0 ? {
+          start: new Date(sorted[0].Date),
+          end: new Date(sorted[sorted.length - 1].Date),
+        } : null;
+      }).filter(Boolean);
+    
+      if (allDatesPerSec.length === 0) return;
+    
+      const overlapStart = new Date(Math.max(...allDatesPerSec.map(d => d.start.getTime())));
+      const overlapEnd = new Date(Math.min(...allDatesPerSec.map(d => d.end.getTime())));
+    
+      // Override with user range if tighter
+      const userStart = weightedStartDate ? new Date(weightedStartDate) : null;
+      const userEnd = weightedEndDate ? new Date(weightedEndDate) : null;
+    
+      const finalStart = userStart ? new Date(Math.max(overlapStart.getTime(), userStart.getTime())) : overlapStart;
+      const finalEnd = userEnd ? new Date(Math.min(overlapEnd.getTime(), userEnd.getTime())) : overlapEnd;
+    
+      const portfolioDataMap = new Map();
+    
+      portfolio.selectedSecurities.forEach(sec => {
+        const weightFraction = (portfolio.weights[sec] || 0) / 100;
+        let secData = rawData[sec] || [];
+    
+        const filtered = secData.filter(({ Date: dateStr }) => {
+          const d = new Date(dateStr);
+          return d >= finalStart && d <= finalEnd;
         });
-  
-        const sortedPortfolioData = Array.from(portfolioDataMap.entries())
-          .map(([date, value]) => ({ x: formatDateUTC(date), y: value }))
-          .sort((a, b) => a.x - b.x);
-  
-        const portfolioYValues = sortedPortfolioData.map(point => point.y);
-        allYValuesAcrossPortfolios.push(...portfolioYValues);
-  
-        // Use helper here:
-        const portfolioCalculatedReturn = calculatePortfolioReturns(
-          portfolio,
-          backendData,
-          weightedStartDate,
-          weightedEndDate
-        );
-
-  
-        tempPortfolioTotalReturns.push({
-          id: portfolio.id,
-          name: portfolio.name,
-          totalReturn: portfolioCalculatedReturn
+    
+        filtered.forEach(point => {
+          const date = point.Date;
+          const value = point[returnKey];
+          if (typeof value === 'number' && !isNaN(value)) {
+            const weightedValue = value * weightFraction * 100;
+            portfolioDataMap.set(date, (portfolioDataMap.get(date) || 0) + weightedValue);
+          }
         });
-  
-        if (sortedPortfolioData.length > 0) {
-          allChartDatasets.push({
-            label: portfolio.name,
-            data: sortedPortfolioData,
-            fill: false,
-            borderColor: distinctColors[portfolioIndex % distinctColors.length],
-            backgroundColor: distinctColors[portfolioIndex % distinctColors.length],
-            borderWidth: 2,
-            pointRadius: 0,
-            pointHoverRadius: 6,
-            tension: 0,
-          });
-        }
+      });
+    
+      const sortedPortfolioData = Array.from(portfolioDataMap.entries())
+        .map(([date, y]) => ({ x: formatDateUTC(date), y }))
+        .sort((a, b) => new Date(a.x) - new Date(b.x));
+    
+      const portfolioYValues = sortedPortfolioData.map(p => p.y);
+      allYValuesAcrossPortfolios.push(...portfolioYValues);
+    
+      const portfolioCalculatedReturn = calculatePortfolioReturns(
+        portfolio,
+        backendData,
+        finalStart.toISOString().split("T")[0],
+        finalEnd.toISOString().split("T")[0]
+      );
+    
+      tempPortfolioTotalReturns.push({
+        id: portfolio.id,
+        name: portfolio.name,
+        totalReturn: portfolioCalculatedReturn,
+      });
+    
+      if (sortedPortfolioData.length > 0) {
+        allChartDatasets.push({
+          label: portfolio.name,
+          data: sortedPortfolioData,
+          fill: false,
+          borderColor: distinctColors[portfolioIndex % distinctColors.length],
+          backgroundColor: distinctColors[portfolioIndex % distinctColors.length],
+          borderWidth: 2,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          tension: 0,
+          hoverRadius: 15,
+          hitRadius: 15,
+        });
       }
     });
+    
   
     setPortfolioWeightErrors(currentWeightErrors);
   
@@ -744,7 +730,7 @@ export default function Ror() {
     });
   
     const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([wbout], { type: "application/octet-stream" }), "Securities.xlsx");
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), "individual-securities.xlsx");
   };
   
   
@@ -883,7 +869,7 @@ export default function Ror() {
   
     // 9. Write file and trigger download
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'Portfolios_Data.xlsx');
+    saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'portfolios.xlsx');
   };
   
 
