@@ -107,10 +107,10 @@ export default function Compare() {
               );
             })}
         </div>
-          {/* <div>
+          <div>
             <h2>Extracted AIS Fields</h2>
             <pre>{aisText}</pre>
-          </div> */}
+          </div>
 
           <div>
             <h2>Missing / Mismatched Fields</h2>
@@ -126,10 +126,10 @@ export default function Compare() {
             })}
           </div>
 
-          {/* <div>
+          <div>
             <h2>Extracted AVR Text</h2>
             <pre>{avrText}</pre>
-          </div> */}
+          </div>
         </>
       )}
     </div>

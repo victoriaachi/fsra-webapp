@@ -67,17 +67,22 @@ def compare_route():
                     continue
                     #print("seen")
 
-                elif field_val in exclude or field_val is None or field_val == "":
+                elif field_name in exclude or titles[field_count] == "" or field_val is None or field_val == "":
                     #print("null")
+                    # delete this later
+                    #ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_vals[field_count] = "NULL"
                     null += 1
                     field_count += 1;
+                    
                     seen_fields.add(field_name)
                 
                 elif field_name not in seen_fields:
                     #print("valid")
                     field_val = clean_numbers_val(field_val, ais_meta, field_count)
-                    ais_text += f"{titles[field_count]} {field_count} {field_name}: {field_val} {ais_found_fields}\n"
+                    if field_count in ratios:
+                        ais_meta[field_count] = "%"
+                    ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
                     #ais_vals[field_count] = extracted_val
                     #ais_found[field_count] = 1
@@ -100,17 +105,13 @@ def compare_route():
                     # field_count += 1
 
         ais_doc.close()
+        # for checking lines 125-127
+        titles[204] = ais_vals[203]
+        titles[206] = ais_vals[205]
         gc.collect()
         print(f"[After closing AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
-        titles[204] = ais_vals[203]
-        titles[206] = ais_vals[205]
-
-       
-        # for i, val in enumerate(ais_vals):
-        #     print(f"Index: {i}, Value: {val}")
-
-
+        # reading avr text
 
         with pdfplumber.open(avr_file) as avr_pdf:
             pages_text = []
@@ -122,15 +123,12 @@ def compare_route():
         avr_text = clean_numbers_pdf(clean_text(avr_text));
         gc.collect()
         print(f"[After cleaning AVR text] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
-        #print(avr_text)
 
         found = 0; 
         not_num = 0;
-
         special_rounding_indices = set(ratios) | set(rounding)
 
         for i, val in enumerate(ais_vals):
-
             # other text for tables    
             if i + 1 in table_other and ais_vals[i+1] != "NULL": 
                 print(f"{i} table other: {val}")
@@ -141,7 +139,7 @@ def compare_route():
 
                 for sentence in avr_text.split('\n'):
                     score = fuzz.partial_ratio(target, sentence.lower())
-                    if score >= 60:
+                    if score >= 80:
                         compare[i] = 1
                         compare[i+1] = 1
                         found += 2
@@ -153,7 +151,6 @@ def compare_route():
                     compare[i] = 0
                     compare[i+1] = 0
                     print("❌ Not found")
-            
             
             # checkmark in tables
             elif i in table_check:
@@ -198,29 +195,28 @@ def compare_route():
 
                 # percentage / rounded numbers
                 elif i in special_rounding_indices:
-                    # Here, call a flexible matching function that:
-                    # - compares val as decimal to val*100 (percent),
-                    # - compares rounded versions to handle many decimals,
-                    # - uses your fuzzy matching to find closest in avr_text
                     variants = avr_match_dec(val, is_percent=('%' in ais_meta[i]))
+                    print("VARIANTS")
+                    print(variants)
 
                     matched = False
                     for variant in variants:
-                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=40)
+                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
                         if sentence:
                             found += 1
                             compare[i] = 1
                             matched = True
-                            #print(f"✅ Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
+                            print(f"✅ Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
                             break
                 
                     if not matched:
+                        print("variant not matched")
                         compare[i] = 0
                 
                 # regular number checking
                 else:
                     matched = False
-                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=40)
+                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=60)
                     if sentence:
                         found += 1
                         compare[i] = 1
@@ -232,14 +228,13 @@ def compare_route():
 
 
 
-        not_null = len(key_map) - ais_vals.count("NULL")        
 
 
         # ais_found = found + not_found + not_num
 
         for i in range(383, 390):
             compare[i] = 1
-            null += 1
+            #null += 1
 
         print("Checking scale phrases in AVR text...")
 
@@ -252,14 +247,14 @@ def compare_route():
         for phrase in thousands_phrases:
             score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
             #print(f"Checking thousands phrase '{phrase}': score = {score}")
-            if score > 80:
+            if score >= 80:
                 found_thousands = True
                 break
 
         for phrase in millions_phrases:
             score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
             #print(f"Checking millions phrase '{phrase}': score = {score}")
-            if score > 80:
+            if score >= 80:
                 found_millions = True
                 break
 
@@ -290,7 +285,7 @@ def compare_route():
                     matched = False
                     variants = [scaled_val]
                     for variant in variants:
-                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=40)
+                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
                         if sentence:
                             found += 1
                             compare[i] = 1
@@ -300,8 +295,8 @@ def compare_route():
                 
                     if not matched:
                         compare[i] = 0
-        #else:
-            #print("No scale phrase detected, skipping scaled matching")
+        else:
+            print("No scale phrase detected, skipping scaled matching")
             
 
 
@@ -340,8 +335,8 @@ def compare_route():
         try:
             date_str = "-".join(ais_vals[i] for i in val_date)
             print("Raw valuation date string:", date_str)
-            for i, val in enumerate(ais_vals):
-                print(f"{i} {val}")
+            # for i, val in enumerate(ais_vals):
+            #     print(f"{i} {val}")
             print(f"null/excluded fields: {null}")
             print(f"fields: {ais_found_fields}")
             print(f"found: {found}")
@@ -361,71 +356,6 @@ def compare_route():
         print(filtered_plan_titles)
 
         print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
-#         prompt = f"""
-# You are an actuary. From the text below, extract the following fields in this list only if there is a numerical number in it: {titles_str}. 
-# If you cannot find a field or if does not contain numbers, return "". If the value is a date, please return it in YYYYMMDD format.
-
-# Please return the results as JSON with this format:
-# {{
-#     "field_1": "",
-#     "field_2": ""
-#   }}
-
-# Text:
-# {avr_text}
-# """
-
-#         gemini = call_gemini_compare(prompt)
-#         print(gemini)
-
-#         try:
-#             gemini_fields = json.loads(gemini)
-            
- 
-#         except json.JSONDecodeError:
-#             gemini_fields = {"error": "Gemini returned invalid JSON"}
-#             print("⚠️ Could not parse Gemini response as JSON:\n", gemini_text)
-
-#         try:
-#             parsed_json = json.loads(gemini)
-#             avr_vals = list(parsed_json.values())
-#             print("parsing worked")
-#             print("List of values:", avr_vals)
-#             for i, val in enumerate(avr_vals):
-#                 if val is not None and val != "":
-#                     avr_found[i] = 1;
-#             print(avr_found)
-#             print(ais_found)
-#         except json.JSONDecodeError as e:
-#             print("JSON parsing error:", e)
-#             print("Raw output:", gemini_text)
-
-
-#         # Now compare ais_json and gemini_fields ----- ais list
-#         print("Comparison between ais list and Gemini Fields (json):")
-#         for i, (ais_val, avr_val) in enumerate(zip(ais_vals, avr_vals)):
-#             print(f"Index: {i}")
-#             print(f"AIS Value: {ais_val}")
-#             print(f"AVR Value: {avr_val}")
-
-#             if avr_found[i] == 0 and ais_found[i] == 0: # both are not found
-#                 compare[i] = 1;
-#             elif avr_found[i] == 0 or ais_found[i] == 0: # found/not found
-#                 compare[i] = 0;
-#             else: # both found, compare first
-#                 if val_equal(ais_val, avr_val):
-#                     print("match")
-#                     compare[i] = 1;
-#                 else:
-#                     print("different")
-#                     compare[i] = 0;
-        
-#         for i, (ais_val, avr_val, compare_val) in enumerate(zip(ais_vals, avr_vals, compare)):
-#             print(i)
-#             if compare_val == 0:
-#                 print(f"ais value: {ais_val}, avr value: {avr_val}")
-
-
 
         return jsonify({
             "result": "Received both files successfully!",
