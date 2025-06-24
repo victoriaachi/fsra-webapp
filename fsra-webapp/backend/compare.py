@@ -1,4 +1,3 @@
-# compare.py
 from flask import Blueprint, jsonify, request
 import psutil, os, gc
 from gemini import call_gemini_compare
@@ -10,6 +9,8 @@ from value_compare import val_equal, extract_num
 from template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date
 from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
 from word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence
+
+fuzzy_threshold = 40
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -44,6 +45,7 @@ def compare_route():
     ais_found = [0]*len(key_map);
     avr_found = [0]*len(key_map);
     compare = [0]*len(key_map);
+    valid_field = [0]*len(key_map);
 
     #titles_str = ", ".join(titles)
     #print(f"Exclude set before loop: {exclude}")
@@ -67,7 +69,7 @@ def compare_route():
                     continue
                     #print("seen")
 
-                elif field_name in exclude or titles[field_count] == "" or field_val is None or field_val == "":
+                elif field_name in exclude or field_count in dates_excl or titles[field_count] == "" or field_val is None or field_val == "":
                     #print("null")
                     # delete this later
                     #ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
@@ -84,6 +86,7 @@ def compare_route():
                         ais_meta[field_count] = "%"
                     ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
+                    valid_field[field_count] = 1
                     #ais_vals[field_count] = extracted_val
                     #ais_found[field_count] = 1
                     ais_vals[field_count] = field_val
@@ -126,105 +129,159 @@ def compare_route():
 
         found = 0; 
         not_num = 0;
+        not_valid = 0
+        zero = 0
         special_rounding_indices = set(ratios) | set(rounding)
 
         for i, val in enumerate(ais_vals):
+            print(f"{i}: {val}")
+            if valid_field[i] == 0:
+                compare[i] = 3
+                not_valid += 1
+                continue
+            elif val == "0":
+                compare[i] = 1
+                zero += 1
+                print("zero")
+                continue
             # other text for tables    
-            if i + 1 in table_other and ais_vals[i+1] != "NULL": 
+            elif i + 1 in table_other and ais_vals[i+1] != "NULL": 
                 print(f"{i} table other: {val}")
                 print(f"{i+1} table other: {ais_vals[i+1]}")
 
-                target = ais_vals[i+1].lower()
+                target = ais_vals[i+1].strip().lower()
                 matched = False
 
                 for sentence in avr_text.split('\n'):
                     score = fuzz.partial_ratio(target, sentence.lower())
-                    if score >= 80:
+                    if score >= fuzzy_threshold:
                         compare[i] = 1
                         compare[i+1] = 1
                         found += 2
                         matched = True
-                        print(f"✅ Fuzzy match (score={score}): '{target}' in '{sentence.strip()}'")
+                        print(f"✅ Fuzzy match (score={score}) for table_other target '{target}' in: {sentence.strip()}")
                         break
 
                 if not matched:
-                    compare[i] = 0
-                    compare[i+1] = 0
-                    print("❌ Not found")
+                    # compare[i] = 0
+                    # compare[i+1] = 0
+                    print(f"❌ Not found - table_other target '{target}'")
+
+                # ✅ skip next index since we just processed i and i+1
+                continue
+
             
             # checkmark in tables
             elif i in table_check:
                 print(f"{i} table check: {val}")
                 if i == 104:
                     if gc_mortality[int(val) - 2] in avr_text:
-                        print("found")
+                        print(f"found {gc_mortality[int(val)-2]}")
                         compare[i] = 1;
                         found += 1;
                     else:
-                        compare[i] = 0
-                        print("not found")
+                        # compare[i] = 0
+                        print("not found - gc mortality")
                 else:
                     if solv_mortality[int(val) - 1] in avr_text:
-                        print("found")
+                        print(f"found {solv_mortality[int(val)-1]}")
                         compare[i] = 1;
                         found += 1;
                     else:
-                        print("not found")
-                        compare[i] = 0
+                        print("not found - solv mortality")
+                        # compare[i] = 0
             #print(f"Processing field {i} ({keys[i]}): {val} (type: {type(val)})")
             # words only value -- remove
-            elif val != "NULL" and val and (extract_num(val) is None or extract_num(val) == ""):
-                #print("not num")
-                #print(val)
-                not_num += 1
-                compare[i] = 1
-                continue  # Skip to next index
+            # elif val != "NULL" and extract_num(val) is not None:
+            #     # date
+            #     if i in dates_excl:
+            #         print("excluded date")
+            #         compare[i] = 1
+            #         #not_num += 1
+            #     elif i in dates:
+            #         print("found date")
+            #         if val in avr_text:
+            #             compare[i] = 1
+            #             found += 1
+            #         else:
+            #             print("not found date")
+            #             compare[i] = 0
 
-            # has numbers    
-            elif val != "NULL" and val:
-                # date
-                if i in dates_excl:
+              # percentage / rounded numbers — exact numeric variant match, fuzzy title match
+            elif i in special_rounding_indices:
+                variants = avr_match_dec(val, is_percent=('%' in ais_meta[i]))
+                print(f"🔎 Checking rounded/percentage variants for '{val}': {variants}")
+
+                best_score = 0
+                best_context = ""
+                found_match = False
+
+                for variant in variants:
+                    pattern = r'\b' + re.escape(variant) + r'\b'
+                    matches = list(re.finditer(pattern, avr_text))
+
+                    for match in matches:
+                        match_pos = match.start()
+
+                        # Define a fixed window around the match position (e.g., ±250 chars)
+                        context_start = max(0, match_pos - 250)
+                        context_end = min(len(avr_text), match_pos + 250)
+                        context = avr_text[context_start:context_end]
+
+                        score = fuzz.partial_ratio(titles[i].lower(), context.lower())
+                        if score > best_score:
+                            best_score = score
+                            best_context = context
+                            found_match = True
+
+                if best_score >= fuzzy_threshold and found_match:
                     compare[i] = 1
-                    not_num += 1
-                elif i in dates:
-                    if val in avr_text:
-                        compare[i] = 1;
-                        found += 1;
-                    else:
-                        compare[i] = 0
-
-                # percentage / rounded numbers
-                elif i in special_rounding_indices:
-                    variants = avr_match_dec(val, is_percent=('%' in ais_meta[i]))
-                    print("VARIANTS")
-                    print(variants)
-
-                    matched = False
-                    for variant in variants:
-                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
-                        if sentence:
-                            found += 1
-                            compare[i] = 1
-                            matched = True
-                            print(f"✅ Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
-                            break
-                
-                    if not matched:
-                        print("variant not matched")
-                        compare[i] = 0
-                
-                # regular number checking
+                    found += 1
+                    print(f"✅ Found variant of '{val}' with strong title match (score={best_score})")
+                    print(f"↪ Context: {best_context[:200]}...")
                 else:
-                    matched = False
-                    sentence, score, match = find_sentence(avr_text, val, titles[i], threshold=100, decimals=2, fuzz_threshold=60)
-                    if sentence:
-                        found += 1
+                    #compare[i] = 0
+                    print(f"❌ No valid context/title match found for any variant of '{val}' (max score={best_score})")
+
+
+
+            # regular number checking
+            # regular number checking — exact number match, fuzzy title match
+            else:
+                pattern = r'\b' + re.escape(val) + r'\b'
+                matches = list(re.finditer(pattern, avr_text))
+
+                if not matches:
+                    #compare[i] = 0
+                    print(f"❌ Number '{val}' not found as standalone in AVR.")
+                else:
+                    best_score = 0
+                    best_context = ""
+
+                    for match in matches:
+                        match_pos = match.start()
+
+                        # Use a character window (±250 chars around match)
+                        context_start = max(0, match_pos - 250)
+                        context_end = min(len(avr_text), match_pos + 250)
+                        context = avr_text[context_start:context_end]
+
+                        score = fuzz.partial_ratio(titles[i].lower(), context.lower())
+                        if score > best_score:
+                            best_score = score
+                            best_context = context
+
+                    if best_score >= fuzzy_threshold:
                         compare[i] = 1
-                        matched = True
-                        #print(f"✅ Regular Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
-                    if not matched:
-                        compare[i] = 0
-                        print(f"not matched: {titles[i]} {val}")
+                        found += 1
+                        print(f"✅ Number '{val}' found, and title '{titles[i]}' matched in context (score={best_score})")
+                        print(f"↪ Context: {best_context[:200]}...")
+                    else:
+                        #compare[i] = 0
+                        print(f"⚠️ Number '{val}' found, but no strong match for title '{titles[i]}' (max score={best_score})")
+
+
+
 
 
 
@@ -236,76 +293,74 @@ def compare_route():
             compare[i] = 1
             #null += 1
 
-        print("Checking scale phrases in AVR text...")
-
+   # ✅ Check for scale phrases in AVR text (e.g., "in thousands" / "in millions")
         thousands_phrases = ["in thousands", "in thousand", "thousands of dollars"]
         millions_phrases = ["in millions", "in million", "millions of dollars"]
 
-        found_thousands = False
-        found_millions = False
-
-        for phrase in thousands_phrases:
-            score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
-            #print(f"Checking thousands phrase '{phrase}': score = {score}")
-            if score >= 80:
-                found_thousands = True
-                break
-
-        for phrase in millions_phrases:
-            score = fuzz.partial_ratio(phrase.lower(), avr_text.lower())
-            #print(f"Checking millions phrase '{phrase}': score = {score}")
-            if score >= 80:
-                found_millions = True
-                break
-
         scale = None
-        if found_thousands:
-            scale = 1000
-        elif found_millions:
-            scale = 1000000
+        for phrase in thousands_phrases:
+            if fuzz.partial_ratio(phrase.lower(), avr_text.lower()) >= fuzzy_threshold:
+                scale = 1000
+                break
 
-        print(f"Scale detected: {scale}")
+        if scale is None:
+            for phrase in millions_phrases:
+                if fuzz.partial_ratio(phrase.lower(), avr_text.lower()) >= fuzzy_threshold:
+                    scale = 1000000
+                    break
 
-        if scale == 1000 or scale == 1000000:
+        print(f"📏 Scale detected: {scale}")
+
+        # ✅ Apply scaled comparison using character window context
+        if scale in (1000, 1000000):
             for i, val in enumerate(ais_vals):
-                if compare[i] == 0 and val != "NULL" and val:
+                if compare[i] == 0 and val != "NULL":
                     num = extract_num(val)
-                    #print(str(num))
                     if num is None:
                         continue
 
                     scaled_val = clean_numbers_val(str(num / scale), [], 0)
-                    #print(scaled_val)
+                    pattern = r'\b' + re.escape(scaled_val) + r'\b'
+                    matches = list(re.finditer(pattern, avr_text))
 
-                    # For ratios, optionally try also dividing to cover cases like 107 vs 0.107
-                    # variants = [scaled_val]
-                    # if i in ratios:
-                    #     variants.append(str(num / scale))
+                    best_score = 0
+                    best_context = ""
 
-                    matched = False
-                    variants = [scaled_val]
-                    for variant in variants:
-                        sentence, score, match = find_sentence(avr_text, variant, titles[i], threshold=100, decimals=1, fuzz_threshold=60)
-                        if sentence:
-                            found += 1
-                            compare[i] = 1
-                            matched = True
-                            #print(f"✅ Match for '{titles[i]}' → Value: {match}\n→ Sentence: {sentence}")
-                            break
-                
-                    if not matched:
-                        compare[i] = 0
+                    for match in matches:
+                        match_pos = match.start()
+                        context_start = max(0, match_pos - 250)
+                        context_end = min(len(avr_text), match_pos + 250)
+                        context = avr_text[context_start:context_end]
+
+                        score = fuzz.partial_ratio(titles[i].lower(), context.lower())
+                        if score > best_score:
+                            best_score = score
+                            best_context = context
+
+                    if best_score >= fuzzy_threshold:
+                        compare[i] = 1
+                        found += 1
+                        print(f"✅ Scaled match for '{titles[i]}' → Value: {scaled_val} (score={best_score})")
+                        print(f"↪ Context: {best_context[:200]}...")
+                    else:
+                        #compare[i] = 0
+                        print(f"❌ Scaled value '{scaled_val}' found, but no strong title match (max score={best_score})")
         else:
-            print("No scale phrase detected, skipping scaled matching")
+            print("❌ No scale phrase detected, skipping scaled value matching.")
+
             
 
 
         not_found = 0
+        not_valid = 0
         for i, val in enumerate(compare):
-            if ais_vals[i] != "NULL" and ais_vals[i] and val == 0:
+            if val == 0:
                 not_found += 1
                 #print(f"metadata: {ais_meta[i]}")
                 print(f"not found: {keys[i]} {ais_vals[i]}")
+            elif val == 3:
+                not_valid += 1
+
  
 
         for i, val in enumerate(compare):
@@ -313,8 +368,8 @@ def compare_route():
                 #print(f"found value: {ais_vals[i]}")
                 continue
 
-        filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
-        filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0 and ais_vals[i] != "NULL"]
+        filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
+        filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
 
         filtered_plan_info = [ais_vals[i] for i in plan_info]
         for idx in [2, 3]:
@@ -341,6 +396,8 @@ def compare_route():
             print(f"fields: {ais_found_fields}")
             print(f"found: {found}")
             print(f"not found: {not_found}")
+            print(f"not valid (should match with null): {not_valid}")
+            print(f"zeroes: {zero}")
             print(f"not num: {not_num}")
             parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
             filtered_val_date = parsed_date.strftime("%B %d, %Y")
@@ -374,5 +431,3 @@ def compare_route():
     except Exception as e:
         print("Error while processing PDFs:", e)
         return jsonify({"error": "Failed to process PDFs"}), 500
-
-    
