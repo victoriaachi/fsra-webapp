@@ -5,12 +5,11 @@ import json, requests, re, copy, array
 import fitz, pdfplumber
 from rapidfuzz import fuzz
 from datetime import datetime
-from value_compare import val_equal, extract_num
-from template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date
-from clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
-from word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence
+from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date
+from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
+from compare_word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence, extract_num
 
-fuzzy_threshold = 40
+fuzzy_threshold = 50
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -111,6 +110,8 @@ def compare_route():
         # for checking lines 125-127
         titles[204] = ais_vals[203]
         titles[206] = ais_vals[205]
+        compare[203] = 1
+        compare[205] = 1
         gc.collect()
         print(f"[After closing AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
@@ -134,7 +135,9 @@ def compare_route():
         special_rounding_indices = set(ratios) | set(rounding)
 
         for i, val in enumerate(ais_vals):
-            print(f"{i}: {val}")
+            #print(f"{i}: {val}")
+            # if i >= 383:
+            #     continue
             if valid_field[i] == 0:
                 compare[i] = 3
                 not_valid += 1

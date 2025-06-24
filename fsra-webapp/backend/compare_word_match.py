@@ -22,6 +22,39 @@ from decimal import Decimal, ROUND_HALF_UP
 #         return "\n".join(lines[start:end]), best_score
 #     return None, 0
 
+def extract_num(s):
+    result = None  # default result if no number found
+
+    if s is not None:
+
+        if re.fullmatch(r'\d{4}-\d{2}-\d{2}', s):
+            return int(s.replace('-', ''))
+
+        # Check if number is in parentheses -> treat as negative
+        is_negative = False
+        s = s.strip()
+        if s.startswith('(') and s.endswith(')'):
+            is_negative = True
+            s = s[1:-1].strip()  # remove parentheses
+
+        # Remove commas
+        s = s.replace(',', '')
+
+        # Extract number with optional decimal and % sign
+        match = re.search(r'([-+]?\d*\.?\d+)%?', s)
+        if match:
+            num_str = match.group(0)
+            if num_str.endswith('%'):
+                val = float(num_str[:-1]) / 100
+            else:
+                val = float(num_str)
+
+            if is_negative:
+                val = -val
+
+            result = val
+
+    return result
 
 # only for number matching currently
 def find_nearest_word(text, keyword, threshold=100):

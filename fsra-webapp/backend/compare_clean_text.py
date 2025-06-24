@@ -1,6 +1,21 @@
 import re
 from datetime import datetime
 
+# # cleans numbers in avr, removing commas, dollar signs, slashes fro dates
+# def clean_pdf_text(text):
+
+#     # remove dollar signs and commas from numbers
+#     def replace_number(match):
+#         return match.group(0).replace('$', '').replace(',', '')
+
+#     number_pattern = r'\b\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?\b'
+#     text = re.sub(number_pattern, replace_number, text)
+
+#     # remove slashes from dates (2023/12/31 -> 20231231)
+#     text = re.sub(r'\b(\d{4})/(\d{2})/(\d{2})\b', r'\1\2\3', text)
+
+#     return text
+
 
 def clean_text(text):
     # Remove lines with mostly non-words
