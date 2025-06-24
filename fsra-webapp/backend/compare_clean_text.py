@@ -1,77 +1,63 @@
 import re
 from datetime import datetime
 
-# # cleans numbers in avr, removing commas, dollar signs, slashes fro dates
-# def clean_pdf_text(text):
 
-#     # remove dollar signs and commas from numbers
-#     def replace_number(match):
-#         return match.group(0).replace('$', '').replace(',', '')
-
-#     number_pattern = r'\b\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?\b'
-#     text = re.sub(number_pattern, replace_number, text)
-
-#     # remove slashes from dates (2023/12/31 -> 20231231)
-#     text = re.sub(r'\b(\d{4})/(\d{2})/(\d{2})\b', r'\1\2\3', text)
-
-#     return text
-
-
+# cleans up non-words, etc in avr text
 def clean_text(text):
-    # Remove lines with mostly non-words
     lines = text.split("\n")
     lines = [line for line in lines if re.search(r'\w', line) and not re.match(r'^\W+$', line)]
     return "\n".join(lines)
 
+# cleans ais field values and updates metadata array
 def clean_numbers_val(text, arr, index):
+    
+    # removes brackets 
     if text.startswith('(') and text.endswith(')'):
         arr[index] += "-"
         text = text[1:-1].strip()
 
-    # Check for minus sign
+    # remove negative signs
     if text.startswith('-'):
         arr[index] += "-"
         text = text[1:].strip()
 
-    # Remove commas from large numbers
+    # remove commas 
     def remove_commas(match):
         return match.group(0).replace(',', '')
 
     comma_pattern = r'\d{1,3}(?:,\d{3})+(?:\.\d+)?'
     text = re.sub(comma_pattern, remove_commas, text)
 
-    # Remove dashes from ISO-style dates (e.g. 2024-01-01 -> 20240101)
+    # remove dashes from dates
     iso_date_pattern = r'\b(\d{4})-(\d{2})-(\d{2})\b'
     text = re.sub(iso_date_pattern, r'\1\2\3', text)
 
-    # 🧹 Remove leading/trailing zeros
+    # remove leading/trailing zeroes
     if re.fullmatch(r'\d+(\.\d+)?', text):
         if '.' in text:
-            # For floats: strip trailing zeros & leading zeros
-            text = str(float(text)).rstrip('0').rstrip('.')  # '001.2000' -> '1.2'
+            # floats
+            text = str(float(text)).rstrip('0').rstrip('.')  
         else:
-            # For ints: remove leading zeros
-            text = str(int(text))  # '000123' -> '123'
+            # ints
+            text = str(int(text))  
     return text
 
+
+# cleans numbers in avr text
 def clean_numbers_pdf(text):
-    """
-    Removes commas and dollar signs from numbers, and removes slashes from dates.
-    """
 
     def replace_number(match):
         matched_str = match.group(0)
         cleaned = matched_str.replace('$', '').replace(',', '')
 
-        # Strip leading/trailing zeros
+        # trailing/leading zeros
         if re.fullmatch(r'\d+(\.\d+)?', cleaned):
             if '.' in cleaned:
-                cleaned = str(float(cleaned)).rstrip('0').rstrip('.')  # '001.2000' -> '1.2'
+                cleaned = str(float(cleaned)).rstrip('0').rstrip('.') 
             else:
-                cleaned = str(int(cleaned))  # '000123' -> '123'
+                cleaned = str(int(cleaned)) 
         return cleaned
 
-    # This pattern *includes* the dollar sign in the match
     number_pattern = r'\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\$?\d+(?:\.\d+)?'
     text = re.sub(number_pattern, replace_number, text)
 
@@ -95,3 +81,18 @@ def clean_numbers_pdf(text):
     text = re.sub(percent_pattern, replace_percent, text)
 
     return text
+
+# # cleans numbers in avr, removing commas, dollar signs, slashes fro dates
+# def clean_pdf_text(text):
+
+#     # remove dollar signs and commas from numbers
+#     def replace_number(match):
+#         return match.group(0).replace('$', '').replace(',', '')
+
+#     number_pattern = r'\b\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?\b'
+#     text = re.sub(number_pattern, replace_number, text)
+
+#     # remove slashes from dates (2023/12/31 -> 20231231)
+#     text = re.sub(r'\b(\d{4})/(\d{2})/(\d{2})\b', r'\1\2\3', text)
+
+#     return text

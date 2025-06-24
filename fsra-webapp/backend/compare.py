@@ -7,7 +7,7 @@ from rapidfuzz import fuzz
 from datetime import datetime
 from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date
 from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
-from compare_word_match import find_nearest_word, find_nearest_number, avr_match_dec, find_sentence, extract_num
+from compare_word_match import avr_match_dec, extract_num
 
 fuzzy_threshold = 50
 
