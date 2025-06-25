@@ -162,7 +162,7 @@ def compare_route():
             elif val == "0":
                 compare[i] = 3
                 zero += 1
-                print("zero")
+                #print("zero")
                 compare_zero += 1
                 fields_excl += 1
                 continue
