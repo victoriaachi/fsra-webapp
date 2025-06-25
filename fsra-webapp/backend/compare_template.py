@@ -810,9 +810,9 @@ dates = [3, 4]
 
 dates_excl = [14, 15, 16, 17, 18, 19, 20, 21]
 
-table_other = [105, 159, 161]
+table_other = [105, 159, 161] #161
 
-table_check = [104, 158, 160]
+table_check = [104, 158, 160] #160
 
 gc_mortality = ["A", "B", "C", "Other", "CPM2014", "F", "CPM2014Priv"]
 
@@ -821,3 +821,6 @@ solv_mortality = ["1994 UP Generational", "CPM2014Priv", "CPM2014", "CPM2014Publ
 plan_info = [0, 1, 3, 4, 386, 387, 388, 389]
 
 val_date = [384, 383, 385]
+
+plan_info_titles = ["Pension Plan Name", "Registration Number", "Valuation Date", "Start Date", "End Date", "Actuary Name",
+                    "Firm Name", "Actuary Phone Number", "Actuary Email Address"]

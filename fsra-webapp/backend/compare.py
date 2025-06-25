@@ -5,11 +5,11 @@ import json, requests, re, copy, array
 import fitz, pdfplumber
 from rapidfuzz import fuzz
 from datetime import datetime
-from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date
-from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf
+from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date, plan_info_titles
+from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers
 from compare_word_match import avr_match_dec, extract_num
 
-fuzzy_threshold = 50
+fuzzy_threshold = 40
 
 compare_bp = Blueprint('compare', __name__)
 
@@ -59,6 +59,8 @@ def compare_route():
         ais_found_fields = 0;
         seen_fields = set()  
         null = 0
+        parsing_include = 0
+        parsing_exclude = 0
         for page in ais_doc:
             for field in page.widgets():
                 field_val = field.field_value
@@ -75,6 +77,7 @@ def compare_route():
                     ais_vals[field_count] = "NULL"
                     null += 1
                     field_count += 1;
+                    parsing_exclude += 1
                     
                     seen_fields.add(field_name)
                 
@@ -91,6 +94,7 @@ def compare_route():
                     ais_vals[field_count] = field_val
                     seen_fields.add(field_name)
                     field_count += 1
+                    parsing_include += 1 
                     # #print(f"{keys[field_count]}: {extracted_val}")
                     # #if extracted_val is not None and extracted_val != "":
                     # if field.field_name not in exclude:
@@ -133,6 +137,16 @@ def compare_route():
         not_valid = 0
         zero = 0
         special_rounding_indices = set(ratios) | set(rounding)
+        compare_invalid = 0
+        compare_no_num = 0
+        compare_zero = 0
+        compare_rounding = 0
+        compare_table = 0
+        compare_reg = 0
+
+        fields_found = 0
+        fields_not_found = 0
+        fields_excl = 0
 
         for i, val in enumerate(ais_vals):
             #print(f"{i}: {val}")
@@ -141,16 +155,28 @@ def compare_route():
             if valid_field[i] == 0:
                 compare[i] = 3
                 not_valid += 1
+                compare_invalid += 1
+                fields_excl += 1
                 continue
+
             elif val == "0":
-                compare[i] = 1
+                compare[i] = 3
                 zero += 1
                 print("zero")
+                compare_zero += 1
+                fields_excl += 1
                 continue
-            # other text for tables    
-            elif i + 1 in table_other and ais_vals[i+1] != "NULL": 
-                print(f"{i} table other: {val}")
-                print(f"{i+1} table other: {ais_vals[i+1]}")
+            # other text for tables 
+            elif i in table_other:
+                compare_no_num += 1
+                fields_excl += 1
+                compare[i] = 3
+                continue   
+            elif i in table_check and val == "5":
+                print("table other")
+                compare_table += 1
+                # print(f"{i} table other: {val}")
+                # print(f"{i+1} table other: {ais_vals[i+1]}")
 
                 target = ais_vals[i+1].strip().lower()
                 matched = False
@@ -159,39 +185,55 @@ def compare_route():
                     score = fuzz.partial_ratio(target, sentence.lower())
                     if score >= fuzzy_threshold:
                         compare[i] = 1
-                        compare[i+1] = 1
-                        found += 2
+                        found += 1
+                        fields_found += 1
                         matched = True
                         print(f"✅ Fuzzy match (score={score}) for table_other target '{target}' in: {sentence.strip()}")
                         break
 
                 if not matched:
+                    fields_not_found += 1
                     # compare[i] = 0
                     # compare[i+1] = 0
                     print(f"❌ Not found - table_other target '{target}'")
 
-                # ✅ skip next index since we just processed i and i+1
-                continue
+
+
+            #elif i + 1 in table_other and ais_vals[i+1] != "NULL": 
+                
 
             
             # checkmark in tables
             elif i in table_check:
+                compare_table += 1
                 print(f"{i} table check: {val}")
                 if i == 104:
                     if gc_mortality[int(val) - 2] in avr_text:
-                        print(f"found {gc_mortality[int(val)-2]}")
+                        print(f"found gc {gc_mortality[int(val)-2]}")
                         compare[i] = 1;
                         found += 1;
+                        fields_found += 1
                     else:
                         # compare[i] = 0
+                        fields_not_found += 1
                         print("not found - gc mortality")
                 else:
+                    print("else")
+                    #print(solv_mortality)
                     if solv_mortality[int(val) - 1] in avr_text:
-                        print(f"found {solv_mortality[int(val)-1]}")
+                        print(f"found solv {solv_mortality[int(val)-1]}")
                         compare[i] = 1;
                         found += 1;
+                        fields_found += 1
                     else:
                         print("not found - solv mortality")
+                        fields_not_found += 1
+            elif extract_num(val) is None or extract_num(val) == "":
+                compare[i] = 3
+                not_num += 1
+                compare_no_num += 1
+                fields_excl += 1
+                print("no numbers extracted")
                         # compare[i] = 0
             #print(f"Processing field {i} ({keys[i]}): {val} (type: {type(val)})")
             # words only value -- remove
@@ -212,6 +254,7 @@ def compare_route():
 
               # percentage / rounded numbers — exact numeric variant match, fuzzy title match
             elif i in special_rounding_indices:
+                compare_rounding += 1
                 variants = avr_match_dec(val, is_percent=('%' in ais_meta[i]))
                 print(f"🔎 Checking rounded/percentage variants for '{val}': {variants}")
 
@@ -239,11 +282,13 @@ def compare_route():
 
                 if best_score >= fuzzy_threshold and found_match:
                     compare[i] = 1
+                    fields_found += 1
                     found += 1
                     print(f"✅ Found variant of '{val}' with strong title match (score={best_score})")
                     print(f"↪ Context: {best_context[:200]}...")
                 else:
                     #compare[i] = 0
+                    fields_not_found += 1
                     print(f"❌ No valid context/title match found for any variant of '{val}' (max score={best_score})")
 
 
@@ -251,11 +296,13 @@ def compare_route():
             # regular number checking
             # regular number checking — exact number match, fuzzy title match
             else:
+                compare_reg += 1
                 pattern = r'\b' + re.escape(val) + r'\b'
                 matches = list(re.finditer(pattern, avr_text))
 
                 if not matches:
                     #compare[i] = 0
+                    fields_not_found += 1
                     print(f"❌ Number '{val}' not found as standalone in AVR.")
                 else:
                     best_score = 0
@@ -277,10 +324,12 @@ def compare_route():
                     if best_score >= fuzzy_threshold:
                         compare[i] = 1
                         found += 1
+                        fields_found += 1
                         print(f"✅ Number '{val}' found, and title '{titles[i]}' matched in context (score={best_score})")
                         print(f"↪ Context: {best_context[:200]}...")
                     else:
                         #compare[i] = 0
+                        fields_not_found += 1
                         print(f"⚠️ Number '{val}' found, but no strong match for title '{titles[i]}' (max score={best_score})")
 
 
@@ -355,14 +404,15 @@ def compare_route():
 
 
         not_found = 0
-        not_valid = 0
+        #not_valid = 0
         for i, val in enumerate(compare):
             if val == 0:
                 not_found += 1
                 #print(f"metadata: {ais_meta[i]}")
-                print(f"not found: {keys[i]} {ais_vals[i]}")
+                #print(f"not found: {keys[i]} {ais_vals[i]}")
             elif val == 3:
-                not_valid += 1
+                continue
+                #not_valid += 1
 
  
 
@@ -373,6 +423,7 @@ def compare_route():
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
+        filtered_values = format_numbers(filtered_values)
 
         filtered_plan_info = [ais_vals[i] for i in plan_info]
         for idx in [2, 3]:
@@ -386,34 +437,41 @@ def compare_route():
                 print(f"Error parsing date at index {idx}: {e}")
 
         # Format plan titles
-        filtered_plan_titles = [titles[i].title() for i in plan_info]
-        print("Filtered plan titles:", filtered_plan_titles)
+        # filtered_plan_titles = [titles[i].title() for i in plan_info]
+        # print("Filtered plan titles:", filtered_plan_titles)
 
         # Handle valuation date
         try:
             date_str = "-".join(ais_vals[i] for i in val_date)
-            print("Raw valuation date string:", date_str)
-            # for i, val in enumerate(ais_vals):
-            #     print(f"{i} {val}")
-            print(f"null/excluded fields: {null}")
-            print(f"fields: {ais_found_fields}")
-            print(f"found: {found}")
-            print(f"not found: {not_found}")
-            print(f"not valid (should match with null): {not_valid}")
-            print(f"zeroes: {zero}")
-            print(f"not num: {not_num}")
+            # print("Raw valuation date string:", date_str)
+            # # for i, val in enumerate(ais_vals):
+            # #     print(f"{i} {val}")
+            # print(f"null/excluded fields: {null}")
+            # print(f"fields: {ais_found_fields}")
+            # print(f"found: {found}")
+            # print(f"not found: {not_found}")
+            # print(f"not valid (should match with null): {not_valid}")
+            # print(f"zeroes: {zero}")
+            # print(f"not num: {not_num}")
             parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
             filtered_val_date = parsed_date.strftime("%B %d, %Y")
-            print("Formatted valuation date:", filtered_val_date)
+            # for i, val in enumerate(ais_vals):
+            #     print(f"{i}: {val}")
+            print(f"parsing include {parsing_include}")
+            print(f"parsing exclude {parsing_exclude}")
+            print(f"zeros: {compare_zero}, tables: {compare_table}, invalid {compare_invalid}, rounding: {compare_rounding}, regular: {compare_reg}, no num: {compare_no_num}")
+            print(f"found: {fields_found}, not found: {fields_not_found}, excluded: {fields_excl}")
+            #print("Formatted valuation date:", filtered_val_date)
 
             # Insert into results
             filtered_plan_info.insert(2, filtered_val_date)
-            filtered_plan_titles.insert(2, "Valuation Date")
+            #filtered_plan_titles.insert(2, "Valuation Date")
         except Exception as e:
             print(f"Error parsing valuation date: {e}")
         
-        print(filtered_plan_info)
-        print(filtered_plan_titles)
+        #print(filtered_plan_info)
+        # filtered_plan_titles = plan_info_titles
+        # print(filtered_plan_titles)
 
         print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
@@ -426,7 +484,7 @@ def compare_route():
             "titles": filtered_titles, 
             "values": filtered_values, 
             "plan_info": filtered_plan_info, 
-            "plan_titles": filtered_plan_titles, 
+            "plan_titles": plan_info_titles, 
             #"gemini_fields": gemini_fields
 
         })

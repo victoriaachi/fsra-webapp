@@ -82,6 +82,25 @@ def clean_numbers_pdf(text):
 
     return text
 
+# adds commas to numbers to be dispalyed
+def format_numbers(arr):
+    formatted = []
+    for s in arr:
+        try:
+            # Try to format as int if no decimal, else float
+            if '.' in s:
+                num = float(s.replace(",", ""))
+                formatted_str = f"{num:,.2f}".rstrip('0').rstrip('.')  # keeps up to 2 decimals
+            else:
+                num = int(s.replace(",", ""))
+                formatted_str = f"{num:,}"
+            formatted.append(formatted_str)
+        except ValueError:
+            # If not a valid number, leave unchanged
+            formatted.append(s)
+    return formatted
+
+
 # # cleans numbers in avr, removing commas, dollar signs, slashes fro dates
 # def clean_pdf_text(text):
 
