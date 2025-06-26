@@ -46,7 +46,7 @@ export default function Compare() {
       setAvrText(data.avr_text);
       setFilteredTitles(data.titles);
       setFilteredValues(data.values);
-      setFilteredInfoTitles(data.plan_titles);
+      setFilteredInfoTitƒs(data.plan_titles);
       setFilteredInfoValues(data.plan_info);
     } catch (error) {
       console.error("Error uploading PDFs:", error);

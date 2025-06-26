@@ -14,7 +14,7 @@ compressed-rtf==1.0.7
 configobj==5.0.9
 configparser==7.2.0
 cryptography==45.0.3
-doc2docx==0.2.4
+# doc2docx==0.2.4
 docx2txt==0.9
 ebcdic==1.1.1
 et_xmlfile==2.0.0

@@ -822,5 +822,10 @@ plan_info = [0, 1, 3, 4, 386, 387, 388, 389]
 
 val_date = [384, 383, 385]
 
+misc_text = [203, 205]
+
+found = [383, 384, 385, 386, 387, 388, 389, 390]
+
+
 plan_info_titles = ["Pension Plan Name", "Registration Number", "Valuation Date", "Start Date", "End Date", "Actuary Name",
                     "Firm Name", "Actuary Phone Number", "Actuary Email Address"]
