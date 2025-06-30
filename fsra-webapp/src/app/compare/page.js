@@ -46,7 +46,7 @@ export default function Compare() {
       setAvrText(data.avr_text);
       setFilteredTitles(data.titles);
       setFilteredValues(data.values);
-      setFilteredInfoTitƒs(data.plan_titles);
+      setFilteredInfoTitles(data.plan_titles);
       setFilteredInfoValues(data.plan_info);
     } catch (error) {
       console.error("Error uploading PDFs:", error);
@@ -107,12 +107,7 @@ export default function Compare() {
               );
             })}
         </div>
-          <div>
-            <h2>Extracted AIS Fields</h2>
-            <pre>{aisText}</pre>
-          </div>
-
-          <div>
+        <div>
             <h2>Missing / Mismatched Fields</h2>
             {filteredTitles.map((title, idx) => {
               const value = filteredValues[idx];
@@ -125,6 +120,12 @@ export default function Compare() {
               );
             })}
           </div>
+          <div>
+            <h2>Extracted AIS Fields</h2>
+            <pre>{aisText}</pre>
+          </div>
+
+
 
           <div>
             <h2>Extracted AVR Text</h2>

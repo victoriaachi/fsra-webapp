@@ -65,6 +65,8 @@ export default function Ror() {
   const [error, setError] = useState("");
   const [backendData, setBackendData] = useState(null);
 
+  const [loading, setLoading] = useState(false);
+
   // For single chart controls
   const [frequency, setFrequency] = useState("daily");
   const [startDate, setStartDate] = useState("");
@@ -121,6 +123,8 @@ export default function Ror() {
       setError("Please upload a file.");
       return;
     }
+    setLoading(true);
+    setBackendData(false);
 
     const formData = new FormData();
     formData.append("file", excel);
@@ -150,6 +154,9 @@ export default function Ror() {
     } catch (error) {
       console.error("Error uploading file:", error);
       setError("Error uploading file");
+    }
+    finally {
+      setLoading(false);
     }
   };
 
@@ -899,11 +906,17 @@ export default function Ror() {
           onChange={excelChange}
           
         />
-        <button onClick={fileSubmit}>
-          Submit
+        <button 
+        onClick={fileSubmit}
+        disabled={loading}>
+        {loading ? "Processing..." : "Submit"}
         </button>
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
       </div>
+
+      {loading && (
+        <div className="loading-screen">Calculating data, please wait...</div>
+      )}
 
       {backendData && (
         <>

@@ -90,6 +90,7 @@ def compare_route():
                     seen_fields.add(field_name)
                 
                 elif field_name not in seen_fields:
+                    print("hello")
                     field_val = clean_numbers_val(field_val, ais_meta, field_count)
                     if field_count in ratios:
                         ais_meta[field_count] = "%"
