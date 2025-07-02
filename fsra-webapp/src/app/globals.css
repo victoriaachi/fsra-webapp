@@ -45,3 +45,7 @@ button:active {
     color-scheme: dark;
   }
 }
+
+.section {
+  margin-top: 10px;
+}

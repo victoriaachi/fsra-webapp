@@ -6,7 +6,7 @@ import fitz, pdfplumber
 from rapidfuzz import fuzz
 from datetime import datetime
 from itertools import combinations
-from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info, val_date, plan_info_titles, misc_text, found
+from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info_keys, val_date, plan_info_titles, misc_text, found
 from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers
 from compare_word_match import avr_match_dec, extract_num
 
@@ -343,7 +343,7 @@ def compare_route():
         filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_values = format_numbers(filtered_values)
 
-        filtered_plan_info = [ais_vals[i] for i in plan_info]
+        filtered_plan_info = [ais_vals[i] for i in plan_info_keys]
         for idx in [2, 3]:
             try:
                 date_str = filtered_plan_info[idx]
@@ -380,6 +380,9 @@ def compare_route():
 
             # Insert into results
             filtered_plan_info.insert(2, filtered_val_date)
+            display_fields = dict(zip(filtered_titles, filtered_values))
+            plan_info = dict(zip(plan_info_titles, filtered_plan_info))
+            print(plan_info)
             #filtered_plan_titles.insert(2, "Valuation Date")
         except Exception as e:
             print(f"Error parsing valuation date: {e}")
@@ -389,15 +392,16 @@ def compare_route():
         # print(filtered_plan_titles)
 
         print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
+        print(plan_info)
+        print(display_fields)
 
         return jsonify({
             "result": "Received both files successfully!",
             "ais_text": ais_text,
             "avr_text": avr_text,
-            "titles": filtered_titles, 
-            "values": filtered_values, 
-            "plan_info": filtered_plan_info, 
-            "plan_titles": plan_info_titles, 
+            "display_fields": display_fields,
+            "plan_info": plan_info, 
+            #"plan_titles": plan_info_titles, 
 
         })
 

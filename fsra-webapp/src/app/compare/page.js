@@ -9,17 +9,26 @@ export default function Compare() {
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
 
-  const [filteredTitles, setFilteredTitles] = useState([]);
-  const [filteredValues, setFilteredValues] = useState([]);
 
-  const [filteredInfoTitles, setFilteredInfoTitles] = useState([]);
-  const [filteredInfoValues, setFilteredInfoValues] = useState([]);
+  const [planInfo, setPlanInfo] = useState({});
+  const[displayFields, setDisplayFields] = useState({});
+
 
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
+  const [toggles, setToggles] = useState({
+    plan: true,
+    ais: true,
+  });
 
   const aisChange = (e) => setAis(e.target.files[0]);
   const avrChange = (e) => setAvr(e.target.files[0]);
+
+  const handleToggle = (name) => {
+    setToggles((prev) => ({ ...prev, [name]: !prev[name] }));
+  };
+  
 
 
   const fileSubmit = async () => {
@@ -44,14 +53,13 @@ export default function Compare() {
 
       setAisText(data.ais_text);
       setAvrText(data.avr_text);
-      setFilteredTitles(data.titles);
-      setFilteredValues(data.values);
-      setFilteredInfoTitles(data.plan_titles);
-      setFilteredInfoValues(data.plan_info);
+      setPlanInfo(data.plan_info);
+      setDisplayFields(data.display_fields);
     } catch (error) {
       console.error("Error uploading PDFs:", error);
     } finally {
       setLoading(false);
+      setSubmitted(true);
     }
   };
 
@@ -92,24 +100,78 @@ export default function Compare() {
         <div className="loading-screen">Comparing PDFs, please wait...</div>
       )}
 
-      {!loading && (
+      {submitted && !loading && (
         <>
-        <div>
-          <h2> Plan Information</h2>
-          {filteredInfoTitles.map((title, idx) => {
-              const value = filteredInfoValues[idx];
-              return (
-                title && value && (
-                  <p key={idx}>
-                    {title}: {value}
-                  </p>
-                )
-              );
-            })}
+          
+        <div className="container">
+            <h2>Plan Information</h2>
+            <div>
+              <span>Show</span>
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={toggles.plan}
+                  onChange={() => handleToggle("plan")}
+                />
+                <span className="slider"></span>
+              </label>
+          </div>
+        
+         {toggles.plan && (
+          <table className="table">
+          <thead>
+            <tr>
+              <th>Field Name</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody>
+          {Object.entries(planInfo).map(([title, value]) => (
+            <tr key={title}>
+              <td>{title}</td>
+              <td>{value}</td>
+            </tr>
+          ))}
+          </tbody>
+        </table>
+         )}
         </div>
-        <div>
+
+        <div className="container">
             <h2>Missing / Mismatched Fields</h2>
-            {filteredTitles.map((title, idx) => {
+            <div>
+              <span>Show</span>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={toggles.ais}
+                onChange={() => handleToggle("ais")}
+                
+              />
+              <span className="slider"></span>
+            </label>
+            </div>
+            {toggles.ais && (
+               <table className="table">
+               <thead>
+                 <tr>
+                   <th>Field Name</th>
+                   <th>AIS Value</th>
+                 </tr>
+               </thead>
+               <tbody>
+               {Object.entries(displayFields).map(([title, value]) => (
+                 <tr key={title}>
+                   <td>{title}</td>
+                   <td>{value}</td>
+                 </tr>
+               ))}
+               </tbody>
+             </table>
+            )}
+           
+
+            {/* {filteredTitles.map((title, idx) => {
               const value = filteredValues[idx];
               return (
                 title && value && (
@@ -118,7 +180,7 @@ export default function Compare() {
                   </p>
                 )
               );
-            })}
+            })} */}
           </div>
           <div>
             <h2>Extracted AIS Fields</h2>

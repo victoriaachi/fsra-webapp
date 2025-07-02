@@ -57,7 +57,7 @@ export default function feature3() {
 
     return (
       <div> 
-        <h1> Pension Benefits Act Search Alternate Method Test</h1>
+        <h1> Pension Benefits Act Search</h1>
         <div>
         </div>
         <form onSubmit={handleSubmit}>

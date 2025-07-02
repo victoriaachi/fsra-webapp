@@ -818,7 +818,7 @@ gc_mortality = ["A", "B", "C", "Other", "CPM2014", "F", "CPM2014Priv"]
 
 solv_mortality = ["1994 UP Generational", "CPM2014Priv", "CPM2014", "CPM2014Publ"]
 
-plan_info = [0, 1, 3, 4, 386, 387, 388, 389]
+plan_info_keys = [0, 1, 3, 4, 386, 387, 388, 389]
 
 val_date = [384, 383, 385]
 
