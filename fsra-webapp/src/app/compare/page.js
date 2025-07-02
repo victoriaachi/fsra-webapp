@@ -10,8 +10,8 @@ export default function Compare() {
   const [avrText, setAvrText] = useState("");
 
 
-  const [planInfo, setPlanInfo] = useState({});
-  const[displayFields, setDisplayFields] = useState({});
+  const [planInfo, setPlanInfo] = useState([]);
+  const [displayFields, setDisplayFields] = useState([]);
 
 
   const [loading, setLoading] = useState(false);
@@ -126,7 +126,7 @@ export default function Compare() {
             </tr>
           </thead>
           <tbody>
-          {Object.entries(planInfo).map(([title, value]) => (
+          {planInfo.map(([title, value]) => (
             <tr key={title}>
               <td>{title}</td>
               <td>{value}</td>
@@ -160,7 +160,7 @@ export default function Compare() {
                  </tr>
                </thead>
                <tbody>
-               {Object.entries(displayFields).map(([title, value]) => (
+               {displayFields.map(([title, value]) => (
                  <tr key={title}>
                    <td>{title}</td>
                    <td>{value}</td>

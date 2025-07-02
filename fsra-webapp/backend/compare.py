@@ -380,8 +380,8 @@ def compare_route():
 
             # Insert into results
             filtered_plan_info.insert(2, filtered_val_date)
-            display_fields = dict(zip(filtered_titles, filtered_values))
-            plan_info = dict(zip(plan_info_titles, filtered_plan_info))
+            display_fields = list(zip(filtered_titles, filtered_values))
+            plan_info = list(zip(plan_info_titles, filtered_plan_info))
             print(plan_info)
             #filtered_plan_titles.insert(2, "Valuation Date")
         except Exception as e:
