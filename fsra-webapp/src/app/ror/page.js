@@ -1012,7 +1012,7 @@ export default function Ror() {
 
             {/* NEW: Display individual chart error */}
             {individualChartError && (
-                <p style={{ color: "red", textAlign: "center", marginTop: "10px" }}>{individualChartError}</p>
+                <p style={{ color: "#555", textAlign: "center", marginTop: "10px" }}>{individualChartError}</p>
             )}
 
             {chartData && chartData.datasets.length > 0 && (
