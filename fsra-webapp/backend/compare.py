@@ -2,7 +2,7 @@ from flask import Blueprint, jsonify, request
 import psutil, os, gc
 #from gemini import call_gemini_compare
 import json, requests, re, copy, array
-import fitz, pdfplumber
+import pymupdf, pdfplumber
 from rapidfuzz import fuzz
 from datetime import datetime
 from itertools import combinations
@@ -66,7 +66,7 @@ def compare_route():
 
     try:
         # Extract text from AIS
-        ais_doc = fitz.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
+        ais_doc = pymupdf.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
         print(f"[After loading AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
         ais_text = ""
         field_count = 0
