@@ -1010,7 +1010,6 @@ export default function Ror() {
               </div>
             </div>
 
-            {/* NEW: Display individual chart error */}
             {individualChartError && (
                 <p style={{ color: "#555", textAlign: "center", marginTop: "10px" }}>{individualChartError}</p>
             )}
