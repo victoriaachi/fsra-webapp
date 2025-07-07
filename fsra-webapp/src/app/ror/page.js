@@ -62,6 +62,7 @@ function formatDateUTC(date) {
 
 export default function Ror() {
   const [excel, setExcel] = useState(null);
+  const [fileDragging, setFileDragging] = useState(false);
   const [error, setError] = useState("");
   const [backendData, setBackendData] = useState(null);
 
@@ -92,6 +93,26 @@ export default function Ror() {
   // State to manage weight errors per portfolio
   const [portfolioWeightErrors, setPortfolioWeightErrors] = useState({});
 
+
+  const handleDrag = (e, setter) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setter(true);
+  };
+
+  const handleDragLeave = (e, setter) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setter(false);
+  };
+
+  const handleDrop = (e, setter, fileSetter) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setter(false);
+    const file = e.dataTransfer.files[0];
+    if (file) fileSetter(file);
+  };
 
   // Load zoom plugin once on client side
   useEffect(() => {
@@ -898,19 +919,47 @@ export default function Ror() {
 
       {/* File Upload Section */}
       <div style={{ marginBottom: "20px", borderBottom: "1px solid #ccc", paddingBottom: "20px" }}>
-        <label htmlFor="excel">Excel File:</label>
-        <input
+        {/* <label htmlFor="excel">Excel File:</label> */}
+        {/* <input
           id="excel"
           type="file"
           accept=".xls,.xlsx,.xlsm,.xlsb"
           onChange={excelChange}
           
-        />
+        /> */}
+
+<div className="file-inputs">
+  {/* Excel Upload */}
+  <div
+    className={`drop-zone ${fileDragging ? "dragging" : ""}`}
+    onDragOver={(e) => handleDrag(e, setFileDragging)}
+    onDragLeave={(e) => handleDragLeave(e, setFileDragging)}
+    onDrop={(e) => handleDrop(e, setFileDragging, excelChange)}
+  >
+    <label htmlFor="excel">Excel File:</label>
+    <input
+      id="excel"
+      type="file"
+      accept=".xlsx,.xls,.xlsm, .xlsb"
+      onChange={excelChange}
+      disabled={loading}
+    />
+    <p>Or drag and drop a file here</p>
+    {excel && <p><strong>Selected:</strong> {excel.name}</p>}
+
+    {/* <button onClick={fileSubmit} disabled={loading}>
+      {loading ? "Processing..." : "Submit"}
+    </button>
+
+    {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>} */}
+  </div>
+</div>
+
         <button 
         onClick={fileSubmit}
         disabled={loading}>
         {loading ? "Processing..." : "Submit"}
-        </button>
+        </button> 
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
       </div>
 
