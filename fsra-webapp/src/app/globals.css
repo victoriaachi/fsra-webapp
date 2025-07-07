@@ -1,14 +1,20 @@
 
 
 :root {
-  --background: #ffd7ea; /* light pink */
-  --foreground: #000000;
+  --sidebar-bg: #fff6fa;     /* pink sidebar in light mode */
+  --sidebar-colour: #000000;
+
+  --main-bg: #ffffff;        /* white background in light mode */
+  --main-colour: #000000;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #3a3a3a;
-    --foreground: #e0e0e0;
+    --sidebar-bg: #3a3a3a;   /* dark sidebar */
+    --sidebar-colour: #e0e0e0;
+
+    --main-bg: #121212;      /* dark page background */
+    --main-colour: #e0e0e0;
   }
 }
 
