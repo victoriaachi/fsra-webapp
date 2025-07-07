@@ -13,15 +13,14 @@ body {
     position: fixed;
     width: 300px;
     height: 100vh;
-    background-color: #ffc1e4;
     padding: 20px;
     box-sizing: border-box;
     justify-content: center;
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: var(--background, #ffd7ea);
-    color: var(--foreground, #000);
+    background-color: var(--background);
+    color: var(--foreground);
 
   }
   
