@@ -11,6 +11,7 @@ from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf,
 from compare_word_match import avr_match_dec, extract_num
 
 fuzzy_threshold = 40 
+sum_fuzzy_threshold = 60
 sum_tol = 0.01
 
 compare_bp = Blueprint('compare', __name__)
@@ -338,6 +339,76 @@ def compare_route():
                 compare3 += 1
             elif val == 1:
                 compare1 += 1
+
+
+        # Extract all numbers and their positions from avr_text once
+        avr_numbers = []
+        avr_positions = []
+        for match in re.finditer(r'\b\d{4,}\b', avr_text):  # tweak regex if needed, at least 4 digits for meaningful sums
+            num_str = match.group(0)
+            pos = match.start()
+            num_val = float(num_str.replace(',', ''))
+            avr_numbers.append(num_val)
+            avr_positions.append(pos)
+
+        # Pre-sort by positions for proximity checks
+        # (They should already be sorted by position due to finditer iterating left to right)
+
+        print(f"Total numbers extracted from AVR text: {len(avr_numbers)}")
+
+        # Function to find combinations near a given position index in avr_numbers
+        def find_combinations_nearby(target_num, max_comb=3, tol=1e-2):
+            # We'll try all combos of size 2 and 3
+            # Consider only combos where numbers are within a certain char distance in avr_text
+            max_char_distance = 100  # tune this to what "nearby" means in characters
+
+            for combo_size in range(2, max_comb+1):
+                for combo_indices in combinations(range(len(avr_numbers)), combo_size):
+                    # Check max distance between numbers in combo by position in text
+                    positions = [avr_positions[idx] for idx in combo_indices]
+                    if max(positions) - min(positions) > max_char_distance:
+                        continue  # not "close" enough
+                    
+                    combo_sum = sum(avr_numbers[idx] for idx in combo_indices)
+                    if abs(combo_sum - target_num) <= tol * target_num:
+                        yield combo_indices, combo_sum
+
+        # Now check unmatched ais_vals for sum combos
+        for i, val in enumerate(ais_vals):
+            if compare[i] == 0 and val != "NULL":
+                target_num = extract_num(val)
+                if target_num is None:
+                    continue
+
+                found_combo = False
+                best_score = 0
+                best_context = ""
+
+                for combo_indices, combo_sum in find_combinations_nearby(target_num):
+                    # Build context string around the combined numbers in avr_text
+                    start_pos = min(avr_positions[idx] for idx in combo_indices)
+                    end_pos = max(avr_positions[idx] for idx in combo_indices) + 20  # small tail
+                    
+                    context_start = max(0, start_pos - 250)
+                    context_end = min(len(avr_text), end_pos + 250)
+                    context = avr_text[context_start:context_end]
+
+                    # Fuzzy match title to context
+                    score = fuzz.partial_ratio(titles[i].lower(), context.lower())
+                    if score > best_score:
+                        best_score = score
+                        best_context = context
+
+                    if best_score >= sum_fuzzy_threshold:
+                        compare[i] = 1
+                        found_combo = True
+                        print(f"✅ Sum combo matched for '{titles[i]}' with AIS val {target_num}, combo sum {combo_sum} (score={best_score})")
+                        print(f"↪ Context: {best_context[:200]}...")
+                        break  # stop at first good match
+
+                if not found_combo:
+                    print(f"❌ No sum combo match found for '{titles[i]}' with AIS val {target_num}")
+
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
