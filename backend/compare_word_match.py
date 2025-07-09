@@ -2,6 +2,22 @@ from rapidfuzz import fuzz
 import re
 from decimal import Decimal, ROUND_HALF_UP
 
+def extract_sum(text, match_start, match_end, window):
+    start = max(0, match_start - window)
+    end = min(len(text), match_end + window)
+    window_text = text[start:end]
+    tokens = re.findall(r'[^\s]+', window_text)  # simple whitespace split
+    numbers = []
+    for token in tokens:
+        try:
+            num = extract_num(token)
+            if num is not None:
+                numbers.append(num)
+        except:
+            continue
+    return numbers
+
+
 # removes non-numbers from a string
 def extract_num(s):
     result = None  
