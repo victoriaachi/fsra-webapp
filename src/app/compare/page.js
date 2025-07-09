@@ -9,8 +9,10 @@ export default function Compare() {
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
 
+  //const [notFound setNotFound] = useState("");
+
   const [planInfo, setPlanInfo] = useState([]);
-  const [displayFields, setDisplayFields] = useState([]);
+  const [mismatchedFields, setMismatchedFields] = useState([]);
 
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -73,7 +75,8 @@ export default function Compare() {
       setAisText(data.ais_text);
       setAvrText(data.avr_text);
       setPlanInfo(data.plan_info);
-      setDisplayFields(data.display_fields);
+      setMismatchedFields(data.mismatched_fields);
+      //setNotFound(data.not_found);
     } catch (error) {
       console.error("Error uploading PDFs:", error);
     } finally {
@@ -184,6 +187,7 @@ export default function Compare() {
                 />
                 <span className="slider"></span>
               </label>
+              <h3>Number of Fields not Found: {mismatchedFields.length}</h3>
             </div>
 
             {toggles.ais && (
@@ -195,7 +199,7 @@ export default function Compare() {
                   </tr>
                 </thead>
                 <tbody>
-                  {displayFields.map(([title, value]) => (
+                  {mismatchedFields.map(([title, value]) => (
                     <tr key={title}>
                       <td>{title}</td>
                       <td>{value}</td>
@@ -205,16 +209,9 @@ export default function Compare() {
               </table>
             )}
           </div>
-
-          <div>
-            <h2>Extracted AIS Fields</h2>
-            <pre>{aisText}</pre>
-          </div>
-
-          <div>
-            <h2>Extracted AVR Text</h2>
-            <pre>{avrText}</pre>
-          </div>
+          <h2>avr text </h2>
+          <pre>{avrText}</pre>
+        
         </>
       )}
     </div>
