@@ -51,7 +51,10 @@ def compare_route():
     # trackers
     fields_found = 0
     fields_not_found = 0
-    fields_excl = 0
+    fields_excl = 0  
+
+    #test
+
 
     def mark_found(i, counter):
         compare[i] = 1
