@@ -341,45 +341,45 @@ def compare_route():
                 compare1 += 1
 
 
-      fuzzy_sum_threshold = 60
-      WINDOW_SIZE = 250
-      MAX_COMBO = 3
+        fuzzy_sum_threshold = 60
+        WINDOW_SIZE = 250
+        MAX_COMBO = 3
 
-      for i, val in enumerate(compare):
-          if val == 0 and i not in sum_excl:
-              title = titles[i]
-              expected_value = extract_num(ais_vals[i])  # expected numeric value
+        for i, val in enumerate(compare):
+            if val == 0:
+                title = titles[i]
+                expected_value = extract_num(ais_vals[i])  # expected numeric value
 
-              if expected_value is None or abs(expected_value) < 1000:
-                  continue
+                if expected_value is None or abs(expected_value) < 1000:
+                    continue
 
-              best_match = None
-              best_score = 0
+                best_match = None
+                best_score = 0
 
-              found_combo = False  # flag to track if sum combo is found
+                found_combo = False  # flag to track if sum combo is found
 
-              for m in re.finditer(r'.{0,250}', avr_text):
-                  snippet = m.group()
-                  score = fuzz.token_set_ratio(snippet.lower(), title.lower())
+                for m in re.finditer(r'.{0,250}', avr_text):
+                    snippet = m.group()
+                    score = fuzz.token_set_ratio(snippet.lower(), title.lower())
 
-                  if score >= fuzzy_sum_threshold:
-                      nums_nearby = extract_sum(avr_text, m.start(), m.end(), WINDOW_SIZE)
+                    if score >= fuzzy_sum_threshold:
+                        nums_nearby = extract_sum(avr_text, m.start(), m.end(), WINDOW_SIZE)
 
-                      for combo_size in range(2, min(MAX_COMBO, len(nums_nearby)) + 1):
-                          for combo in combinations(nums_nearby, combo_size):
-                              if abs(sum(combo) - expected_value) < 0.01:
-                                  compare[i] = 1  # mark found
-                                  print(f"✅ Sum found for index {i}: {combo} for {titles[i]} {ais_vals[i]} near fuzzy match with score {score}")
-                                  found_combo = True
-                                  break
-                          if found_combo:
-                              break
+                        for combo_size in range(2, min(MAX_COMBO, len(nums_nearby)) + 1):
+                            for combo in combinations(nums_nearby, combo_size):
+                                if abs(sum(combo) - expected_value) < 0.01:
+                                    compare[i] = 1  # mark found
+                                    print(f"✅ Sum found for index {i}: {combo} for {titles[i]} {ais_vals[i]} near fuzzy match with score {score}")
+                                    found_combo = True
+                                    break
+                            if found_combo:
+                                break
 
-                  if found_combo:
-                      break  # no need to check further substrings
+                    if found_combo:
+                        break  # no need to check further substrings
 
 
-      not_found = compare.count(0)
+        not_found = compare.count(0)
 
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
