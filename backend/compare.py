@@ -442,7 +442,7 @@ def compare_route():
             "result": "Received both files successfully!",
             "ais_text": ais_text,
             "avr_text": avr_text,
-            "display_fields": display_fields,
+            "mismatched_fields": display_fields,
             "plan_info": plan_info, 
             #"plan_titles": plan_info_titles, 
 
