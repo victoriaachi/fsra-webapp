@@ -75,6 +75,10 @@ export default function Ror() {
   const [selectedSecurities, setSelectedSecurities] = useState([]);
   const [chartData, setChartData] = useState(null);
   const chartRef = useRef();
+  const priceChartRef = useRef();
+
+  const [showPriceChart, setShowPriceChart] = useState(false);
+  const [priceChartData, setPriceChartData] = useState(null);
   // NEW: State for individual chart errors
   const [individualChartError, setIndividualChartError] = useState("");
 
@@ -124,6 +128,7 @@ export default function Ror() {
   // Rebuild chart data whenever dependencies change
   useEffect(() => {
     generateIndividualChart();
+    generatePriceChart();
   }, [backendData, frequency, selectedSecurities, startDate, endDate]);
 
   // Rebuild weighted chart data when backendData or weightedFrequency changes
@@ -374,6 +379,50 @@ export default function Ror() {
 
     setChartData({ datasets, calculatedMinY, calculatedMaxY });
   };
+
+  const generatePriceChart = () => {
+    if (!backendData || !backendData[frequency]) {
+      setPriceChartData(null);
+      return;
+    }
+  
+    const rawData = backendData[frequency];
+    const start = startDate ? new Date(startDate) : null;
+    const end = endDate ? new Date(endDate) : null;
+  
+    const datasets = selectedSecurities.map((sec, index) => {
+      let dataPoints = rawData[sec] || [];
+  
+      if (start && end) {
+        dataPoints = dataPoints.filter(({ Date: dateString }) => {
+          const d = new Date(dateString);
+          return d >= start && d <= end;
+        });
+      }
+  
+      const data = dataPoints.map(point => ({
+        x: formatDateUTC(point.Date),
+        y: point.Price,
+      }));
+  
+      return {
+        label: sec,
+        data: data,
+        fill: false,
+        borderColor: distinctColors[index % distinctColors.length],
+        borderWidth: 2,
+        backgroundColor: distinctColors[index % distinctColors.length],
+        tension: 0,
+        pointRadius: 0,
+        pointHoverRadius: 6,
+        hoverRadius: 15,
+        hitRadius: 15,
+      };
+    });
+  
+    setPriceChartData({ datasets });
+  };
+  
 
   const generateWeightedChart = () => {
     if (!backendData) {
@@ -1029,7 +1078,20 @@ export default function Ror() {
                   </div>
                 </div>
               )}
-              {selectedSecurities.length > 0 && (
+
+
+
+              <button onClick={exportChart} className="chart-button">
+                  Export Chart
+                </button>
+                <button onClick={() => exportSecurities(backendData, frequency)} 
+                className="chart-button"
+                disabled={!backendData || selectedSecurities.length === 0}>
+                  Download Excel File
+                </button>
+            </div>
+
+            {selectedSecurities.length > 0 && (
             <div style={{ marginTop: '20px' }}>
               <h3>Total Return by Security (Selected Time Period)</h3>
               <ul>
@@ -1042,19 +1104,114 @@ export default function Ror() {
             </div>
           )}
 
+            <div style={{ marginBottom: "15px" }}>
+              <div style={{ marginBottom: "15px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  Show Price Chart
+                  <label className="toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={showPriceChart}
+                      onChange={() => setShowPriceChart(prev => !prev)}
+                    />
+                    <span className="slider"></span>
+                  </label>
+                </label>
+              </div>
+            
+
+
+
+{showPriceChart && priceChartData && priceChartData.datasets.length > 0 && (
+  <div
+    style={{
+      marginTop: "30px",
+      padding: "20px",
+      border: "1px solid #ccc",
+      borderRadius: "10px",
+      backgroundColor: "#f9f9f9",
+      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
+    }}
+  >
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+      <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Price Chart</h3>
+      <button
+        onClick={() => priceChartRef.current?.resetZoom()}
+        className="chart-button"
+      >
+        Reset Zoom
+      </button>
+    </div>
+
+    <Line
+      ref={priceChartRef}
+      data={priceChartData}
+      options={{
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.2,
+        plugins: {
+          title: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
+            },
+          },
+          legend: {
+            onClick: null,
+            labels: {
+              usePointStyle: true,
+              boxWidth: 12,
+              boxHeight: 12,
+              color: "#000",
+            },
+          },
+          zoom: {
+            pan: { enabled: true, mode: "x" },
+            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "x" },
+          },
+        },
+        scales: {
+          x: {
+            type: "time",
+            time: {
+              unit:
+                frequency === "daily"
+                  ? "day"
+                  : frequency === "quarter"
+                  ? "quarter"
+                  : frequency === "monthly"
+                  ? "month"
+                  : "year",
+              tooltipFormat: "MMM dd, yyyy",
+              displayFormats: {
+                year: "yyyy",
+                month: "MMM yyyy",
+                day: "MMM dd, yyyy",
+              },
+            },
+            title: { display: true, text: "Date" },
+          },
+          y: {
+            title: { display: true, text: "Price ($)" },
+            ticks: {
+              callback: (value) => `$${value}`,
+            },
+          },
+        },
+      }}
+    />
+  </div>
+)}
+
+
+
 
               <div style={{ marginTop: "20px" }}>
                 <button onClick={() => chartRef.current?.resetZoom()} className="chart-button">
                   Reset Zoom
                 </button>
-                <button onClick={exportChart} className="chart-button">
-                  Export Chart
-                </button>
-                <button onClick={() => exportSecurities(backendData, frequency)} 
-                className="chart-button"
-                disabled={!backendData || selectedSecurities.length === 0}>
-                  Download Excel File
-                </button>
+      
 
               </div>
             </div>
