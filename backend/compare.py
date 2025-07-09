@@ -120,7 +120,8 @@ def compare_route():
             avr_text = "\n".join(pages_text)
         print(f"[After loading AVR PDF text] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
-        avr_text = clean_numbers_pdf(clean_text(avr_text));
+        avr_text = clean_text(avr_text);
+        #avr_text = clean_numbers_pdf(avr_text);
         gc.collect()
         print(f"[After cleaning AVR text] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
