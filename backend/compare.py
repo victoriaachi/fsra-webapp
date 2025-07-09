@@ -8,7 +8,7 @@ from datetime import datetime
 from itertools import combinations
 from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info_keys, val_date, plan_info_titles, misc_text, found
 from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers
-from compare_word_match import avr_match_dec, extract_num
+from compare_word_match import avr_match_dec, extract_num, extract_sum
 
 fuzzy_threshold = 40 
 sum_fuzzy_threshold = 60
@@ -341,73 +341,45 @@ def compare_route():
                 compare1 += 1
 
 
-        # Extract all numbers and their positions from avr_text once
-        avr_numbers = []
-        avr_positions = []
-        for match in re.finditer(r'\b\d{4,}\b', avr_text):  # tweak regex if needed, at least 4 digits for meaningful sums
-            num_str = match.group(0)
-            pos = match.start()
-            num_val = float(num_str.replace(',', ''))
-            avr_numbers.append(num_val)
-            avr_positions.append(pos)
+      fuzzy_sum_threshold = 60
+      WINDOW_SIZE = 250
+      MAX_COMBO = 3
 
-        # Pre-sort by positions for proximity checks
-        # (They should already be sorted by position due to finditer iterating left to right)
+      for i, val in enumerate(compare):
+          if val == 0 and i not in sum_excl:
+              title = titles[i]
+              expected_value = extract_num(ais_vals[i])  # expected numeric value
 
-        print(f"Total numbers extracted from AVR text: {len(avr_numbers)}")
+              if expected_value is None or abs(expected_value) < 1000:
+                  continue
 
-        # Function to find combinations near a given position index in avr_numbers
-        def find_combinations_nearby(target_num, max_comb=3, tol=1e-2):
-            # We'll try all combos of size 2 and 3
-            # Consider only combos where numbers are within a certain char distance in avr_text
-            max_char_distance = 100  # tune this to what "nearby" means in characters
+              best_match = None
+              best_score = 0
 
-            for combo_size in range(2, max_comb+1):
-                for combo_indices in combinations(range(len(avr_numbers)), combo_size):
-                    # Check max distance between numbers in combo by position in text
-                    positions = [avr_positions[idx] for idx in combo_indices]
-                    if max(positions) - min(positions) > max_char_distance:
-                        continue  # not "close" enough
-                    
-                    combo_sum = sum(avr_numbers[idx] for idx in combo_indices)
-                    if abs(combo_sum - target_num) <= tol * target_num:
-                        yield combo_indices, combo_sum
+              found_combo = False  # flag to track if sum combo is found
 
-        # Now check unmatched ais_vals for sum combos
-        for i, val in enumerate(ais_vals):
-            if compare[i] == 0 and val != "NULL":
-                target_num = extract_num(val)
-                if target_num is None:
-                    continue
+              for m in re.finditer(r'.{0,250}', avr_text):
+                  snippet = m.group()
+                  score = fuzz.token_set_ratio(snippet.lower(), title.lower())
 
-                found_combo = False
-                best_score = 0
-                best_context = ""
+                  if score >= fuzzy_sum_threshold:
+                      nums_nearby = extract_sum(avr_text, m.start(), m.end(), WINDOW_SIZE)
 
-                for combo_indices, combo_sum in find_combinations_nearby(target_num):
-                    # Build context string around the combined numbers in avr_text
-                    start_pos = min(avr_positions[idx] for idx in combo_indices)
-                    end_pos = max(avr_positions[idx] for idx in combo_indices) + 20  # small tail
-                    
-                    context_start = max(0, start_pos - 250)
-                    context_end = min(len(avr_text), end_pos + 250)
-                    context = avr_text[context_start:context_end]
+                      for combo_size in range(2, min(MAX_COMBO, len(nums_nearby)) + 1):
+                          for combo in combinations(nums_nearby, combo_size):
+                              if abs(sum(combo) - expected_value) < 0.01:
+                                  compare[i] = 1  # mark found
+                                  print(f"✅ Sum found for index {i}: {combo} for {titles[i]} {ais_vals[i]} near fuzzy match with score {score}")
+                                  found_combo = True
+                                  break
+                          if found_combo:
+                              break
 
-                    # Fuzzy match title to context
-                    score = fuzz.partial_ratio(titles[i].lower(), context.lower())
-                    if score > best_score:
-                        best_score = score
-                        best_context = context
+                  if found_combo:
+                      break  # no need to check further substrings
 
-                    if best_score >= sum_fuzzy_threshold:
-                        compare[i] = 1
-                        found_combo = True
-                        print(f"✅ Sum combo matched for '{titles[i]}' with AIS val {target_num}, combo sum {combo_sum} (score={best_score})")
-                        print(f"↪ Context: {best_context[:200]}...")
-                        break  # stop at first good match
 
-                if not found_combo:
-                    print(f"❌ No sum combo match found for '{titles[i]}' with AIS val {target_num}")
+      not_found = compare.count(0)
 
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
