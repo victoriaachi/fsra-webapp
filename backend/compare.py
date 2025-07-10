@@ -8,11 +8,12 @@ from rapidfuzz import fuzz
 from datetime import datetime
 from itertools import combinations
 from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info_keys, val_date, plan_info_titles, misc_text, found
-from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers
+from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers, clean_sheet_name
 from compare_word_match import avr_match_dec, extract_num, extract_sum
 
 fuzzy_threshold = 40 
 sum_fuzzy_threshold = 60
+sparkle_fuzzy_threshold = 60
 sum_tol = 0.01
 
 compare_bp = Blueprint('compare', __name__)
@@ -393,6 +394,7 @@ def compare_route():
         records = []
 
         for sheet_name in xls.sheet_names:
+            cleaned_sheet_name = clean_sheet_name(sheet_name)
             df = xls.parse(sheet_name, header=None)
             for row_idx, row in df.iterrows():
                 for col_idx, cell in row.items():
@@ -401,37 +403,80 @@ def compare_route():
                     if isinstance(cell, str):
                         matches = financial_pattern.findall(cell)
                         for match in matches:
-                            value = match
+                            value = clean_numbers_pdf(match)
                             col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
                             row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                            records.append([value, col_label, row_label, sheet_name])
+                            records.append([value, col_label, row_label, cleaned_sheet_name])
                     
                     elif isinstance(cell, (int, float)):
                         value = cell
                         col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
                         row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                        records.append([value, col_label, row_label, sheet_name])
+                        records.append([value, col_label, row_label, cleaned_sheet_name])
 
         # Create final DataFrame
         merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
+        merged_df = merged_df.fillna("")
+        excel_data = merged_df.to_dict(orient="records")
 
         # Print full DataFrame without truncation
-        print(merged_df)
+        #print(merged_df)
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
         #     print(merged_df)
-        page_8_df = merged_df[merged_df["sheet name"] == "page_8"]
 
+        for i, val in enumerate(compare):
 
-        # Print nicely
-        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
-            print(page_8_df)
+            if val == 0:
+                print("inside if")
+                best_score = 0
+                best_value = None
+                
+                target_title = titles[i].lower()
+                
+                # Loop through each Excel row in merged_df
+                for idx, row in merged_df.iterrows():
+                    row_label = str(row['row label']).lower()
+                    col_label = str(row['col label']).lower()
+                    excel_value = row['value']
+                    
+                    # Compute fuzzy match scores for row label and col label against the title
+                    score_row = fuzz.partial_ratio(target_title, row_label)
+                    score_col = fuzz.partial_ratio(target_title, col_label)
+                    
+                    # Use whichever label matches best
+                    score = max(score_row, score_col)
+                    
+                    # Check if this is the best match so far and above threshold
+                    if score > best_score and score >= sparkle_fuzzy_threshold:
+                        print("if statement")
+                        best_score = score
+                        best_value = excel_value
+                
+                # If a good match was found, update avr_vals[i]
+                if best_value is not None:
+                    avr_vals[i] = best_value
+                    if best_value == ais_vals[i]:
+                        compare[i] = 1  # mark as found only if values match
+                    print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
 
+                if best_value is not None:
+                    avr_vals[i] = best_value
+                    #compare[i] = 1  # mark as found
+                    print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
+                
+        
+        print("hi")
         not_found = compare.count(0)
+        print("hi")
 
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
-        filtered_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
-        filtered_values = format_numbers(filtered_values)
+        filtered_ais_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
+        filtered_avr_values = [avr_vals[i] for i in range(len(compare)) if compare[i] == 0]
+        print("here?")
+        filtered_ais_values = format_numbers(filtered_ais_values)
+        filtered_avr_values = format_numbers(filtered_avr_values)
+        print("hi")
 
         filtered_plan_info = [ais_vals[i] for i in plan_info_keys]
         for idx in [2, 3]:
@@ -443,6 +488,8 @@ def compare_route():
                 #print(f"Formatted date at index {idx}: {filtered_plan_info[idx]}")
             except Exception as e:
                 print(f"Error parsing date at index {idx}: {e}")
+
+        print("hi")
 
         try:
             date_str = "-".join(ais_vals[i] for i in val_date)
@@ -467,7 +514,8 @@ def compare_route():
 
             # Insert into results
             filtered_plan_info.insert(2, filtered_val_date)
-            display_fields = list(zip(filtered_titles, filtered_values))
+            display_fields = list(zip(filtered_titles, filtered_ais_values, filtered_avr_values))
+            print(display_fields)
             plan_info = list(zip(plan_info_titles, filtered_plan_info))
             #print(plan_info)
             #filtered_plan_titles.insert(2, "Valuation Date")
@@ -488,6 +536,7 @@ def compare_route():
             "avr_text": avr_text,
             "mismatched_fields": display_fields,
             "plan_info": plan_info, 
+            "excel_data": excel_data
             #"plan_titles": plan_info_titles, 
 
         })

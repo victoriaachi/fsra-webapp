@@ -9,6 +9,7 @@ export default function Compare() {
 
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
+  const [excelData, setExcelData] = useState([]);
 
   //const [notFound setNotFound] = useState("");
 
@@ -78,6 +79,7 @@ export default function Compare() {
 
       setAisText(data.ais_text);
       setAvrText(data.avr_text);
+      setExcelData(data.excel_data || []);
       setPlanInfo(data.plan_info);
       setMismatchedFields(data.mismatched_fields);
       //setNotFound(data.not_found);
@@ -234,6 +236,35 @@ export default function Compare() {
               </table>
             )}
           </div>
+
+          {excelData.length > 0 && (
+           <div className="container">
+           <h2>Excel Data</h2>
+           <table className="table">
+             <thead>
+               <tr>
+                 <th>Value</th>
+                 <th>Col Label</th>
+                 <th>Row Label</th>
+                 <th>Sheet Name</th>
+               </tr>
+             </thead>
+             <tbody>
+               {excelData.map((row, idx) => (
+                 <tr key={idx}>
+                   <td>{row.value}</td>
+                   <td>{row["col label"]}</td>
+                   <td>{row["row label"]}</td>
+                   <td>{row["sheet name"]}</td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
+         </div>
+         
+          )}
+                    
+
           <h2>avr text </h2>
           <pre>{avrText}</pre>
         

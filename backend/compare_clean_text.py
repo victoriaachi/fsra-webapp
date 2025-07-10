@@ -1,6 +1,13 @@
 import re
 from datetime import datetime
 
+def clean_sheet_name(name):
+    match = re.search(r'page_(\d+)', name)
+    if match:
+        return match.group(1)
+    else:
+        return name  
+
 
 # cleans up non-words, etc in avr text
 def clean_text(text):
@@ -86,6 +93,7 @@ def clean_numbers_pdf(text):
 def format_numbers(arr):
     formatted = []
     for s in arr:
+        s = str(s);
         try:
             # Try to format as int if no decimal, else float
             if '.' in s:
