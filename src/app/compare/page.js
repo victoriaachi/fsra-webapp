@@ -219,13 +219,15 @@ export default function Compare() {
                   <tr>
                     <th>Field Name</th>
                     <th>AIS Value</th>
+                    <th>AVR Value</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mismatchedFields.map(([title, value]) => (
+                  {mismatchedFields.map(([title, aisValue, avrValue]) => (
                     <tr key={title}>
                       <td>{title}</td>
-                      <td>{value}</td>
+                      <td>{aisValue}</td>
+                      <td>{avrValue}</td>
                     </tr>
                   ))}
                 </tbody>

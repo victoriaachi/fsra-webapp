@@ -3,6 +3,7 @@ import psutil, os, gc
 #from gemini import call_gemini_compare
 import json, requests, re, copy, array
 import pymupdf, pdfplumber
+import pandas as pd
 from rapidfuzz import fuzz
 from datetime import datetime
 from itertools import combinations
@@ -28,9 +29,11 @@ def compare_route():
 
     ais_file = request.files['ais']
     avr_file = request.files['avr']
+    excel_file = request.files['excel']
 
     print("AIS filename:", ais_file.filename)
     print("AVR filename:", avr_file.filename)
+    print("Excel filename:", excel_file.filename)
 
     # variable names
     keys = list(key_map.keys());
@@ -382,6 +385,47 @@ def compare_route():
                     if found_combo:
                         break  # no need to check further substrings
 
+        # avr values
+        
+        # Load Excel sheet (adjust path as needed)
+        df = pd.read_excel(excel_file, header=None)
+
+        # Drop fully empty rows and columns
+        df.dropna(how='all', inplace=True)
+        df.dropna(axis=1, how='all', inplace=True)
+        df.reset_index(drop=True, inplace=True)
+
+        # Assume the first row contains column headers
+        column_labels = df.iloc[0, 2:]  # skip first two columns (label + dollar sign)
+        data = []
+
+        # Go through each row starting from row 1 (skip header row)
+        for i in range(1, len(df)):
+            row = df.iloc[i]
+            row_label = row[0]  # first column is the label (e.g. "Market value of assets")
+
+            for j, col_label in enumerate(column_labels):
+                value = row[j + 2]  # offset by 2 to account for initial columns
+
+                if pd.notna(value) and isinstance(value, (int, float)):
+                    data.append({
+                        "row_label": str(row_label),
+                        "col_label": str(col_label),
+                        "value": value
+                    })
+
+        # Convert to DataFrame
+        structured_df = pd.DataFrame(data)
+
+        # Print output
+        for _, row in structured_df.iterrows():
+            print(f"{row['row_label']} | {row['col_label']} → {row['value']}")
+
+
+
+        
+
+
 
         not_found = compare.count(0)
 
@@ -410,10 +454,7 @@ def compare_route():
             # print(f"fields: {ais_found_fields}")
             # print(f"found: {found}")
             print(compare)
-            #print(f"not found: {not_found}")
-            # print(f"not valid (should match with null): {not_valid}")
-            # print(f"zeroes: {zero}")
-            # print(f"not num: {not_num}")
+
             parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
             filtered_val_date = parsed_date.strftime("%B %d, %Y")
             # for i, val in enumerate(ais_vals):
