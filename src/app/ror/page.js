@@ -364,20 +364,8 @@ export default function Ror() {
       };
     });
 
-    let calculatedMinY, calculatedMaxY;
-    if (allYValues.length > 0) {
-      calculatedMinY = Math.min(...allYValues);
-      calculatedMaxY = Math.max(...allYValues);
 
-      const buffer = (calculatedMaxY - calculatedMinY) * 0.15;
-      calculatedMinY = calculatedMinY - buffer;
-      calculatedMaxY = calculatedMaxY + buffer;
-    } else {
-      calculatedMinY = undefined;
-      calculatedMaxY = undefined;
-    }
-
-    setChartData({ datasets, calculatedMinY, calculatedMaxY });
+    setChartData({ datasets });
   };
 
   const generatePriceChart = () => {
@@ -563,10 +551,7 @@ export default function Ror() {
       }
   
       setWeightedChartData({
-        datasets: allChartDatasets,
-        calculatedMinY: calculatedWeightedMinY,
-        calculatedMaxY: calculatedWeightedMaxY,
-      });
+        datasets: allChartDatasets});
       setPortfolioTotalReturns(tempPortfolioTotalReturns);
     }
   };
@@ -1020,16 +1005,16 @@ export default function Ror() {
         <>
           {/* First Chart Section: Individual Rate of Return Chart */}
           <div className="ror-chart-section" >
-            <h2>Individual Securities Rate of Return Chart</h2>
+            <h2>Individual Market Indices Rate of Return Chart</h2>
             <div className="customize-section">
               <h3>Customize Chart</h3>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={frequency} onChange={handleFrequencyChange}>
                   <option value="daily">Daily</option>
-                  <option value="monthly">Monthly</option>{/* Added monthly option */}
-                  <option value="quarter">Quarterly</option>
-                  <option value="annual">Annual</option>
+                  <option value="monthly">Monthly (Calendar Year)</option>{/* Added monthly option */}
+                  <option value="quarter">Quarterly (Calendar Year)</option>
+                  <option value="annual">Annual (Calendar Year)</option>
                 </select>
               </div>
 
@@ -1056,7 +1041,7 @@ export default function Ror() {
 
               {backendData.securities?.length > 0 && (
                 <div style={{ marginBottom: "20px" }}>
-                  <label style={{ marginRight: "10px", verticalAlign: "top" }}>Securities:</label>
+                  <label style={{ marginRight: "10px", verticalAlign: "top" }}>Market Indices:</label>
                   <button onClick={handleSelectAll} className="chart-button">
                     {selectedSecurities.length === backendData.securities.length
                       ? "Unselect All"
@@ -1093,7 +1078,7 @@ export default function Ror() {
 
             {selectedSecurities.length > 0 && (
             <div style={{ marginTop: '20px' }}>
-              <h3>Total Return by Security (Selected Time Period)</h3>
+              <h3>Total Return by Market Index (Selected Time Period)</h3>
               <ul>
                 {calculateIndividualReturns().map(({ sec, totalReturn }, idx) => (
                   <li key={idx}>
@@ -1134,7 +1119,7 @@ export default function Ror() {
     }}
   >
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-      <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Price Chart</h3>
+      <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Index Value Chart (End)</h3>
       <button
         onClick={() => priceChartRef.current?.resetZoom()}
         className="chart-button"
@@ -1195,7 +1180,13 @@ export default function Ror() {
           y: {
             title: { display: true, text: "Price ($)" },
             ticks: {
-              callback: (value) => `$${value}`,
+              callback: function(value) {
+                // Format value with commas if > 1000
+                if (value >= 1000 || value <= -1000) {
+                  return value.toLocaleString();
+                }
+                return value;
+              }
             },
           },
         },
@@ -1265,12 +1256,10 @@ export default function Ror() {
                             title: { display: true, text: "Date" },
                         },
                         y: {
-                          min: Math.floor(chartData?.calculatedMinY * 100) / 100,
-                          max: Math.ceil(chartData?.calculatedMaxY * 100) / 100,
                           ticks: {
                             callback: (value) => `${value}%`,
                           },
-                          title: { display: true, text: "Return (%)" },
+                          title: { display: true, text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Return (%)` },
                         },
                       },
                     }}
@@ -1288,9 +1277,9 @@ export default function Ror() {
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
                   <option value="daily">Daily</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarter">Quarterly</option>
-                  <option value="annual">Annual</option>
+                  <option value="monthly">Monthly (Calendar Year)</option>
+                  <option value="quarter">Quarterly (Calendar Year)</option>
+                  <option value="annual">Annual (Calendar Year)</option>
                 </select>
               </div>
 
@@ -1356,13 +1345,18 @@ export default function Ror() {
                                 <span>{sec}</span>
                               </label>
                               {portfolio.selectedSecurities.includes(sec) && (
-                                <input
-                                  type="number"
-                                  placeholder="Weight %"
-                                  value={portfolio.weights[sec] || ''}
-                                  onChange={(e) => handlePortfolioWeightChange(portfolio.id, sec, e.target.value)}
-                                  className="weight-change"
-                                />
+                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                               <input
+                                 type="number"
+                                 placeholder="Weight"
+                                 value={portfolio.weights[sec] || ''}
+                                 onChange={(e) => handlePortfolioWeightChange(portfolio.id, sec, e.target.value)}
+                                 className="weight-change"
+                                 style={{ width: '80px' }}
+                               />
+                               <span>%</span>
+                             </div>
+                                
                               )}
                             </div>
                           ))}
@@ -1465,12 +1459,11 @@ export default function Ror() {
                             title: { display: true, text: "Date" },
                           },
                           y: {
-                            min: Math.floor(weightedChartData?.calculatedMinY * 100) / 100,
-                            max: Math.ceil(weightedChartData?.calculatedMaxY * 100) / 100,
+                          
                             ticks: {
                               callback: (value) => `${value}%`,
                             },
-                            title: { display: true, text: "Return (%)" },
+                            title: { display: true, text: `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)} Return (%)` },
                           },
                         },
                       }}

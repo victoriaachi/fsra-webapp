@@ -38,6 +38,7 @@ def read_and_clean_sheet(xls, sheet_name):
         return df.dropna(subset=['Price'])
 
     return df
+
 def calculate_daily_ror(xls):
     result = {}
 
@@ -260,6 +261,13 @@ def get_annual_date_range(xls):
 
     return overall_min, overall_max
 
+def rename_keys(data_dict, rename_map):
+    renamed = {}
+    for old_key, value in data_dict.items():
+        new_key = rename_map.get(old_key, old_key)  # Use new name if exists, else original
+        renamed[new_key] = value
+    return renamed
+
 
 
 @ror_bp.route('/ror', methods=['POST'])
@@ -341,8 +349,21 @@ def ror():
             "annual": {k: v[:5] for k, v in list(annual.items())[:5]},
             "rawPrices": {k: v[:5] for k, v in list(raw_prices.items())[:5]}
         }
-        #print("=== DEBUG: First 5 entries of each section ===")
-        #print(json.dumps(debug_output, indent=2, default=str))
+
+        rename_map = {
+            "S&P_TSX Composite Index (Net TR": "S&P/TSX",
+            "MSCI World daily": "MSCI World",
+        }
+
+        daily = rename_keys(daily, rename_map)
+        monthly = rename_keys(monthly, rename_map)
+        quarter = rename_keys(quarterly, rename_map)
+        annual = rename_keys(annual, rename_map)
+        raw_prices = rename_keys(raw_prices, rename_map)
+
+        securities = [rename_map.get(s, s) for s in filtered_sheets]
+        # print("=== DEBUG: First 5 entries of each section ===")
+        # print(json.dumps(debug_output, indent=2, default=str))
         gc.collect()
         print(f"[Memory before returning response] {process.memory_info().rss / 1024**2:.2f} MB")
 
