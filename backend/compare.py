@@ -142,7 +142,7 @@ def compare_route():
             if i in misc_text:
                 mark_exclude(i, fields_excl)
                 compare_no_num += 1
-            elif i in found:
+            elif i in found or i in plan_info_keys:
                 mark_found(i, fields_found)
                 compare_no_num += 1
 

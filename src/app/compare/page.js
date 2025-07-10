@@ -5,6 +5,7 @@ import './page.css';
 export default function Compare() {
   const [ais, setAis] = useState(null);
   const [avr, setAvr] = useState(null);
+  const [excel, setExcel] = useState(null);
 
   const [aisText, setAisText] = useState("");
   const [avrText, setAvrText] = useState("");
@@ -24,9 +25,11 @@ export default function Compare() {
 
   const [aisDragging, setAisDragging] = useState(false);
   const [avrDragging, setAvrDragging] = useState(false);
+  const [excelDragging, setExcelDragging] = useState(false);
 
   const aisChange = (e) => setAis(e.target.files[0]);
   const avrChange = (e) => setAvr(e.target.files[0]);
+  const excelChange = (e) => setExcel(e.target.files[0]);
 
   const handleToggle = (name) => {
     setToggles((prev) => ({ ...prev, [name]: !prev[name] }));
@@ -53,8 +56,8 @@ export default function Compare() {
   };
 
   const fileSubmit = async () => {
-    if (!ais || !avr) {
-      setError("Please upload two files.");
+    if (!ais || !avr || !excel) {
+      setError("Please upload 3 files.");
       return;
     }
     setError("");
@@ -63,6 +66,7 @@ export default function Compare() {
     const formData = new FormData();
     formData.append("ais", ais);
     formData.append("avr", avr);
+    formData.append("excel", excel);
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/compare`, {
@@ -122,6 +126,25 @@ export default function Compare() {
             type="file"
             accept="application/pdf"
             onChange={avrChange}
+            disabled={loading}
+          />
+          <p>Or drag and drop a file here</p>
+          {avr && <p><strong>Selected:</strong> {avr.name}</p>}
+        </div>
+
+           {/* Excel File Upload */}
+        <div
+          className={`drop-zone ${excelDragging ? "dragging" : ""}`}
+          onDragOver={(e) => handleDrag(e, setExcelDragging)}
+          onDragLeave={(e) => handleDragLeave(e, setExcelDragging)}
+          onDrop={(e) => handleDrop(e, setExcelDragging, setExcel)}
+        >
+          <label htmlFor="avr">Excel File:</label>
+          <input
+            id="excel"
+            type="file"
+            accept=".xlsx,.xls,.xlsm, .xlsb"
+            onChange={excelChange}
             disabled={loading}
           />
           <p>Or drag and drop a file here</p>
