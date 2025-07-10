@@ -386,47 +386,45 @@ def compare_route():
                         break  # no need to check further substrings
 
         # avr values
-        
-        # Load Excel sheet (adjust path as needed)
-        df = pd.read_excel(excel_file, header=None)
+        xls = pd.ExcelFile(excel_file, engine="openpyxl")
 
-       import pandas as pd
-import re
+        financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
 
-# Load the Excel file
-xls = pd.ExcelFile("your_file.xlsx", engine="openpyxl")
+        records = []
 
-# Regular expression to match financial values
-financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
+        for sheet_name in xls.sheet_names:
+            df = xls.parse(sheet_name, header=None)
+            for row_idx, row in df.iterrows():
+                for col_idx, cell in row.items():
+                    value = None
 
-# Dictionary to store individual DataFrames
-value_dataframes = {}
+                    if isinstance(cell, str):
+                        matches = financial_pattern.findall(cell)
+                        for match in matches:
+                            value = match
+                            col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
+                            row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
+                            records.append([value, col_label, row_label, sheet_name])
+                    
+                    elif isinstance(cell, (int, float)):
+                        value = cell
+                        col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
+                        row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
+                        records.append([value, col_label, row_label, sheet_name])
 
-# Iterate through each sheet
-for sheet_name in xls.sheet_names:
-    df = xls.parse(sheet_name, header=None)
-    for row_idx, row in df.iterrows():
-        for col_idx, cell in row.items():
-            if isinstance(cell, str):
-                matches = financial_pattern.findall(cell)
-                for match in matches:
-                    value = match
-                    col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
-                    row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                    value_df = pd.DataFrame([[value, col_label, row_label, sheet_name]],
-                                            columns=["value", "col label", "row label", "sheet name"])
-                    value_dataframes[f"{sheet_name}_{row_idx}_{col_idx}_{value}"] = value_df
-            elif isinstance(cell, (int, float)):
-                value = cell
-                col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
-                row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                value_df = pd.DataFrame([[value, col_label, row_label, sheet_name]],
-                                        columns=["value", "col label", "row label", "sheet name"])
-                value_dataframes[f"{sheet_name}_{row_idx}_{col_idx}_{value}"] = value_df
+        # Create final DataFrame
+        merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
 
-# Example: Access one of the DataFrames
-example_key = list(value_dataframes.keys())[0]
-print(value_dataframes[example_key])
+        # Print full DataFrame without truncation
+        print(merged_df)
+        # with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+        #     print(merged_df)
+        page_8_df = merged_df[merged_df["sheet name"] == "page_8"]
+
+
+        # Print nicely
+        with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+            print(page_8_df)
 
         not_found = compare.count(0)
 
@@ -439,10 +437,10 @@ print(value_dataframes[example_key])
         for idx in [2, 3]:
             try:
                 date_str = filtered_plan_info[idx]
-                print(f"Original date at index {idx}: {date_str}")
+                #print(f"Original date at index {idx}: {date_str}")
                 date_obj = datetime.strptime(date_str, "%Y%m%d")
                 filtered_plan_info[idx] = date_obj.strftime("%B %d, %Y")
-                print(f"Formatted date at index {idx}: {filtered_plan_info[idx]}")
+                #print(f"Formatted date at index {idx}: {filtered_plan_info[idx]}")
             except Exception as e:
                 print(f"Error parsing date at index {idx}: {e}")
 
@@ -454,24 +452,24 @@ print(value_dataframes[example_key])
             # print(f"null/excluded fields: {null}")
             # print(f"fields: {ais_found_fields}")
             # print(f"found: {found}")
-            print(compare)
+            #print(compare)
 
             parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
             filtered_val_date = parsed_date.strftime("%B %d, %Y")
             # for i, val in enumerate(ais_vals):
             #     print(f"{i}: {val}")
-            print(f"parsing include {parsing_include}")
-            print(f"parsing exclude {parsing_exclude}")
-            print(f"zeros: {compare_zero}, tables: {compare_table}, invalid {compare_invalid}, rounding: {compare_rounding}, regular: {compare_reg}, no num: {compare_no_num}")
-            print(f"found: {fields_found}, not found: {fields_not_found}, excluded: {fields_excl}")
-            print(f"compare 1:{compare1}, 0:{compare0}, 3:{compare3}")
+            # print(f"parsing include {parsing_include}")
+            # print(f"parsing exclude {parsing_exclude}")
+            # print(f"zeros: {compare_zero}, tables: {compare_table}, invalid {compare_invalid}, rounding: {compare_rounding}, regular: {compare_reg}, no num: {compare_no_num}")
+            # print(f"found: {fields_found}, not found: {fields_not_found}, excluded: {fields_excl}")
+            # print(f"compare 1:{compare1}, 0:{compare0}, 3:{compare3}")
             #print("Formatted valuation date:", filtered_val_date)
 
             # Insert into results
             filtered_plan_info.insert(2, filtered_val_date)
             display_fields = list(zip(filtered_titles, filtered_values))
             plan_info = list(zip(plan_info_titles, filtered_plan_info))
-            print(plan_info)
+            #print(plan_info)
             #filtered_plan_titles.insert(2, "Valuation Date")
         except Exception as e:
             print(f"Error parsing valuation date: {e}")
@@ -481,8 +479,8 @@ print(value_dataframes[example_key])
         # print(filtered_plan_titles)
 
         print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
-        print(plan_info)
-        print(display_fields)
+        # print(plan_info)
+        # print(display_fields)
 
         return jsonify({
             "result": "Received both files successfully!",
