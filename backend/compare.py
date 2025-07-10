@@ -390,42 +390,43 @@ def compare_route():
         # Load Excel sheet (adjust path as needed)
         df = pd.read_excel(excel_file, header=None)
 
-        # Drop fully empty rows and columns
-        df.dropna(how='all', inplace=True)
-        df.dropna(axis=1, how='all', inplace=True)
-        df.reset_index(drop=True, inplace=True)
+       import pandas as pd
+import re
 
-        # Assume the first row contains column headers
-        column_labels = df.iloc[0, 2:]  # skip first two columns (label + dollar sign)
-        data = []
+# Load the Excel file
+xls = pd.ExcelFile("your_file.xlsx", engine="openpyxl")
 
-        # Go through each row starting from row 1 (skip header row)
-        for i in range(1, len(df)):
-            row = df.iloc[i]
-            row_label = row[0]  # first column is the label (e.g. "Market value of assets")
+# Regular expression to match financial values
+financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
 
-            for j, col_label in enumerate(column_labels):
-                value = row[j + 2]  # offset by 2 to account for initial columns
+# Dictionary to store individual DataFrames
+value_dataframes = {}
 
-                if pd.notna(value) and isinstance(value, (int, float)):
-                    data.append({
-                        "row_label": str(row_label),
-                        "col_label": str(col_label),
-                        "value": value
-                    })
+# Iterate through each sheet
+for sheet_name in xls.sheet_names:
+    df = xls.parse(sheet_name, header=None)
+    for row_idx, row in df.iterrows():
+        for col_idx, cell in row.items():
+            if isinstance(cell, str):
+                matches = financial_pattern.findall(cell)
+                for match in matches:
+                    value = match
+                    col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
+                    row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
+                    value_df = pd.DataFrame([[value, col_label, row_label, sheet_name]],
+                                            columns=["value", "col label", "row label", "sheet name"])
+                    value_dataframes[f"{sheet_name}_{row_idx}_{col_idx}_{value}"] = value_df
+            elif isinstance(cell, (int, float)):
+                value = cell
+                col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
+                row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
+                value_df = pd.DataFrame([[value, col_label, row_label, sheet_name]],
+                                        columns=["value", "col label", "row label", "sheet name"])
+                value_dataframes[f"{sheet_name}_{row_idx}_{col_idx}_{value}"] = value_df
 
-        # Convert to DataFrame
-        structured_df = pd.DataFrame(data)
-
-        # Print output
-        for _, row in structured_df.iterrows():
-            print(f"{row['row_label']} | {row['col_label']} → {row['value']}")
-
-
-
-        
-
-
+# Example: Access one of the DataFrames
+example_key = list(value_dataframes.keys())[0]
+print(value_dataframes[example_key])
 
         not_found = compare.count(0)
 
