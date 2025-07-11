@@ -43,7 +43,10 @@ def compare_route():
     titles = copy.deepcopy(field_names);
     # values in ais
     ais_vals = [""]*len(key_map);
-    avr_vals = [""]*len(key_map);
+    avr_vals = ["not matched"]*len(key_map);
+
+    # page numbers
+    avr_pages = ["test"]*len(key_map);
 
     # value metadata - percent, negative, etc
     ais_meta = [""]*len(key_map);
@@ -389,36 +392,63 @@ def compare_route():
 
         # avr values
         xls = pd.ExcelFile(excel_file, engine="openpyxl")
-
         financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
 
         records = []
-
         for sheet_name in xls.sheet_names:
             cleaned_sheet_name = clean_sheet_name(sheet_name)
             df = xls.parse(sheet_name, header=None)
+            current_section = ""  # Tracks the current header label
+
             for row_idx, row in df.iterrows():
+                first_cell = str(row.iloc[0]).strip().lower() if pd.notna(row.iloc[0]) else ""
+
+                is_header_row = (
+                    row.count() == 1 and  # only one non-empty cell
+                    isinstance(row.iloc[0], str) and
+                    not financial_pattern.search(row.iloc[0])
+                )
+
+                if is_header_row:
+                    current_section = first_cell  # update the section header
+                    continue
+
                 for col_idx, cell in row.items():
                     value = None
 
+                    # Build row label (composite with section)
+                    base_row_label = str(df.iloc[row_idx, 0]).strip() if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
+                    full_row_label = f"{current_section} {base_row_label}".strip() if current_section else base_row_label
+
+                    # Find nearest non-null column label above this row
+                    col_label = ""
+                    for r in range(row_idx - 1, -1, -1):
+                        above = df.iloc[r, col_idx]
+                        if pd.notna(above):
+                            col_label = str(above).strip()
+                            break
+
+                    # Skip if either label contains "table of contents"
+                    if "table of contents" in full_row_label.lower() or "table of contents" in col_label.lower():
+                        continue
+
+                    # Parse value
                     if isinstance(cell, str):
                         matches = financial_pattern.findall(cell)
                         for match in matches:
                             value = clean_numbers_pdf(match)
-                            col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
-                            row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                            records.append([value, col_label, row_label, cleaned_sheet_name])
-                    
+                            records.append([value, col_label, full_row_label, cleaned_sheet_name])
+
                     elif isinstance(cell, (int, float)):
                         value = cell
-                        col_label = str(df.iloc[0, col_idx]) if row_idx > 0 and pd.notna(df.iloc[0, col_idx]) else ""
-                        row_label = str(df.iloc[row_idx, 0]) if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                        records.append([value, col_label, row_label, cleaned_sheet_name])
+                        records.append([value, col_label, full_row_label, cleaned_sheet_name])
+
 
         # Create final DataFrame
         merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
         merged_df = merged_df.fillna("")
         excel_data = merged_df.to_dict(orient="records")
+
 
         # Print full DataFrame without truncation
         #print(merged_df)
@@ -451,13 +481,15 @@ def compare_route():
                         print("if statement")
                         best_score = score
                         best_value = excel_value
+                        best_page = row['sheet name']
                 
                 # If a good match was found, update avr_vals[i]
                 if best_value is not None:
                     avr_vals[i] = best_value
+                    avr_pages[i] = best_page
                     if best_value == ais_vals[i]:
                         compare[i] = 1  # mark as found only if values match
-                    print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
+                    print(f"✅ Excel exact match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
 
                 if best_value is not None:
                     avr_vals[i] = best_value
@@ -473,6 +505,7 @@ def compare_route():
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_ais_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_avr_values = [avr_vals[i] for i in range(len(compare)) if compare[i] == 0]
+        filtered_page_numbers = [avr_pages[i] for i in range(len(compare))if compare[i] == 0]
         print("here?")
         filtered_ais_values = format_numbers(filtered_ais_values)
         filtered_avr_values = format_numbers(filtered_avr_values)
@@ -514,7 +547,7 @@ def compare_route():
 
             # Insert into results
             filtered_plan_info.insert(2, filtered_val_date)
-            display_fields = list(zip(filtered_titles, filtered_ais_values, filtered_avr_values))
+            display_fields = list(zip(filtered_titles, filtered_ais_values, filtered_avr_values, filtered_page_numbers))
             print(display_fields)
             plan_info = list(zip(plan_info_titles, filtered_plan_info))
             #print(plan_info)

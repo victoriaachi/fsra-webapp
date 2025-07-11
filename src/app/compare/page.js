@@ -150,7 +150,7 @@ export default function Compare() {
             disabled={loading}
           />
           <p>Or drag and drop a file here</p>
-          {avr && <p><strong>Selected:</strong> {avr.name}</p>}
+          {excel && <p><strong>Selected:</strong> {excel.name}</p>}
         </div>
       </div>
 
@@ -222,14 +222,16 @@ export default function Compare() {
                     <th>Field Name</th>
                     <th>AIS Value</th>
                     <th>AVR Value</th>
+                    <th>Page Number</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {mismatchedFields.map(([title, aisValue, avrValue]) => (
+                  {mismatchedFields.map(([title, aisValue, avrValue, pageNumber]) => (
                     <tr key={title}>
                       <td>{title}</td>
                       <td>{aisValue}</td>
                       <td>{avrValue}</td>
+                      <td>{pageNumber}</td>
                     </tr>
                   ))}
                 </tbody>
