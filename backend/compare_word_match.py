@@ -1,6 +1,21 @@
 from rapidfuzz import fuzz
 import re
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import datetime
+
+def find_period(start_str, end_str):
+    # Parse the date strings
+    start_date = datetime.strptime(start_str, "%Y%m%d")
+    end_date = datetime.strptime(end_str, "%Y%m%d")
+
+    # Calculate the difference in days
+    days_diff = (end_date - start_date).days
+
+    # Divide by average days per year (including leap years)
+    years = days_diff / 365.25
+
+    return round(years)
+
 
 def extract_sum(text, match_start, match_end, window):
     start = max(0, match_start - window)

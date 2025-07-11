@@ -302,7 +302,7 @@ export default function Ror() {
       return;
     }
     if (selectedSecurities.length === 0) {
-      setIndividualChartError("Please select at least one security to display the chart.");
+      setIndividualChartError("Please select at least one market index to display the chart.");
       setChartData({ datasets: [] }); // Set datasets to empty for the empty state
       return;
     }
@@ -447,8 +447,10 @@ export default function Ror() {
     
       const rawData = backendData[weightedFrequency];
       let returnKey = `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)}Return`;
+      if (weightedFrequency === 'daily') returnKey = 'DailyReturn';
       if (weightedFrequency === 'monthly') returnKey = 'MonthlyReturn';
       if (weightedFrequency === 'quarter') returnKey = 'QuarterReturn';
+      if (weightedFrequency === 'annual') returnKey = 'AnnualReturn';
     
       // 🔍 Determine overlap window
       const allDatesPerSec = portfolio.selectedSecurities.map(sec => {
@@ -1244,14 +1246,20 @@ export default function Ror() {
                         x: {
                             type: "time",
                             time: {
-                                unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : (frequency === 'monthly' ? 'month' : 'year')), // Updated unit
-                                tooltipFormat: 'MMM dd, yyyy', 
-                                displayFormats: { 
-                                  year: 'yyyy',
-                                  month: 'MMM yyyy',
-                                  day: 'MMM dd, yyyy'
-                                },
-                               
+                              unit:
+                                frequency === "daily"
+                                  ? "day"
+                                  : frequency === "quarter"
+                                  ? "quarter"
+                                  : frequency === "monthly"
+                                  ? "month"
+                                  : "year",
+                              tooltipFormat: "MMM dd, yyyy",
+                              displayFormats: {
+                                year: "yyyy",
+                                month: "MMM yyyy",
+                                day: "MMM dd, yyyy",
+                              },
                             },
                             title: { display: true, text: "Date" },
                         },
@@ -1448,14 +1456,33 @@ export default function Ror() {
                           x: {
                             type: "time",
                             time: {
-                              unit: frequency === 'daily' ? 'day' : (frequency === 'quarter' ? 'quarter' : (frequency === 'monthly' ? 'month' : 'year')), // Updated unit
-                              tooltipFormat: 'MMM dd, yyyy', 
-                              displayFormats: { 
-                                year: 'yyyy',
-                                month: 'MMM yyyy',
-                                day: 'MMM dd, yyyy'
+                              unit:
+                                weightedFrequency === "daily"
+                                  ? "day"
+                                  : weightedFrequency === "quarter"
+                                  ? "quarter"
+                                  : weightedFrequency === "monthly"
+                                  ? "month"
+                                  : "year",
+                              tooltipFormat: "MMM dd, yyyy",
+                              displayFormats: {
+                                year: "yyyy",
+                                month: "MMM yyyy",
+                                day: "MMM dd, yyyy",
+                              },
+                              round: false,
+                              ticks: {
+                                source: 'auto',
+                                callback: function(value, index, values) {
+                                  const date = new Date(value);
+                                  if (this.options.time.unit === 'year') {
+                                    return date.getFullYear();
+                                  }
+                                  return ChartJS.Ticks.formatters.datetime.call(this, value, index, values);
+                                }
                               }
-                          },
+                            },
+                            
                             title: { display: true, text: "Date" },
                           },
                           y: {
@@ -1471,7 +1498,7 @@ export default function Ror() {
                    
                   </>
                 ) : (
-                  <p style={{ textAlign: 'center', color: '#555' }}>Please select securities and weights for at least one portfolio to display the weighted chart.</p>
+                  <p style={{ textAlign: 'center', color: '#555' }}>Please select market indices and weights for at least one portfolio to display the weighted chart.</p>
                 )}
               </div>
             )}

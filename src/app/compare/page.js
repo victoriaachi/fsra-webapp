@@ -202,6 +202,7 @@ export default function Compare() {
 
           <div className="container">
             <h2>Missing / Mismatched Fields</h2>
+            <p>Disclaimer: DC normal cost, membership data and sensitivity information excluded in comparison</p>
             <div>
               <span>Show</span>
               <label className="toggle-switch">
@@ -266,7 +267,8 @@ export default function Compare() {
          
           )}
                     
-
+          <h2>ais text</h2>
+          <pre>{aisText}</pre>
           <h2>avr text </h2>
           <pre>{avrText}</pre>
         

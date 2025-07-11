@@ -7,9 +7,9 @@ import pandas as pd
 from rapidfuzz import fuzz
 from datetime import datetime
 from itertools import combinations
-from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info_keys, val_date, plan_info_titles, misc_text, found
+from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info_keys, val_date, plan_info_titles, misc_text, found, dc_nc, sensitivity, membership, solv_incr
 from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers, clean_sheet_name
-from compare_word_match import avr_match_dec, extract_num, extract_sum
+from compare_word_match import avr_match_dec, extract_num, extract_sum, find_period
 
 fuzzy_threshold = 40 
 sum_fuzzy_threshold = 80
@@ -62,6 +62,9 @@ def compare_route():
     fields_not_found = 0
     fields_excl = 0  
 
+    incremental_cost = 0
+    num_years = 0
+
     #test
 
 
@@ -101,6 +104,7 @@ def compare_route():
                     field_count += 1;
                     parsing_exclude += 1
                     seen_fields.add(field_name)
+                    ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                 
                 elif field_name not in seen_fields:
                     print("hello")
@@ -119,6 +123,9 @@ def compare_route():
         # for checking lines 125-127
         titles[204] = ais_vals[203]
         titles[206] = ais_vals[205]
+        num_years = find_period(ais_vals[3], ais_vals[4])
+        incremental_cost = extract_num(ais_vals[solv_incr]) * num_years
+        ais_vals[solv_incr] = str(incremental_cost)
 
         gc.collect()
         print(f"[After closing AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
@@ -139,7 +146,7 @@ def compare_route():
 
         not_num = 0;
         zero = 0
-        special_rounding_indices = set(ratios) | set(rounding)
+        special_rounding_indices = set(ratios) | set(rounding) 
         compare_invalid = 0
         compare_no_num = 0
         compare_zero = 0
@@ -151,7 +158,7 @@ def compare_route():
             if i in misc_text:
                 mark_exclude(i, fields_excl)
                 compare_no_num += 1
-            elif i in found or i in plan_info_keys:
+            elif i in found or i in plan_info_keys or i in dc_nc or i in membership or i in sensitivity:
                 mark_found(i, fields_found)
                 compare_no_num += 1
 
@@ -218,6 +225,43 @@ def compare_route():
                 not_num += 1
                 compare_no_num += 1
                 print("no numbers extracted")
+            
+            # solvency incremental cost
+            elif i == solv_incr:
+                compare_rounding += 1
+                variants = [str(int(float(ais_vals[i])) + offset) for offset in range(-3, 4)]
+
+                print(f"🔎 Checking numeric/rounded variants for '{val}': {variants}")
+
+                best_score = 0
+                best_context = ""
+                found_match = False
+
+                for variant in variants:
+                    pattern = r'\b' + re.escape(variant) + r'\b'
+                    matches = list(re.finditer(pattern, avr_text))
+
+                    for match in matches:
+                        match_pos = match.start()
+                        context_start = max(0, match_pos - 250)
+                        context_end = min(len(avr_text), match_pos + 250)
+                        context = avr_text[context_start:context_end]
+
+                        score = fuzz.partial_ratio(titles[i].lower(), context.lower())
+                        if score > best_score:
+                            best_score = score
+                            best_context = context
+                            found_match = True
+
+                if best_score >= fuzzy_threshold and found_match:
+                    mark_found(i, fields_found)
+                    print(f"✅ Found nearby numeric variant of '{val}' (score={best_score})")
+                    print(f"↪ Context: {best_context[:200]}...")
+                else:
+                    mark_not_found(i, fields_not_found)
+                    print(f"❌ No numeric variant matched '{val}' (max score={best_score})")
+
+
             
               # percentage / rounded numbers — exact numeric variant match, fuzzy title match
             elif i in special_rounding_indices:
@@ -558,7 +602,7 @@ def compare_route():
         #print(filtered_plan_info)
         # filtered_plan_titles = plan_info_titles
         # print(filtered_plan_titles)
-
+        print(incremental_cost)
         print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
         # print(plan_info)
         # print(display_fields)

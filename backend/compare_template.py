@@ -797,19 +797,27 @@ field_names = [
     "",
 ]
 
+
+# non numerical values
 exclude = ["C003", "F006", "F0065", "F0067", "F0063", "F0062", "F0064", "F0066", "F006Other", "I020", "I021", "I20other", "I21other",
             "I036a", "I036ai", "l036aii", "I036aiii", "I036bi", "I036biim", "I036biif", "I037_includ",
             "I037_sep", "I037_no", "I038ai", "I038ae", "I038aei", "I038bi", "I038be", "I038bei", "I039", "I040", "I041",
             "K102", "K103", "L110", "M135", "M136", "M136a", "O137", "O138e", "O1391", "O1393", "O1394", "O1399a", "O1399b", "O141", "O144.(i)", "O144.(ii)"]
 
+# percentages
 ratios = [273, 282]
 
+# include variations to round up/down
 rounding = [59, 64, 67, 126, 175]
 
+# dates, don't format
 dates = [3, 4]
+
+# period start dates
 
 dates_excl = [14, 15, 16, 17, 18, 19, 20, 21]
 
+# mortality tables
 table_other = [105, 159, 161] #161
 
 table_check = [104, 158, 160] #160
@@ -818,14 +826,27 @@ gc_mortality = ["A", "B", "C", "Other", "CPM2014", "F", "CPM2014Priv"]
 
 solv_mortality = ["1994 UP Generational", "CPM2014Priv", "CPM2014", "CPM2014Publ"]
 
+# plan info 
 plan_info_keys = [0, 1, 3, 4, 386, 387, 388, 389]
-
-val_date = [384, 383, 385]
-
-misc_text = [203, 205]
-
-found = [383, 384, 385, 386, 387, 388, 389, 390]
-
 
 plan_info_titles = ["Pension Plan Name", "Registration Number", "Valuation Date", "Start Date", "End Date", "Actuary Name",
                     "Firm Name", "Actuary Phone Number", "Actuary Email Address"]
+
+# valuation date
+val_date = [384, 383, 385]
+
+# lines 125-127
+misc_text = [203, 205]
+
+# actuary contact info
+found = [383, 384, 385, 386, 387, 388, 389, 390]
+
+# don't search for these
+dc_nc = [33, 34, 38, 39, 43, 45, 49, 50]
+
+membership = [58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68]
+
+sensitivity = [178, 179, 180, 181, 182, 183, 184, 185, 186]
+
+# solvency incremental cost key
+solv_incr = 174
