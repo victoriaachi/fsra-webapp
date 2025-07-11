@@ -12,7 +12,7 @@ from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf,
 from compare_word_match import avr_match_dec, extract_num, extract_sum, find_period
 
 fuzzy_threshold = 40 
-sum_fuzzy_threshold = 80
+sum_fuzzy_threshold = 60
 sparkle_fuzzy_threshold = 80
 window_size = 250
 max_combo = 3
