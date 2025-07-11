@@ -12,8 +12,10 @@ from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf,
 from compare_word_match import avr_match_dec, extract_num, extract_sum
 
 fuzzy_threshold = 40 
-sum_fuzzy_threshold = 60
-sparkle_fuzzy_threshold = 60
+sum_fuzzy_threshold = 80
+sparkle_fuzzy_threshold = 80
+window_size = 250
+max_combo = 3
 sum_tol = 0.01
 
 compare_bp = Blueprint('compare', __name__)
@@ -350,9 +352,7 @@ def compare_route():
         print(f"not found: {compare0}")
 
 
-        fuzzy_sum_threshold = 60
-        WINDOW_SIZE = 250
-        MAX_COMBO = 3
+
 
         for i, val in enumerate(compare):
             if val == 0:
@@ -371,10 +371,10 @@ def compare_route():
                     snippet = m.group()
                     score = fuzz.token_set_ratio(snippet.lower(), title.lower())
 
-                    if score >= fuzzy_sum_threshold:
-                        nums_nearby = extract_sum(avr_text, m.start(), m.end(), WINDOW_SIZE)
+                    if score >= sum_fuzzy_threshold:
+                        nums_nearby = extract_sum(avr_text, m.start(), m.end(), window_size)
 
-                        for combo_size in range(2, min(MAX_COMBO, len(nums_nearby)) + 1):
+                        for combo_size in range(2, min(max_combo, len(nums_nearby)) + 1):
                             for combo in combinations(nums_nearby, combo_size):
                                 if abs(sum(combo) - expected_value) < 0.01:
                                     compare[i] = 1  # mark found
@@ -428,7 +428,6 @@ def compare_route():
         for i, val in enumerate(compare):
 
             if val == 0:
-                print("inside if")
                 best_score = 0
                 best_value = None
                 
