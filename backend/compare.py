@@ -43,6 +43,7 @@ def compare_route():
     titles = copy.deepcopy(field_names);
     # values in ais
     ais_vals = [""]*len(key_map);
+    ais_display = [""]*len(key_map);
     avr_vals = ["not matched"]*len(key_map);
 
     # page numbers
@@ -108,13 +109,14 @@ def compare_route():
                 
                 elif field_name not in seen_fields:
                     print("hello")
-                    field_val = clean_numbers_val(field_val, ais_meta, field_count)
+                    cleaned_val = clean_numbers_val(field_val, ais_meta, field_count)
                     if field_count in ratios:
                         ais_meta[field_count] = "%"
                     ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                     ais_found_fields += 1
                     valid_field[field_count] = 1
-                    ais_vals[field_count] = field_val
+                    ais_vals[field_count] = cleaned_val
+                    ais_display[field_count] = field_val
                     seen_fields.add(field_name)
                     field_count += 1
                     parsing_include += 1 
@@ -547,7 +549,7 @@ def compare_route():
 
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
-        filtered_ais_values = [ais_vals[i] for i in range(len(compare)) if compare[i] == 0]
+        filtered_ais_values = [ais_display[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_avr_values = [avr_vals[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_page_numbers = [avr_pages[i] for i in range(len(compare))if compare[i] == 0]
         print("here?")
