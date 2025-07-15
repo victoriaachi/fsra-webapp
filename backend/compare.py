@@ -6,7 +6,7 @@ import pymupdf, pdfplumber
 import pandas as pd
 from rapidfuzz import fuzz
 from datetime import datetime
-from itertools import combinations
+from itertools import combinations, product
 from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info_keys, val_date, plan_info_titles, misc_text, found, dc_nc, sensitivity, membership, solv_incr
 from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers, clean_sheet_name
 from compare_word_match import avr_match_dec, extract_num, extract_sum, find_period
@@ -47,7 +47,7 @@ def compare_route():
     avr_vals = ["not matched"]*len(key_map);
 
     # page numbers
-    avr_pages = ["test"]*len(key_map);
+    avr_pages = ["not matched"]*len(key_map);
 
     # value metadata - percent, negative, etc
     ais_meta = [""]*len(key_map);
@@ -425,11 +425,17 @@ def compare_route():
 
                         for combo_size in range(2, min(max_combo, len(nums_nearby)) + 1):
                             for combo in combinations(nums_nearby, combo_size):
-                                if abs(sum(combo) - expected_value) < 0.01:
-                                    compare[i] = 1  # mark found
-                                    print(f"✅ Sum found for index {i}: {combo} for {titles[i]} {ais_vals[i]} near fuzzy match with score {score}")
-                                    found_combo = True
+                                # Try all +/- sign combinations for the current combo
+                                for signs in product([1, -1], repeat=len(combo)):
+                                    signed_sum = sum(s * n for s, n in zip(signs, combo))
+                                    if abs(signed_sum - expected_value) < 0.01:
+                                        compare[i] = 1  # mark found
+                                        print(f"✅ Match found with +/- signs for index {titles[i]} {i}: {combo} → target: {expected_value}, actual: {signed_sum} near fuzzy match with score {score}")
+                                        found_combo = True
+                                        break
+                                if found_combo:
                                     break
+
                             if found_combo:
                                 break
 
@@ -543,19 +549,15 @@ def compare_route():
                     print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
                 
         
-        print("hi")
         not_found = compare.count(0)
-        print("hi")
 
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_ais_values = [ais_display[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_avr_values = [avr_vals[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_page_numbers = [avr_pages[i] for i in range(len(compare))if compare[i] == 0]
-        print("here?")
         filtered_ais_values = format_numbers(filtered_ais_values)
         filtered_avr_values = format_numbers(filtered_avr_values)
-        print("hi")
 
         filtered_plan_info = [ais_vals[i] for i in plan_info_keys]
         for idx in [2, 3]:
