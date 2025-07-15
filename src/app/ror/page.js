@@ -81,6 +81,7 @@ export default function Ror() {
   const [priceChartData, setPriceChartData] = useState(null);
   // NEW: State for individual chart errors
   const [individualChartError, setIndividualChartError] = useState("");
+  const [individualTotalReturns, setIndividualTotalReturns] = useState([]);
 
 
   // New: portfolios state for multiple portfolios
@@ -135,6 +136,15 @@ export default function Ror() {
   useEffect(() => {
     generateWeightedChart();
   }, [backendData, weightedFrequency]);
+
+  useEffect(() => {
+    if (backendData && selectedSecurities.length > 0) {
+        const returns = calculateIndividualReturns(backendData, selectedSecurities, startDate, endDate);
+        setIndividualTotalReturns(returns);
+    } else {
+        setIndividualTotalReturns([]);
+    }
+}, [backendData, selectedSecurities, startDate, endDate]);
 
 
   // Handle Excel file input change
@@ -502,18 +512,24 @@ export default function Ror() {
       const portfolioYValues = sortedPortfolioData.map(p => p.y);
       allYValuesAcrossPortfolios.push(...portfolioYValues);
     
-      const portfolioCalculatedReturn = calculatePortfolioReturns(
+      const result = calculatePortfolioReturns(
         portfolio,
         backendData,
-        finalStart.toISOString().split("T")[0],
-        finalEnd.toISOString().split("T")[0]
+        weightedStartDate, // Pass original weightedStartDate
+        weightedEndDate // Pass original weightedEndDate
       );
-    
+      
+      const name = result.isPartialPeriod ? `${portfolio.name} (Partial Period)` : portfolio.name;
+      console.log(name);
+      
       tempPortfolioTotalReturns.push({
         id: portfolio.id,
         name: portfolio.name,
-        totalReturn: portfolioCalculatedReturn,
+        totalReturn: result.value,
+        isPartial: result.isPartialPeriod,
       });
+      
+      
     
       if (sortedPortfolioData.length > 0) {
         allChartDatasets.push({
@@ -558,99 +574,103 @@ export default function Ror() {
     }
   };
   
+// Helper function to find the closest price on or before a given date
+const findPriceOnOrBefore = (data, targetDateObj) => {
+    if (!targetDateObj) return { price: null, date: null };
 
-  const calculatePortfolioReturns = (portfolio, backendData, startDate, endDate) => {
-    const start = startDate ? new Date(new Date(startDate).getTime() - 24 * 60 * 60 * 1000) : null;
-    const end = endDate ? new Date(endDate) : null;
-  
-    let simpleWeightedPortfolioReturn = 0;
-    let allSecuritiesHaveValidPrices = true;
-  
-    portfolio.selectedSecurities.forEach(sec => {
-      const weightFraction = (portfolio.weights[sec] || 0) / 100;
-      const allSecDailyData = backendData.daily[sec] || [];
-      const sortedData = [...allSecDailyData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
-  
-      let startPrice = null;
-      let startPriceDate = null;
-      let endPrice = null;
-      let endPriceDate = null;
-  
-      if (sortedData.length > 0) {
-        if (start) {
-          let foundStartDataPoint = null;
-          for (let i = sortedData.length - 1; i >= 0; i--) {
-            if (new Date(sortedData[i].Date) <= start) {
-              foundStartDataPoint = sortedData[i];
-              break;
-            }
-          }
-          if (foundStartDataPoint) {
-            startPrice = foundStartDataPoint.Price;
-            startPriceDate = foundStartDataPoint.Date;
-          } else {
-            startPrice = sortedData[0].Price;
-            startPriceDate = sortedData[0].Date;
-          }
-        } else {
-          startPrice = sortedData[0].Price;
-          startPriceDate = sortedData[0].Date;
+    let foundPrice = null;
+    let foundDate = null;
+    
+    // Iterate backwards to find the last price on or before targetDate
+    for (let i = data.length - 1; i >= 0; i--) {
+        const dataPointDate = new Date(data[i].Date);
+        if (dataPointDate <= targetDateObj) {
+            foundPrice = data[i].Price;
+            foundDate = data[i].Date;
+            break;
         }
-      }
-  
-      if (sortedData.length > 0) {
-        if (end) {
-          let foundEndDataPoint = null;
-          for (let i = sortedData.length - 1; i >= 0; i--) {
-            if (new Date(sortedData[i].Date) <= end) {
-              foundEndDataPoint = sortedData[i];
-              break;
-            }
-          }
-          if (foundEndDataPoint) {
-            endPrice = foundEndDataPoint.Price;
-            endPriceDate = foundEndDataPoint.Date;
-          }
-        } else {
-          endPrice = sortedData[sortedData.length - 1].Price;
-          endPriceDate = sortedData[sortedData.length - 1].Date;
-        }
-      }
-  
-      if (
-        startPrice === null || endPrice === null ||
-        typeof startPrice !== "number" || typeof endPrice !== "number" ||
-        isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
-      ) {
-        allSecuritiesHaveValidPrices = false;
-        return;
-      }
-  
-      const securityTotalReturn = (endPrice / startPrice) - 1;
-      const weightedContribution = securityTotalReturn * weightFraction;
-      simpleWeightedPortfolioReturn += weightedContribution;
-    });
-  
-    if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
-      return (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%";
-    } else if (portfolio.selectedSecurities.length === 0) {
-      return "N/A (No securities selected)";
-    } else {
-      return "N/A (Missing price data or invalid range for some securities)";
     }
-  };
+    
+    // If no date found before or on targetDate, take the very first available data point
+    if (foundPrice === null && data.length > 0) {
+        foundPrice = data[0].Price;
+        foundDate = data[0].Date;
+    }
+    return { price: foundPrice, date: foundDate };
+};
+
+const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDateStr) => {
+  const userStartDateObj = startDateStr ? new Date(startDateStr) : null;
+  const userEndDateObj = endDateStr ? new Date(endDateStr) : null;
+
+  let simpleWeightedPortfolioReturn = 0;
+  let allSecuritiesHaveValidPrices = true;
+  let isPartialPeriod = false;
+
+  portfolio.selectedSecurities.forEach(sec => {
+    const weightFraction = (portfolio.weights[sec] || 0) / 100;
+    const allSecDailyData = backendData.daily[sec] || [];
+    const sortedData = [...allSecDailyData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+
+    // Find start price
+    const { price: startPrice, date: startPriceDate } = findPriceOnOrBefore(sortedData, userStartDateObj);
+
+    // Find end price
+    const { price: endPrice, date: endPriceDate } = findPriceOnOrBefore(sortedData, userEndDateObj);
+
+    // Check if the found dates are exactly the user's requested dates (if provided)
+    // If user provided a start date AND the found start price date doesn't match the user's start date
+    if (startDateStr && formatDateUTC(startPriceDate) !== startDateStr) {
+      isPartialPeriod = true;
+    }
+    // If user provided an end date AND the found end price date doesn't match the user's end date
+    if (endDateStr && formatDateUTC(endPriceDate) !== endDateStr) {
+      isPartialPeriod = true;
+    }
+
+    if (
+      startPrice === null || endPrice === null ||
+      typeof startPrice !== "number" || typeof endPrice !== "number" ||
+      isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
+    ) {
+      allSecuritiesHaveValidPrices = false;
+      return;
+    }
+
+    const securityTotalReturn = (endPrice / startPrice) - 1;
+    const weightedContribution = securityTotalReturn * weightFraction;
+    simpleWeightedPortfolioReturn += weightedContribution;
+  });
+
+  if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
+    return {
+      value: (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%",
+      isPartialPeriod,
+    };
+  } else if (portfolio.selectedSecurities.length === 0) {
+    return {
+      value: "N/A (No securities selected)",
+      isPartialPeriod: false,
+    };
+  } else {
+    return {
+      value: "N/A (Missing price data or invalid range for some securities)",
+      isPartialPeriod: false,
+    };
+  }
+};
   
 
   // Calculate total returns for selected securities (daily data)
-  const calculateIndividualReturns = () => {
+  const calculateIndividualReturns = (backendData, selectedSecurities, startDateStr, endDateStr) => {
     if (!backendData || selectedSecurities.length === 0) return [];
   
     const rawData = backendData["rawPrices"];
-    const start = startDate ? new Date(new Date(startDate).getTime() - 24 * 60 * 60 * 1000) : null;
-    const end = endDate ? new Date(endDate) : null;
+    const userStartDateObj = startDateStr ? new Date(startDateStr) : null;
+    const userEndDateObj = endDateStr ? new Date(endDateStr) : null;
   
     console.log(`--- Calculating Individual Security Total Returns ---`);
-    console.log(`  Individual Chart Date Range: Start = ${startDate}, End = ${endDate}`);
+    console.log(`  Individual Chart Date Range: Start = ${startDateStr}, End = ${endDateStr}`);
   
     return selectedSecurities.map(sec => {
       const allData = rawData[sec] || [];
@@ -658,72 +678,44 @@ export default function Ror() {
   
       if (sortedData.length === 0) {
         console.log(`  ${sec}: No price data available`);
-        return { sec, totalReturn: "N/A" };
+        return { sec, totalReturn: "N/A (No data)", disclaimer: "" }; // Initialize disclaimer to empty
       }
-  
-      let startPrice = null;
-      let startPriceDate = null;
-      let endPrice = null;
-      let endPriceDate = null;
   
       // Find start price
-      if (start) {
-        let foundStartDataPoint = null;
-        for (let i = sortedData.length - 1; i >= 0; i--) {
-          const dataPointDate = new Date(sortedData[i].Date);
-          if (dataPointDate <= start) {
-            foundStartDataPoint = sortedData[i];
-            break;
-          }
-        }
-        if (foundStartDataPoint) {
-          startPrice = foundStartDataPoint.Price;
-          startPriceDate = foundStartDataPoint.Date;
-        } else {
-          startPrice = sortedData[0].Price;
-          startPriceDate = sortedData[0].Date;
-        }
-      } else {
-        startPrice = sortedData[0].Price;
-        startPriceDate = sortedData[0].Date;
-      }
+      const { price: startPrice, date: startPriceDate } = findPriceOnOrBefore(sortedData, userStartDateObj);
   
       // Find end price
-      if (end) {
-        let foundEndDataPoint = null;
-        for (let i = sortedData.length - 1; i >= 0; i--) {
-          const dataPointDate = new Date(sortedData[i].Date);
-          if (dataPointDate <= end) {
-            foundEndDataPoint = sortedData[i];
-            break;
-          }
-        }
-        if (foundEndDataPoint) {
-          endPrice = foundEndDataPoint.Price;
-          endPriceDate = foundEndDataPoint.Date;
-        }
-      } else {
-        endPrice = sortedData[sortedData.length - 1].Price;
-        endPriceDate = sortedData[sortedData.length - 1].Date;
-      }
+      const { price: endPrice, date: endPriceDate } = findPriceOnOrBefore(sortedData, userEndDateObj);
   
       // 🔍 Logging start/end date and price info
       console.log(`  ${sec}:`);
       console.log(`    Start Date Used: ${startPriceDate}, Start Price: ${startPrice}`);
       console.log(`    End Date Used:   ${endPriceDate}, End Price:   ${endPrice}`);
   
+      let isPartial = false;
+      // If user provided a start date AND the found start price date doesn't match the user's start date
+      if (startDateStr && formatDateUTC(startPriceDate) !== startDateStr) {
+        isPartial = true;
+      }
+      // If user provided an end date AND the found end price date doesn't match the user's end date
+      if (endDateStr && formatDateUTC(endPriceDate) !== endDateStr) {
+        isPartial = true;
+      }
+      const disclaimer = isPartial ? " (Partial Period)" : "";
+
+
       if (
         startPrice === null || endPrice === null ||
         typeof startPrice !== "number" || typeof endPrice !== "number" ||
         isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
       ) {
-        return { sec, totalReturn: "N/A" };
+        return { sec, totalReturn: "N/A (Missing price data or invalid range)", disclaimer };
       }
   
       const totalReturnDecimal = (endPrice / startPrice) - 1;
       const totalReturn = (totalReturnDecimal * 100).toFixed(2) + "%";
-  
-      return { sec, totalReturn };
+      
+      return { sec, totalReturn, disclaimer };
     });
   };
   
@@ -1082,12 +1074,13 @@ export default function Ror() {
             <div style={{ marginTop: '20px' }}>
               <h3>Total Return by Market Index (Selected Time Period)</h3>
               <ul>
-                {calculateIndividualReturns().map(({ sec, totalReturn }, idx) => (
+                {individualTotalReturns.map(({ sec, totalReturn, disclaimer }, idx) => (
                   <li key={idx}>
-                    <strong>{sec}</strong>: {totalReturn}
+                    <strong>{sec}</strong>{disclaimer || ''}: {totalReturn}
                   </li>
                 ))}
               </ul>
+
             </div>
           )}
 
@@ -1411,9 +1404,12 @@ export default function Ror() {
               <div style={{ marginTop: "20px" }}>
                   <h3>Portfolio Total Returns:</h3>
                   {portfolioTotalReturns.map((p, idx) => ( // Change here: iterate over portfolioTotalReturns
-                      <p key={idx}>
-                          <strong>{p.name}:</strong> {p.totalReturn}
-                      </p>
+                    <p key={idx}>
+                      <strong>
+                        {p.name}{p.isPartial ? " (Partial Period)" : ""}:
+                      </strong> {p.totalReturn}
+                    </p>
+
                   ))}
               </div>
           )}
