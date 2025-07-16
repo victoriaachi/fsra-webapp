@@ -20,8 +20,11 @@ export default function Compare() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [toggles, setToggles] = useState({
-    plan: true,
-    ais: true,
+    info: true,
+    fields: true,
+    ais: false,
+    avr: false,
+
   });
 
   const [aisDragging, setAisDragging] = useState(false);
@@ -169,18 +172,18 @@ export default function Compare() {
           <div className="container">
             <h2>Plan Information</h2>
             <div>
-              <span>Show</span>
+             <span>{toggles.info ? "Hide" : "Show"}</span>
               <label className="toggle-switch">
                 <input
                   type="checkbox"
-                  checked={toggles.plan}
-                  onChange={() => handleToggle("plan")}
+                  checked={toggles.info}
+                  onChange={() => handleToggle("info")}
                 />
                 <span className="slider"></span>
               </label>
             </div>
 
-            {toggles.plan && (
+            {toggles.info && (
               <table className="table">
                 <thead>
                   <tr>
@@ -204,19 +207,19 @@ export default function Compare() {
             <h2>Missing / Mismatched Fields</h2>
             <p>Disclaimer: DC normal cost, membership data and sensitivity information excluded in comparison</p>
             <div>
-              <span>Show</span>
+              <span>{toggles.fields ? "Hide" : "Show"}</span>
               <label className="toggle-switch">
                 <input
                   type="checkbox"
-                  checked={toggles.ais}
-                  onChange={() => handleToggle("ais")}
+                  checked={toggles.fields}
+                  onChange={() => handleToggle("fields")}
                 />
                 <span className="slider"></span>
               </label>
               <h3>Number of Fields not Found: {mismatchedFields.length}</h3>
             </div>
 
-            {toggles.ais && (
+            {toggles.fields && (
               <table className="table">
                 <thead>
                   <tr>
@@ -240,7 +243,7 @@ export default function Compare() {
             )}
           </div>
 
-          {excelData.length > 0 && (
+          {/* {excelData.length > 0 && (
            <div className="container">
            <h2>Excel Data</h2>
            <table className="table">
@@ -265,12 +268,35 @@ export default function Compare() {
            </table>
          </div>
          
-          )}
-                    
-          <h2>ais text</h2>
-          <pre>{aisText}</pre>
-          <h2>avr text </h2>
-          <pre>{avrText}</pre>
+          )} */}
+          <div>
+            <h2>AIS Text</h2>
+            <span>{toggles.ais ? "Hide" : "Show"}</span>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={toggles.ais}
+                onChange={() => handleToggle("ais")}
+              />
+              <span className="slider"></span>
+            </label>
+            {toggles.ais && <pre>{aisText}</pre>}
+          </div>
+
+          <div>
+            <h2>AVR Text</h2>
+            <span>{toggles.avr ? "Hide" : "Show"}</span>
+            <label className="toggle-switch">
+              <input
+                type="checkbox"
+                checked={toggles.avr}
+                onChange={() => handleToggle("avr")}
+              />
+              <span className="slider"></span>
+            </label>
+            {toggles.avr && <pre>{avrText}</pre>}
+          </div>
+
         
         </>
       )}

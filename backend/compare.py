@@ -105,7 +105,7 @@ def compare_route():
                     field_count += 1;
                     parsing_exclude += 1
                     seen_fields.add(field_name)
-                    ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
+                    #ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                 
                 elif field_name not in seen_fields:
                     print("hello")
