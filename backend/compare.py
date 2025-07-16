@@ -112,7 +112,7 @@ def compare_route():
                     cleaned_val = clean_numbers_val(field_val, ais_meta, field_count)
                     if field_count in ratios:
                         ais_meta[field_count] = "%"
-                    ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
+                    ais_text += f"{titles[field_count]}: {field_val}\n"
                     ais_found_fields += 1
                     valid_field[field_count] = 1
                     ais_vals[field_count] = cleaned_val
