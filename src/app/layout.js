@@ -13,9 +13,10 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body>
         <nav className="sidebar">
-          <h2>Dashboard</h2>
+          <img src="/parrot-wave.png"/>
+          <h2>Parrot-ssistant</h2> 
           <ul>
-            <li><Link href="/">Home</Link></li>
+            {/* <li><Link href="/">Home</Link></li> */}
             <li><Link href="/compare">AIS vs AVR Compare Tool</Link></li>
             {/* <li><Link href="/pba">PBA Search</Link></li> */}
             {/* <li><Link href="/feature3">Feature 3</Link></li> */}
