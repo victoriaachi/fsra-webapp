@@ -992,7 +992,16 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       </div>
 
       {loading && (
-        <div className="loading-screen">Calculating data, please wait...</div>
+        <div className="loading-screen">
+        <div>Calculating data, please wait</div>
+        <div className="loading-content">
+          <img src="/parrot-think.png" style={{width:'200px', height:'200px'}}/>
+          <div className="loading-dots">
+            <span>.</span><span>.</span><span>.</span>
+          </div>
+        </div>
+      </div>
+        
       )}
 
       {backendData && (

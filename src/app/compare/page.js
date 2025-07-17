@@ -164,11 +164,11 @@ export default function Compare() {
       </button>
 
       {loading && (
-        <div class="loading-screen">
+        <div className="loading-screen">
         <div>Comparing PDFs, please wait</div>
-        <div class="loading-content">
+        <div className="loading-content">
           <img src="/parrot-think.png" style={{width:'200px', height:'200px'}}/>
-          <div class="loading-dots">
+          <div className="loading-dots">
             <span>.</span><span>.</span><span>.</span>
           </div>
         </div>
