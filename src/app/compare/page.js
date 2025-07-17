@@ -164,7 +164,16 @@ export default function Compare() {
       </button>
 
       {loading && (
-        <div className="loading-screen">Comparing PDFs, please wait...</div>
+        <div class="loading-screen">
+        <div>Comparing PDFs, please wait</div>
+        <div class="loading-content">
+          <img src="/parrot-think.png" style={{width:'200px', height:'200px'}}/>
+          <div class="loading-dots">
+            <span>.</span><span>.</span><span>.</span>
+          </div>
+        </div>
+      </div>
+        
       )}
 
       {submitted && !loading && (

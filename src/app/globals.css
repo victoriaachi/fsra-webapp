@@ -57,3 +57,9 @@ button:active {
 .section {
   margin-top: 10px;
 }
+
+img {
+  border-radius: 10px;
+  max-width: 100%;
+  height: auto;
+}
