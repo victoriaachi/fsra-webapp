@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import './page.css'
 import {
   Chart as ChartJS,
@@ -958,29 +959,28 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
 <div className="file-inputs">
   {/* Excel Upload */}
-  <div
-    className={`drop-zone ${fileDragging ? "dragging" : ""}`}
-    onDragOver={(e) => handleDrag(e, setFileDragging)}
-    onDragLeave={(e) => handleDragLeave(e, setFileDragging)}
-    onDrop={(e) => handleDrop(e, setFileDragging, excelChange)}
-  >
-    <label htmlFor="excel">Excel File:</label>
-    <input
-      id="excel"
-      type="file"
-      accept=".xlsx,.xls,.xlsm, .xlsb"
-      onChange={excelChange}
-      disabled={loading}
-    />
-    <p>Or drag and drop a file here</p>
-    {excel && <p><strong>Selected:</strong> {excel.name}</p>}
+  <label htmlFor="excel" style={{ cursor: "pointer" }}>
+  <div className={`drop-zone ${fileDragging ? "dragging" : ""}`}
+  onDragOver={(e) => handleDrag(e, setFileDragging)}
+  onDragLeave={(e) => handleDragLeave(e, setFileDragging)}
+  onDrop={(e) => handleDrop(e, setFileDragging, excelChange)}
+>
+  <label htmlFor="excel" className="upload-label">
+  <ArrowUpTrayIcon className="w-3 h-3 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
+    <span>Upload Excel File</span>
+  </label>
+  <input
+    id="excel"
+    type="file"
+    accept=".xlsx,.xls,.xlsm,.xlsb"
+    onChange={excelChange}
+    disabled={loading}
+  />
+  <p>📁 or drag and drop a file here</p>
+  {excel && <p><strong>Selected:</strong> {excel.name}</p>}
+</div>
 
-    {/* <button onClick={fileSubmit} disabled={loading}>
-      {loading ? "Processing..." : "Submit"}
-    </button>
-
-    {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>} */}
-  </div>
+</label>
 </div>
 
         <button 
