@@ -182,6 +182,7 @@ export default function Ror() {
 
       setWeightedFrequency("daily");
       setWeightedStartDate(defaultDailyRange.min || "");
+
       setWeightedEndDate(defaultDailyRange.max || "");
       setPortfolios([{ id: 1, name: "Portfolio 1", selectedSecurities: [], weights: {} }]); // Reset portfolios on new data load
       setWeightedChartData(null);
