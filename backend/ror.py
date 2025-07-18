@@ -351,7 +351,7 @@ def ror():
         }
 
         rename_map = {
-            "S&P_TSX Composite Index (Net TR": "S&P/TSX",
+            "S&P_TSX Composite Index (Net TR": "S&P-TSX",
             "MSCI World daily": "MSCI World",
         }
 
