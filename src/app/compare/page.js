@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import './page.css';
 
 export default function Compare() {
@@ -99,6 +100,7 @@ export default function Compare() {
       <h1>AIS vs AVR Compare Tool</h1>
 
       <div className="file-inputs">
+
         {/* AIS Upload */}
         <div
           className={`drop-zone ${aisDragging ? "dragging" : ""}`}
@@ -106,15 +108,19 @@ export default function Compare() {
           onDragLeave={(e) => handleDragLeave(e, setAisDragging)}
           onDrop={(e) => handleDrop(e, setAisDragging, setAis)}
         >
-          <label htmlFor="ais">AIS:</label>
+          <label htmlFor="ais" className="upload-label">
+            <ArrowUpTrayIcon className="w-12 h-12 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
+            <span>AIS: Upload PDF</span>
+          </label>
           <input
             id="ais"
             type="file"
             accept="application/pdf"
             onChange={aisChange}
             disabled={loading}
+            style={{ display: 'none' }}
           />
-          <p>Or drag and drop a file here</p>
+          <p>📁 or drag and drop a file here</p>
           {ais && <p><strong>Selected:</strong> {ais.name}</p>}
         </div>
 
@@ -125,37 +131,46 @@ export default function Compare() {
           onDragLeave={(e) => handleDragLeave(e, setAvrDragging)}
           onDrop={(e) => handleDrop(e, setAvrDragging, setAvr)}
         >
-          <label htmlFor="avr">AVR:</label>
+          <label htmlFor="avr" className="upload-label">
+            <ArrowUpTrayIcon className="w-12 h-12 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
+            <span>AVR: Upload PDF</span>
+          </label>
           <input
             id="avr"
             type="file"
             accept="application/pdf"
             onChange={avrChange}
             disabled={loading}
+            style={{ display: 'none' }}
           />
-          <p>Or drag and drop a file here</p>
+          <p>📁 or drag and drop a file here</p>
           {avr && <p><strong>Selected:</strong> {avr.name}</p>}
         </div>
 
-           {/* Excel File Upload */}
+        {/* Excel File Upload */}
         <div
           className={`drop-zone ${excelDragging ? "dragging" : ""}`}
           onDragOver={(e) => handleDrag(e, setExcelDragging)}
           onDragLeave={(e) => handleDragLeave(e, setExcelDragging)}
           onDrop={(e) => handleDrop(e, setExcelDragging, setExcel)}
         >
-          <label htmlFor="avr">Excel File:</label>
+          <label htmlFor="excel" className="upload-label">
+            <ArrowUpTrayIcon className="w-12 h-12 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
+            <span>Upload Excel File</span>
+          </label>
           <input
             id="excel"
             type="file"
-            accept=".xlsx,.xls,.xlsm, .xlsb"
+            accept=".xlsx,.xls,.xlsm,.xlsb"
             onChange={excelChange}
             disabled={loading}
+            style={{ display: 'none' }}
           />
-          <p>Or drag and drop a file here</p>
+          <p>📁 or drag and drop a file here</p>
           {excel && <p><strong>Selected:</strong> {excel.name}</p>}
         </div>
-      </div>
+
+        </div>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
