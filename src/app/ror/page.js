@@ -1012,7 +1012,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           {/* First Chart Section: Individual Rate of Return Chart */}
           <div className="ror-chart-section" >
             <h2>Individual Market Indices Rate of Return Chart</h2>
-            <div className="customize-section">
+            <div className="container">
               <h3>Customize Chart</h3>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
@@ -1270,11 +1270,12 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               </div>
             )}
           </div>
+          <div className="bottom-border"></div>
 
           {/* Second Chart Section: Weighted Rate of Return Chart */}
           <div className="ror-chart-section">
             <h2>Weighted Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
-            <div className="customize-section">
+            <div className="container">
               <h3>Customize Chart</h3>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>

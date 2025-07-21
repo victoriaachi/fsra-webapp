@@ -72,6 +72,10 @@ img {
   height: auto;
 }
 
+.container {
+  margin-top: 10px;
+  justify-content: center;
+}
 
 .toggle-switch {
   position: relative;
@@ -218,7 +222,8 @@ h1 {
 }
 
 .toggle-section {
-  margin-top: 30px;
+  margin-top: 20px;
+  margin-bottom: 20px;
   padding: 20px;
   border: 1px solid #ddd; /* lighter than #ccc */
   background-color: var(--main-bg);
@@ -230,6 +235,7 @@ h1 {
   width: 100%;
   border-bottom: 1px solid #ccc;
   margin-top: 20px;
+  margin-bottom: 20px;
 }
 
 button {
@@ -238,7 +244,7 @@ button {
   font-size: 16px;
 }
 
-.submit-button {
+button {
   background-color: var(--main-bg); 
   color: var(--text-color); /* soft light text */
   padding: 12px 24px;
@@ -253,13 +259,13 @@ button {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.submit-button:hover {
-  background-color: var(--accent-color); /* lighter dark */
+button:hover {
+  /* background-color: var(--accent-color);  */
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
 }
 
-.submit-button:active {
+button:active {
   transform: translateY(0);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }

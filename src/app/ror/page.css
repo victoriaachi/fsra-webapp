@@ -5,12 +5,6 @@
     padding-right: 50px;
 }
 
-.customize-section {
-    margin-top: 20px;
-    padding: 20px;
-    /* border-radius: 8px; */
-}
-
 .portfolio-name {
     font-size: 1em;
     padding: 5px;
@@ -70,7 +64,7 @@
     border: 1px solid #ddd;
 }
 
-.security-checkbox {
+/* .security-checkbox {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -92,12 +86,28 @@
     width: 16px;
     height: 16px;
     accent-color: #007bff; /* blue checkboxes */
-  }
+  /* }
   
   .security-checkbox span {
     font-size: 14px;
     color: #333;
   }
+
+  .security-checkbox {
+    appearance: none;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: border-color 0.2s ease;
+  }
+  
+  .security-checkbox:focus {
+    border-color: #3b82f6;
+    outline: none;
+  } */ */
 
 
   .upload-label {
@@ -110,6 +120,81 @@
   .upload-label:hover svg {
     stroke: #3b82f6; /* Tailwind's blue-500 */
   }
+
+
+  select {
+    appearance: none;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: var(--main-bg);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    transition: border-color 0.2s ease;
+  }
+  
+  select:focus {
+    border-color: #3b82f6;
+    outline: none;
+  }
+
+
+  input[type="date"] {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: var(--main-bg);
+    transition: border-color 0.2s ease;
+  }
+  
+  input[type="date"]:focus {
+    border-color: #3b82f6;
+    outline: none;
+  }
+
+  .security-checkbox {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 12px;
+    margin-bottom: 6px;
+  
+    background-color: var(--main-bg); /* Use your themed background */
+    color: var(--text-color);         /* Use your themed text color */
+    border: 1px solid var(--text-color);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+  }
+  
+  .security-checkbox:hover {
+    background-color: var(--hover-glow); /* Soft hover effect using your rgba glow */
+  }
+  
+  .security-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent-color); /* Colored checkboxes */
+    cursor: pointer;
+  }
+  
+  .security-checkbox span {
+    font-size: 14px;
+    color: var(--text-color); /* Respect theme text color */
+  }
+  
+  .security-checkbox:focus-within {
+    border-color: var(--sidebar-bg); /* Give it some themed focus border */
+    outline: none;
+  }
+  
+
+
+  
   
 
 
