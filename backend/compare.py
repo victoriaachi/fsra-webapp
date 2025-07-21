@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-import psutil, os, gc
+import os, gc
 #from gemini import call_gemini_compare
 import json, requests, re, copy, array
 import pymupdf, pdfplumber
@@ -22,9 +22,7 @@ compare_bp = Blueprint('compare', __name__)
 
 @compare_bp.route('/compare', methods=['GET', 'POST'])
 def compare_route():
-    process = psutil.Process(os.getpid())  
 
-    print(f"[START] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
     if request.method == 'GET':
         return jsonify({"message": "Compare endpoint is live!"})
     if 'ais' not in request.files or 'avr' not in request.files:
@@ -84,7 +82,6 @@ def compare_route():
     try:
         # Extract text from AIS
         ais_doc = pymupdf.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
-        print(f"[After loading AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
         ais_text = ""
         field_count = 0
         ais_found_fields = 0;
@@ -108,7 +105,6 @@ def compare_route():
                     #ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                 
                 elif field_name not in seen_fields:
-                    print("hello")
                     cleaned_val = clean_numbers_val(field_val, ais_meta, field_count)
                     if field_count in ratios:
                         ais_meta[field_count] = "%"
@@ -130,7 +126,6 @@ def compare_route():
         ais_vals[solv_incr] = str(incremental_cost)
 
         gc.collect()
-        print(f"[After closing AIS PDF] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
         # reading avr text
 
@@ -139,12 +134,10 @@ def compare_route():
             for page in avr_pdf.pages:
                 pages_text.append(page.extract_text() or "")
             avr_text = "\n".join(pages_text)
-        print(f"[After loading AVR PDF text] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
         avr_text = clean_text(avr_text);
         avr_text = clean_numbers_pdf(avr_text);
         gc.collect()
-        print(f"[After cleaning AVR text] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
 
         not_num = 0;
         zero = 0
@@ -607,7 +600,6 @@ def compare_route():
         # filtered_plan_titles = plan_info_titles
         # print(filtered_plan_titles)
         print(incremental_cost)
-        print(f"[Before returning response] Memory usage: {process.memory_info().rss / 1024**2:.2f} MB")
         # print(plan_info)
         # print(display_fields)
 
