@@ -252,6 +252,7 @@ export default function Compare() {
           <div className="container">
             <h2>Missing / Mismatched Fields</h2>
             <p>Disclaimer: DC normal cost, membership data and sensitivity information excluded in comparison</p>
+            <p>Number of Fields not Found: {mismatchedFields.length}</p>
             <div>
               <span>{toggles.fields ? "Hide" : "Show"}</span>
               <label className="toggle-switch">
@@ -262,7 +263,7 @@ export default function Compare() {
                 />
                 <span className="slider"></span>
               </label>
-              <h3>Number of Fields not Found: {mismatchedFields.length}</h3>
+
             </div>
 
             {toggles.fields && (
@@ -291,7 +292,7 @@ export default function Compare() {
             )}
           </div>
 
-          <div>
+          <div className="container">
             <h2>AIS Text</h2>
             <span>{toggles.ais ? "Hide" : "Show"}</span>
             <label className="toggle-switch">
@@ -309,7 +310,7 @@ export default function Compare() {
                 )}
           </div>
 
-          <div>
+          <div className="container">
             <h2>AVR Text</h2>
             <span>{toggles.avr ? "Hide" : "Show"}</span>
             <label className="toggle-switch">

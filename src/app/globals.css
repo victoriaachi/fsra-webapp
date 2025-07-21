@@ -239,8 +239,8 @@ button {
 }
 
 .submit-button {
-  background-color: #1a2e5d; 
-  color: #f1f5f9; /* soft light text */
+  background-color: var(--main-bg); 
+  color: var(--text-color); /* soft light text */
   padding: 12px 24px;
   border: none;
   border-radius: 6px; /* slightly rounded, but still rectangular */
@@ -254,7 +254,7 @@ button {
 }
 
 .submit-button:hover {
-  background-color: #1e293b; /* lighter dark */
+  background-color: var(--accent-color); /* lighter dark */
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
 }
