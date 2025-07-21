@@ -1094,7 +1094,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               </ul>
 
             </div>
-          )}
+          )} 
 
             <div style={{ marginBottom: "15px" }}>
               <div style={{ marginBottom: "15px" }}>
