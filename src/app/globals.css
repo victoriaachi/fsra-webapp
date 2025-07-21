@@ -173,10 +173,7 @@ h1 {
   display: flex;
   flex-direction: row;
   gap: 10px;
-  margin-bottom: 10px;
   justify-content: center;
-  margin-bottom: 20px;
-  padding-bottom: 20px;
   /* border-bottom: 1px solid #ccc; */
 }
 
@@ -228,5 +225,37 @@ h1 {
   width: 100%;
   border-bottom: 1px solid #ccc;
   margin-top: 20px;
+}
+
+button {
+  margin-top: 10px;
+  padding: 4px 10px;
+  font-size: 16px;
+}
+
+.submit-button {
+  background-color: #1a2e5d; /* dark navy/charcoal */
+  color: #f1f5f9; /* soft light text */
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px; /* slightly rounded, but still rectangular */
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.submit-button:hover {
+  background-color: #1e293b; /* lighter dark */
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+.submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 

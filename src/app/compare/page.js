@@ -193,7 +193,7 @@ export default function Compare() {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <button onClick={fileSubmit} disabled={loading}>
+      <button className="submit-button" onClick={fileSubmit} disabled={loading}>
         {loading ? "Processing..." : "Submit"}
       </button>
 

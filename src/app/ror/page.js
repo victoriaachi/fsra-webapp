@@ -986,6 +986,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 </div>
 
         <button 
+        className="submit-button"
         onClick={fileSubmit}
         disabled={loading}>
         {loading ? "Processing..." : "Submit"}
