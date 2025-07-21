@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-import os, gc
+import os
 #from gemini import call_gemini_compare
 import json, requests, re, copy, array
 import pymupdf, pdfplumber
@@ -125,7 +125,6 @@ def compare_route():
         incremental_cost = extract_num(ais_vals[solv_incr]) * num_years
         ais_vals[solv_incr] = str(incremental_cost)
 
-        gc.collect()
 
         # reading avr text
 
@@ -137,7 +136,6 @@ def compare_route():
 
         avr_text = clean_text(avr_text);
         avr_text = clean_numbers_pdf(avr_text);
-        gc.collect()
 
         not_num = 0;
         zero = 0

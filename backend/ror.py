@@ -1,10 +1,9 @@
 from flask import Blueprint, request, jsonify
 import pandas as pd
 from pandas.tseries.offsets import YearEnd, QuarterEnd, MonthEnd
-import json, psutil, os, gc
+import json, os
 
 ror_bp = Blueprint('ror', __name__)
-process = psutil.Process(os.getpid())
 
 def find_data_start(df):
     for i, row in df.iterrows():
@@ -280,45 +279,26 @@ def ror():
         return jsonify({"error": "No selected file"}), 400
     
     try:
-        print(f"[Memory before processing] {process.memory_info().rss / 1024**2:.2f} MB")
 
         xls = pd.ExcelFile(file)  # Load once here
 
         daily = calculate_daily_ror(xls)
-        gc.collect()
-        print(f"[Memory after calculate_daily_ror] {process.memory_info().rss / 1024**2:.2f} MB")
 
         monthly = calculate_monthly_ror(xls)
-        gc.collect()
-        print(f"[Memory after calculate_monthly_ror] {process.memory_info().rss / 1024**2:.2f} MB")
 
         quarterly = calculate_quarterly_ror(xls)
-        gc.collect()
-        print(f"[Memory after calculate_quarterly_ror] {process.memory_info().rss / 1024**2:.2f} MB")
 
         annual = calculate_annual_ror(xls)
-        gc.collect()
-        print(f"[Memory after calculate_annual_ror] {process.memory_info().rss / 1024**2:.2f} MB")
 
         daily_range = get_daily_date_range(xls)
-        gc.collect()
-        print(f"[Memory after get_daily_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
 
         monthly_range = get_monthly_date_range(xls)
-        gc.collect()
-        print(f"[Memory after get_monthly_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
 
         quarter_range = get_quarterly_date_range(xls)
-        gc.collect()
-        print(f"[Memory after get_quarterly_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
 
         annual_range = get_annual_date_range(xls)
-        gc.collect()
-        print(f"[Memory after get_annual_date_range] {process.memory_info().rss / 1024**2:.2f} MB")
 
         raw_prices = extract_raw_prices(xls)
-        gc.collect()
-        print(f"[Memory after extract_raw_prices] {process.memory_info().rss / 1024**2:.2f} MB")
 
         filtered_sheets = [sheet_name for sheet_name in xls.sheet_names
                            if sheet_name.strip().lower() not in ("since last update", "ror")]
@@ -364,8 +344,6 @@ def ror():
         securities = [rename_map.get(s, s) for s in filtered_sheets]
         # print("=== DEBUG: First 5 entries of each section ===")
         # print(json.dumps(debug_output, indent=2, default=str))
-        gc.collect()
-        print(f"[Memory before returning response] {process.memory_info().rss / 1024**2:.2f} MB")
 
         return jsonify({
             "ranges": {
