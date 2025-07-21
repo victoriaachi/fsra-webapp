@@ -948,7 +948,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       <h1>Rate of Return Graphs</h1>
 
       {/* File Upload Section */}
-      <div style={{ marginBottom: "20px", borderBottom: "1px solid #ccc", paddingBottom: "20px" }}>
+      <div className="file-inputs">
         {/* <label htmlFor="excel">Excel File:</label> */}
         {/* <input
           id="excel"
@@ -958,14 +958,13 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           
         /> */}
 
-<div className="file-inputs">
   {/* Excel Upload */}
   <label htmlFor="excel" style={{ cursor: "pointer" }}>
   <div className={`drop-zone ${fileDragging ? "dragging" : ""}`}
   onDragOver={(e) => handleDrag(e, setFileDragging)}
   onDragLeave={(e) => handleDragLeave(e, setFileDragging)}
   onDrop={(e) => handleDrop(e, setFileDragging, excelChange)}
->
+  >
   <label htmlFor="excel" className="upload-label">
   <ArrowUpTrayIcon className="w-3 h-3 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
     <span>Upload Excel File</span>
@@ -990,7 +989,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         {loading ? "Processing..." : "Submit"}
         </button> 
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
-      </div>
+
 
       {loading && (
         <div className="loading-screen">
@@ -1003,7 +1002,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         </div>
       </div>
         
-      )}
+      )}  
 
       {backendData && (
         <>
@@ -1283,7 +1282,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           <div className="ror-chart-section">
             <h2>Weighted Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
             <div className="customize-section">
-              <h3>Customize Weighted Chart</h3>
+              <h3>Customize Chart</h3>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
