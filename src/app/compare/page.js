@@ -12,8 +12,6 @@ export default function Compare() {
   const [avrText, setAvrText] = useState("");
   const [excelData, setExcelData] = useState([]);
 
-  //const [notFound setNotFound] = useState("");
-
   const [planInfo, setPlanInfo] = useState([]);
   const [mismatchedFields, setMismatchedFields] = useState([]);
 
@@ -201,7 +199,7 @@ export default function Compare() {
 
       {loading && (
         <div className="loading-screen">
-        <div>Comparing PDFs, please wait</div>
+        <p>Comparing PDFs, please wait</p>
         <div className="loading-content">
           <img src="/parrot-think.png" style={{width:'200px', height:'200px'}}/>
           <div className="loading-dots">
@@ -293,32 +291,6 @@ export default function Compare() {
             )}
           </div>
 
-          {/* {excelData.length > 0 && (
-           <div className="container">
-           <h2>Excel Data</h2>
-           <table className="table">
-             <thead>
-               <tr>
-                 <th>Value</th>
-                 <th>Col Label</th>
-                 <th>Row Label</th>
-                 <th>Sheet Name</th>
-               </tr>
-             </thead>
-             <tbody>
-               {excelData.map((row, idx) => (
-                 <tr key={idx}>
-                   <td>{row.value}</td>
-                   <td>{row["col label"]}</td>
-                   <td>{row["row label"]}</td>
-                   <td>{row["sheet name"]}</td>
-                 </tr>
-               ))}
-             </tbody>
-           </table>
-         </div>
-         
-          )} */}
           <div>
             <h2>AIS Text</h2>
             <span>{toggles.ais ? "Hide" : "Show"}</span>
@@ -358,6 +330,34 @@ export default function Compare() {
         
         </>
       )}
+
+          {/* {excelData.length > 0 && (
+           <div className="container">
+           <h2>Excel Data</h2>
+           <table className="table">
+             <thead>
+               <tr>
+                 <th>Value</th>
+                 <th>Col Label</th>
+                 <th>Row Label</th>
+                 <th>Sheet Name</th>
+               </tr>
+             </thead>
+             <tbody>
+               {excelData.map((row, idx) => (
+                 <tr key={idx}>
+                   <td>{row.value}</td>
+                   <td>{row["col label"]}</td>
+                   <td>{row["row label"]}</td>
+                   <td>{row["sheet name"]}</td>
+                 </tr>
+               ))}
+             </tbody>
+           </table>
+         </div>
+         
+          )} */}
     </div>
+    
   );
 }

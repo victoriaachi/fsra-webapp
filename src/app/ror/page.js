@@ -996,7 +996,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
       {loading && (
         <div className="loading-screen">
-        <div>Calculating data, please wait</div>
+        <p>Calculating data, please wait</p>
         <div className="loading-content">
           <img src="/parrot-think.png" style={{width:'200px', height:'200px'}}/>
           <div className="loading-dots">
@@ -1117,7 +1117,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 {showPriceChart && priceChartData && priceChartData.datasets.length > 0 && (
   <div className="toggle-section">
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
-      <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Index Value Chart (End)</h3>
       <button
         onClick={() => priceChartRef.current?.resetZoom()}
         className="chart-button"
@@ -1134,7 +1133,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         maintainAspectRatio: true,
         aspectRatio: 1.2,
         plugins: {
-          title: { display: false },
+          title: { display: true, text: "Index Value Chart (End)", font: { size: 18 } },
           tooltip: {
             callbacks: {
               label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,

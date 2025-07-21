@@ -1,20 +1,21 @@
 
-
 :root {
-  --sidebar-bg: #e4f8ff;     /* pink sidebar in light mode */
-  --sidebar-colour: #000000;
-
-  --main-bg: #ffffff;        /* white background in light mode */
-  --main-colour: #000000;
+  --sidebar-bg: #edfbff;
+  --sidebar-colour: #1e293b;
+  --main-bg: #f9fafb;
+  --text-color: #1f2937;
+  --accent-color: #3b82f6; /* electric blue */
+  --hover-glow: rgba(59, 130, 246, 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --sidebar-bg: #3a3a3a;   /* dark sidebar */
-    --sidebar-colour: #e0e0e0;
-
-    --main-bg: #121212;      /* dark page background */
-    --main-colour: #e0e0e0;
+    --sidebar-bg: #0e1328;       /* darker navy-blue tone */
+    --sidebar-colour: #e4f1ff;   /* soft white-blue */
+    --main-bg: #1a1d2b;          /* deep cool gray/blue */
+    --text-color: #e0e0e0;       /* smooth light gray */
+    --accent-color: #00ffc3;     /* neon mint */
+    --hover-glow: rgba(0, 255, 195, 0.2); /* slightly softer glow */
   }
 }
 
@@ -22,18 +23,21 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
+  background-color: var(--main-bg);
+  color: var(--text-color);
 }
 
+
 body {
-  color: var(--foreground);
-  background: var(--background);
   font-family: 'Poppins', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 500; /* or 400 */
+
+h1, h2, h3, h4, h5, h6, p {
+  color: var(--text-color);
+  font-weight: 500;
 }
 
 * {
@@ -137,6 +141,7 @@ img {
 
 /* Dot animation */
 .loading-dots span {
+  color: var(--text-color);
   opacity: 0.2;
   animation-name: blink;
   animation-duration: 1.5s;
@@ -183,7 +188,7 @@ h1 {
   margin-bottom: 20px;
   text-align: center;
   position: relative;
-  background-color: #fefefe;
+  background-color: var(--main-bg);
   border-radius: 10px;
   transition: border-color 0.3s, background-color 0.3s;
   box-shadow: 0 2px 5px rgba(0,0,0,0.05);
@@ -192,14 +197,14 @@ h1 {
 }
 
 .drop-zone:hover {
-  background-color: #f5faff;
+  background-color: var(--main-bg);
   border-color: #007bff;
   cursor: pointer;
 }
 
 .drop-zone.dragging {
   border-color: #007bff;
-  background-color: #e8f4ff;
+  background-color: #f5faff;
 }
 
 .drop-zone input[type="file"] {
@@ -216,7 +221,7 @@ h1 {
   margin-top: 30px;
   padding: 20px;
   border: 1px solid #ddd; /* lighter than #ccc */
-  background-color: #ffffff;
+  background-color: var(--main-bg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border-radius: 4px;
 }
