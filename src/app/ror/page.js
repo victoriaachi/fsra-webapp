@@ -1099,7 +1099,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             <div style={{ marginBottom: "15px" }}>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                  Show Price Chart
+                  Show Index Value Chart
                   <label className="toggle-switch">
                     <input
                       type="checkbox"

@@ -82,7 +82,8 @@ def clean_numbers_pdf(text):
 
     def replace_percent(match):
         number = match.group(1)
-        return number + ' __PERCENT__'
+        return number
+        # return number + ' __PERCENT__'
 
     percent_pattern = r'(\d+(?:\.\d+)?)%'
     text = re.sub(percent_pattern, replace_percent, text)

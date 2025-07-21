@@ -10,9 +10,6 @@
   .upload-label:hover svg {
     stroke: #3b82f6; /* Tailwind's blue-500 */
   }
-
-  
- 
   
   .loading-screen {
     margin: 20px auto;
