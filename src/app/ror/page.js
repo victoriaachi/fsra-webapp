@@ -944,7 +944,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
 
   return (
-    <div style={{ padding: "20px", maxWidth: "1200px", margin: "0 auto" }}>
+    <div className="container">
       <h1>Rate of Return Graphs</h1>
 
       {/* File Upload Section */}
@@ -977,7 +977,9 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     disabled={loading}
   />
   <p>📁 or drag and drop a file here</p>
-  {excel && <p><strong>Selected:</strong> {excel.name}</p>}
+      <p>
+        <strong>Selected:</strong> {excel ? excel.name : "None"}
+      </p>
 </div>
 
 </label>
@@ -989,7 +991,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         {loading ? "Processing..." : "Submit"}
         </button> 
         {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
-
+        <div className="bottom-border"></div>
 
       {loading && (
         <div className="loading-screen">
@@ -1112,16 +1114,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
 
 {showPriceChart && priceChartData && priceChartData.datasets.length > 0 && (
-  <div
-    style={{
-      marginTop: "30px",
-      padding: "20px",
-      border: "1px solid #ccc",
-      borderRadius: "10px",
-      backgroundColor: "#f9f9f9",
-      boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-    }}
-  >
+  <div className="toggle-section">
     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
       <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Index Value Chart (End)</h3>
       <button

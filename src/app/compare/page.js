@@ -123,11 +123,9 @@ export default function Compare() {
         disabled={loading}
       />
       <p>📁 or drag and drop a file here</p>
-      {ais && (
-        <p>
-          <strong>Selected:</strong> {ais.name}
-        </p>
-      )}
+      <p>
+        <strong>Selected:</strong> {ais ? ais.name : "None"}
+      </p>
     </div>
   </label>
 
@@ -155,11 +153,9 @@ export default function Compare() {
         disabled={loading}
       />
       <p>📁 or drag and drop a file here</p>
-      {avr && (
-        <p>
-          <strong>Selected:</strong> {avr.name}
-        </p>
-      )}
+      <p>
+        <strong>Selected:</strong> {avr ? avr.name : "None"}
+      </p>
     </div>
   </label>
 
@@ -181,16 +177,15 @@ export default function Compare() {
       <input
         id="excel"
         type="file"
-        accept="application/pdf"
+        accept=".xlsx,.xls,.xlsm,.xlsb"
         onChange={excelChange}
         disabled={loading}
       />
       <p>📁 or drag and drop a file here</p>
-      {ais && (
-        <p>
-          <strong>Selected:</strong> {ais.name}
-        </p>
-      )}
+      <p>
+        <strong>Selected:</strong> {excel ? excel.name : "None"}
+      </p>
+    
     </div>
   </label>
 
@@ -201,6 +196,8 @@ export default function Compare() {
       <button onClick={fileSubmit} disabled={loading}>
         {loading ? "Processing..." : "Submit"}
       </button>
+
+      <div className="bottom-border"></div>
 
       {loading && (
         <div className="loading-screen">
@@ -232,6 +229,7 @@ export default function Compare() {
             </div>
 
             {toggles.info && (
+              <div className="toggle-section">
               <table className="table">
                 <thead>
                   <tr>
@@ -248,8 +246,10 @@ export default function Compare() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
+
 
           <div className="container">
             <h2>Missing / Mismatched Fields</h2>
@@ -268,6 +268,7 @@ export default function Compare() {
             </div>
 
             {toggles.fields && (
+              <div className="toggle-section">
               <table className="table">
                 <thead>
                   <tr>
@@ -288,6 +289,7 @@ export default function Compare() {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
 
@@ -328,7 +330,11 @@ export default function Compare() {
               />
               <span className="slider"></span>
             </label>
-            {toggles.ais && <pre>{aisText}</pre>}
+            {toggles.ais && (
+              <div className="toggle-section">
+                <pre>{aisText}</pre>
+                </div>
+                )}
           </div>
 
           <div>
@@ -342,7 +348,11 @@ export default function Compare() {
               />
               <span className="slider"></span>
             </label>
-            {toggles.avr && <pre>{avrText}</pre>}
+            {toggles.avr && (
+              <div className="toggle-section">
+              <pre>{avrText}</pre>
+              </div>
+              )}
           </div>
 
         
