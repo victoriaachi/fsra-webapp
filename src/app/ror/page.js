@@ -18,6 +18,9 @@ import { Line } from "react-chartjs-2";
 import 'chartjs-adapter-date-fns';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+// import DatePicker from "react-datepicker";
+// import "react-datepicker/dist/react-datepicker.css";
+
 
 
 const whiteBackgroundPlugin = {
@@ -1093,8 +1096,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           <div className="ror-chart-section" >
             <h2>Market Indices Rate of Return Chart</h2>
             <div className="container">
-              <h3>Customize Chart</h3>
-              <div className="gap"></div>
+              {/* <h3>Customize Chart</h3>
+              <div className="gap"></div> */}
               <div>
                 <label>Frequency:</label>
                 <select value={frequency} onChange={handleFrequencyChange}>
@@ -1358,8 +1361,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           <div className="ror-chart-section">
             <h2>Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
             <div className="container">
-              <h3>Customize Chart</h3>
-              <div className="gap"></div>
+              {/* <h3>Customize Chart</h3>
+              <div className="gap"></div> */}
               <div >
                 <label >Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
