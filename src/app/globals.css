@@ -266,3 +266,8 @@ button:active {
 .gap {
   margin-top: 15px;
 }
+
+.error {
+  color: red;
+  margin-top: 10px;
+}

@@ -189,7 +189,7 @@ export default function Compare() {
 
         </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
 
       <button className="submit-button" onClick={fileSubmit} disabled={loading}>
         {loading ? "Processing..." : "Submit"}
@@ -273,8 +273,8 @@ export default function Compare() {
                   <tr>
                     <th>Field Name</th>
                     <th>AIS Value</th>
-                    <th>AVR Value</th>
-                    <th>Page Number</th>
+                    {/* <th>AVR Value</th> */}
+                    <th>AVR Page Number</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -282,7 +282,7 @@ export default function Compare() {
                     <tr key={title}>
                       <td>{title}</td>
                       <td>{aisValue}</td>
-                      <td>{avrValue}</td>
+                      {/* <td>{avrValue}</td> */}
                       <td>{pageNumber}</td>
                     </tr>
                   ))}

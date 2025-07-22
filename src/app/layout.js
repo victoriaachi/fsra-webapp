@@ -1,4 +1,4 @@
-import "./layout.css";  // import your CSS file
+import "./layout.css"; 
 import './globals.css'
 import Link from "next/link";
  
@@ -17,7 +17,7 @@ export default function RootLayout({ children }) {
           <h2>Parrot-ssistant</h2> 
           <ul>
             {/* <li><Link href="/">Home</Link></li> */}
-            <li><Link href="/compare">AIS vs AVR Compare Tool</Link></li>
+            <li><Link href="/compare">AIS vs AVR Comparison</Link></li>
             {/* <li><Link href="/pba">PBA Search</Link></li> */}
             {/* <li><Link href="/feature3">Feature 3</Link></li> */}
             <li><Link href="/ror">Rate of Return Graphs</Link></li>

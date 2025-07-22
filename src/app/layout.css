@@ -47,7 +47,7 @@ nav.sidebar ul li a {
   display: block;
   width: 100%;
   padding: 12px 16px;
-  border-radius: 10px;
+  border-radius: 30px;
   transition: transform 0.2s ease, box-shadow 0.3s ease, background-color 0.3s ease;
   background-color: transparent;
   color: inherit;

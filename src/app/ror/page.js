@@ -946,66 +946,54 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
   return (
     <div className="container">
       <h1>Rate of Return Graphs</h1>
-
-      {/* File Upload Section */}
       <div className="file-inputs">
-        {/* <label htmlFor="excel">Excel File:</label> */}
-        {/* <input
+        <label htmlFor="excel" style={{ cursor: "pointer" }}>
+        <div className={`drop-zone ${fileDragging ? "dragging" : ""}`}
+        onDragOver={(e) => handleDrag(e, setFileDragging)}
+        onDragLeave={(e) => handleDragLeave(e, setFileDragging)}
+        onDrop={(e) => handleDrop(e, setFileDragging, excelChange)}
+        >
+        <label htmlFor="excel" className="upload-label">
+        <ArrowUpTrayIcon className="w-3 h-3 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
+          <span>Upload Excel File</span>
+        </label>
+        <input
           id="excel"
           type="file"
-          accept=".xls,.xlsx,.xlsm,.xlsb"
+          accept=".xlsx,.xls,.xlsm,.xlsb"
           onChange={excelChange}
-          
-        /> */}
-
-  {/* Excel Upload */}
-  <label htmlFor="excel" style={{ cursor: "pointer" }}>
-  <div className={`drop-zone ${fileDragging ? "dragging" : ""}`}
-  onDragOver={(e) => handleDrag(e, setFileDragging)}
-  onDragLeave={(e) => handleDragLeave(e, setFileDragging)}
-  onDrop={(e) => handleDrop(e, setFileDragging, excelChange)}
-  >
-  <label htmlFor="excel" className="upload-label">
-  <ArrowUpTrayIcon className="w-3 h-3 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
-    <span>Upload Excel File</span>
-  </label>
-  <input
-    id="excel"
-    type="file"
-    accept=".xlsx,.xls,.xlsm,.xlsb"
-    onChange={excelChange}
-    disabled={loading}
-  />
-  <p>📁 or drag and drop a file here</p>
-      <p>
-        <strong>Selected:</strong> {excel ? excel.name : "None"}
-      </p>
-</div>
-
-</label>
-</div>
-
-        <button 
-        className="submit-button"
-        onClick={fileSubmit}
-        disabled={loading}>
-        {loading ? "Processing..." : "Submit"}
-        </button> 
-        {error && <p style={{ color: "red", marginTop: "10px" }}>{error}</p>}
-        <div className="bottom-border"></div>
-
-      {loading && (
-        <div className="loading-screen">
-        <p>Calculating data, please wait</p>
-        <div className="loading-content">
-          <img src="/parrot-think.png" style={{width:'200px', height:'200px'}}/>
-          <div className="loading-dots">
-            <span>.</span><span>.</span><span>.</span>
-          </div>
-        </div>
+          disabled={loading}
+        />
+        <p>📁 or drag and drop a file here</p>
+            <p>
+              <strong>Selected:</strong> {excel ? excel.name : "None"}
+            </p>
       </div>
-        
-      )}  
+
+      </label>
+      </div>
+      {error && <p className="error">{error}</p>}
+              <button 
+              className="submit-button"
+              onClick={fileSubmit}
+              disabled={loading}>
+              {loading ? "Processing..." : "Submit"}
+              </button> 
+              
+              <div className="bottom-border"></div>
+
+            {loading && (
+              <div className="loading-screen">
+              <p>Calculating data, please wait</p>
+              <div className="loading-content">
+                <img src="/parrot-think.png" style={{height:'200px'}}/>
+                <div className="loading-dots">
+                  <span>.</span><span>.</span><span>.</span>
+                </div>
+              </div>
+            </div>
+              
+            )}  
 
       {backendData && (
         <>
@@ -1015,8 +1003,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             <div className="container">
               <h3>Customize Chart</h3>
               <div className="gap"></div>
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ marginRight: "10px" }}>Frequency:</label>
+              <div>
+                <label>Frequency:</label>
                 <select value={frequency} onChange={handleFrequencyChange}>
                   <option value="daily">Daily</option>
                   <option value="monthly">Monthly (Calendar Year)</option>{/* Added monthly option */}
@@ -1026,8 +1014,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               </div>
 
               {backendData.ranges?.[frequency] && (
-                <div style={{ marginBottom: "15px" }}>
-                  <label style={{ marginRight: "10px" }}>Date Range:</label>
+                <div>
+                  <label>Date Range:</label>
                   <input
                     type="date"
                     value={startDate}
@@ -1047,14 +1035,14 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               )}
 
               {backendData.securities?.length > 0 && (
-                <div style={{ marginBottom: "20px" }}>
-                  <label style={{ marginRight: "10px", verticalAlign: "top" }}>Market Indices:</label>
+                <div >
+                  <label>Market Indices:</label>
                   <button onClick={handleSelectAll} className="chart-button">
                     {selectedSecurities.length === backendData.securities.length
                       ? "Unselect All"
                       : "Select All"}
                   </button>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '10px' }}>
+                  <div className="securities">
                     {backendData.securities.map((sec) => (
                   <label
                   key={`chart1-${sec}`}
@@ -1084,7 +1072,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             </div>
 
             {selectedSecurities.length > 0 && (
-            <div style={{ marginTop: '20px' }}>
+            <div>
               <h3>Total Return by Market Index (Selected Time Period)</h3>
               <ul>
                 {individualTotalReturns.map(({ sec, totalReturn, disclaimer }, idx) => (
@@ -1115,9 +1103,10 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
 
 
-{showPriceChart && priceChartData && priceChartData.datasets.length > 0 && (
+{showPriceChart && priceChartData && priceChartData.datasets.length > 0
+ && (
   <div className="toggle-section">
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+    <div>
       <button
         onClick={() => priceChartRef.current?.resetZoom()}
         className="chart-button"
@@ -1196,7 +1185,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
 
 
-              <div style={{ marginTop: "20px" }}>
+              <div>
                 <button onClick={() => chartRef.current?.resetZoom()} className="chart-button">
                   Reset Zoom
                 </button>
@@ -1206,11 +1195,11 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             </div>
 
             {individualChartError && (
-                <p style={{ color: "#555", textAlign: "center", marginTop: "10px" }}>{individualChartError}</p>
+                <p className="grey-error">{individualChartError}</p>
             )}
 
             {chartData && chartData.datasets.length > 0 && (
-              <div style={{ marginTop: "30px" }}>
+              <div>
                   <Line
                     ref={chartRef}
                     data={chartData}
@@ -1279,8 +1268,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             <div className="container">
               <h3>Customize Chart</h3>
               <div className="gap"></div>
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ marginRight: "10px" }}>Frequency:</label>
+              <div >
+                <label >Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
                   <option value="daily">Daily</option>
                   <option value="monthly">Monthly (Calendar Year)</option>
@@ -1386,7 +1375,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               </div>
 
               {/* NEW: Manual trigger button for weighted chart */}
-              <div style={{ marginTop: "20px" }}>
+              <div>
                 <button onClick={generateWeightedChart} className="generate-button">
                   Generate Weighted Chart
                 </button>
@@ -1404,9 +1393,9 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                 </button>
               </div>
             </div>
-            <div style={{ marginTop: '20px' }}>
+            <div >
             {portfolioTotalReturns.length > 0 && (
-              <div style={{ marginTop: "20px" }}>
+              <div>
                   <h3>Portfolio Total Returns:</h3>
                   {portfolioTotalReturns.map((p, idx) => ( // Change here: iterate over portfolioTotalReturns
                     <p key={idx}>
@@ -1421,7 +1410,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             </div>
             
             {weightedChartData && (
-              <div style={{ marginTop: "30px" }}>
+              <div>
                 {weightedChartData.datasets.length > 0 ? (
                   <>
                     <Line
@@ -1499,7 +1488,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                    
                   </>
                 ) : (
-                  <p style={{ textAlign: 'center', color: '#555' }}>Please select market indices and weights for at least one portfolio to display the weighted chart.</p>
+                  <p className="grey-error">Please select market indices and weights for at least one portfolio to display the weighted chart.</p>
                 )}
               </div>
             )}
