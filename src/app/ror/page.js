@@ -1096,9 +1096,9 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             </div>
           )} 
 
-            <div style={{ marginBottom: "15px" }}>
-              <div style={{ marginBottom: "15px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div>
+              <div>
+                <label>
                   Show Index Value Chart
                   <label className="toggle-switch">
                     <input
