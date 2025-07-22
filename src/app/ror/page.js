@@ -521,7 +521,8 @@ export default function Ror() {
         weightedEndDate // Pass original weightedEndDate
       );
       
-      const name = result.isPartialPeriod ? `${portfolio.name} (Partial Period)` : portfolio.name;
+      //const name = result.isPartialPeriod ? `${portfolio.name} (Partial Period)` : portfolio.name;
+      const name = portfolio.name
       console.log(name);
       
       tempPortfolioTotalReturns.push({
@@ -999,7 +1000,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         <>
           {/* First Chart Section: Individual Rate of Return Chart */}
           <div className="ror-chart-section" >
-            <h2>Individual Market Indices Rate of Return Chart</h2>
+            <h2>Market Indices Rate of Return Chart</h2>
             <div className="container">
               <h3>Customize Chart</h3>
               <div className="gap"></div>
@@ -1007,8 +1008,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                 <label>Frequency:</label>
                 <select value={frequency} onChange={handleFrequencyChange}>
                   <option value="daily">Daily</option>
-                  <option value="monthly">Monthly (Calendar Year)</option>{/* Added monthly option */}
-                  <option value="quarter">Quarterly (Calendar Year)</option>
+                  <option value="monthly">Monthly</option>{/* Added monthly option */}
+                  <option value="quarter">Quarterly</option>
                   <option value="annual">Annual (Calendar Year)</option>
                 </select>
               </div>
@@ -1123,7 +1124,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         maintainAspectRatio: true,
         aspectRatio: 1.2,
         plugins: {
-          title: { display: true, text: "Index Value Chart (End)", font: { size: 18 } },
+          title: { display: true, text: "Index Value Chart", font: { size: 18 } },
           tooltip: {
             callbacks: {
               label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
@@ -1208,7 +1209,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                       maintainAspectRatio: true,
                       aspectRatio: 1.2,
                       plugins: {
-                        title: { display: true, text: "Individual Rate of Return", font: { size: 18 } },
+                        title: { display: true, text: "Rate of Return", font: { size: 18 } },
                         tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`, }, },
                         legend: {
                           onClick: null,
@@ -1264,7 +1265,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
           {/* Second Chart Section: Weighted Rate of Return Chart */}
           <div className="ror-chart-section">
-            <h2>Weighted Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
+            <h2>Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
             <div className="container">
               <h3>Customize Chart</h3>
               <div className="gap"></div>
@@ -1272,8 +1273,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                 <label >Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
                   <option value="daily">Daily</option>
-                  <option value="monthly">Monthly (Calendar Year)</option>
-                  <option value="quarter">Quarterly (Calendar Year)</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="quarter">Quarterly</option>
                   <option value="annual">Annual (Calendar Year)</option>
                 </select>
               </div>
@@ -1421,7 +1422,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                         maintainAspectRatio: true,
                         aspectRatio: 1.2,
                         plugins: {
-                          title: { display: true, text: "Weighted Portfolios Rate of Return", font: { size: 18 } },
+                          title: { display: true, text: "Portfolios Rate of Return", font: { size: 18 } },
                           tooltip: {
                             callbacks: {
                               label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
