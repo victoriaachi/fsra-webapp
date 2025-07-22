@@ -280,10 +280,52 @@ export default function Ror() {
   const handleFrequencyChange = (e) => {
     const newFreq = e.target.value;
     setFrequency(newFreq);
-    const range = backendData?.ranges?.[newFreq] || {};
-    setStartDate(range.min || "");
-    setEndDate(range.max || "");
+    // const range = backendData?.ranges?.[newFreq] || {};
+    // setStartDate(range.min || "");
+    // setEndDate(range.max || "");
   };
+
+  useEffect(() => {
+    if (!backendData || !backendData[frequency]) return;
+  
+    const selected = selectedSecurities || [];
+    const rawData = backendData[frequency];
+  
+    // No securities selected — use full range
+    if (selected.length === 0) {
+      const defaultRange = backendData.ranges?.[frequency] || {};
+      setStartDate(defaultRange.min || "");
+      setEndDate(defaultRange.max || "");
+      return;
+    }
+  
+    const startDates = [];
+    const endDates = [];
+  
+    selected.forEach(sec => {
+      const secData = rawData[sec];
+      if (secData && secData.length > 0) {
+        const dates = secData.map(d => new Date(d.Date));
+        dates.sort((a, b) => a - b);
+        startDates.push(dates[0]);
+        endDates.push(dates[dates.length - 1]);
+      }
+    });
+  
+    if (startDates.length === 0 || endDates.length === 0) return;
+  
+    const min = selected.length === 1
+      ? startDates[0]
+      : new Date(Math.max(...startDates.map(d => d.getTime())));
+  
+    const max = selected.length === 1
+      ? endDates[0]
+      : new Date(Math.min(...endDates.map(d => d.getTime())));
+  
+    setStartDate(min.toISOString().split("T")[0]);
+    setEndDate(max.toISOString().split("T")[0]);
+  }, [frequency, selectedSecurities, backendData]);
+  
 
   const handleSecurityToggle = (sec) => {
     setSelectedSecurities(prev =>
@@ -305,6 +347,55 @@ export default function Ror() {
     setWeightedStartDate(range.min || "");
     setWeightedEndDate(range.max || "");
   };
+
+  const allSelectedSecurities = portfolios
+  .flatMap(p => p.selectedSecurities)
+  .filter((v, i, a) => a.indexOf(v) === i); // remove duplicates
+
+  useEffect(() => {
+    if (!backendData || !backendData[weightedFrequency] || !portfolios || portfolios.length === 0) return;
+  
+    const rawData = backendData[weightedFrequency];
+  
+    const allSelected = portfolios
+      .flatMap(p => p.selectedSecurities)
+      .filter((v, i, a) => a.indexOf(v) === i); // unique securities
+  
+    if (allSelected.length === 0) {
+      const defaultRange = backendData.ranges?.[weightedFrequency] || {};
+      setWeightedStartDate(defaultRange.min || "");
+      setWeightedEndDate(defaultRange.max || "");
+      return;
+    }
+  
+    const startDates = [];
+    const endDates = [];
+  
+    allSelected.forEach(sec => {
+      const secData = rawData[sec];
+      if (secData && secData.length > 0) {
+        const dates = secData.map(d => new Date(d.Date));
+        dates.sort((a, b) => a - b);
+        startDates.push(dates[0]);
+        endDates.push(dates[dates.length - 1]);
+      }
+    });
+  
+    if (startDates.length === 0 || endDates.length === 0) return;
+  
+    const min = allSelected.length === 1
+      ? startDates[0]
+      : new Date(Math.max(...startDates.map(d => d.getTime())));
+  
+    const max = allSelected.length === 1
+      ? endDates[0]
+      : new Date(Math.min(...endDates.map(d => d.getTime())));
+  
+    setWeightedStartDate(min.toISOString().split("T")[0]);
+    setWeightedEndDate(max.toISOString().split("T")[0]);
+  }, [weightedFrequency, portfolios, backendData]);
+  
+  
 
   // Prepare data for single securities chart
   const generateIndividualChart = () => {
