@@ -4,8 +4,8 @@ import Link from "next/link";
  
 
 export const metadata = {
-  title: "FSRA Webapp",
-  description: "PDF Comparison & Pension Legislation Tool",
+  title: "Parrot-ssistant",
+  description: "PDF Comparison & Rate of Return Graph Tool",
 };
 
 export default function RootLayout({ children }) {
