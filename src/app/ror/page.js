@@ -1014,6 +1014,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             <h2>Individual Market Indices Rate of Return Chart</h2>
             <div className="container">
               <h3>Customize Chart</h3>
+              <div className="gap"></div>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={frequency} onChange={handleFrequencyChange}>
@@ -1277,6 +1278,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             <h2>Weighted Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
             <div className="container">
               <h3>Customize Chart</h3>
+              <div className="gap"></div>
               <div style={{ marginBottom: "15px" }}>
                 <label style={{ marginRight: "10px" }}>Frequency:</label>
                 <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>

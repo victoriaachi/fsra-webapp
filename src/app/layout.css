@@ -35,11 +35,12 @@ nav.sidebar ul {
   list-style: none;
   padding-left: 0;
   width: 100%;
+  
 }
 
 nav.sidebar ul li {
   margin-bottom: 20px;
-  text-align: left;
+  text-align: center;
 }
 
 nav.sidebar ul li a {
