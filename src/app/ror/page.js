@@ -624,6 +624,8 @@ export default function Ror() {
         name: portfolio.name,
         totalReturn: result.value,
         isPartial: result.isPartialPeriod,
+        startDateStr: finalStart.toISOString().split("T")[0],
+        endDateStr: finalEnd.toISOString().split("T")[0]
       });
       
       
@@ -798,7 +800,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       if (endDateStr && formatDateUTC(endPriceDate) !== endDateStr) {
         isPartial = true;
       }
-      const disclaimer = isPartial ? " (Partial Period)" : "";
+      const disclaimer = isPartial ? `    (from ${startDateStr} to ${endPriceDate})` : "";
 
 
       if (
@@ -1172,7 +1174,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               <ul>
                 {individualTotalReturns.map(({ sec, totalReturn, disclaimer }, idx) => (
                   <li key={idx}>
-                    <strong>{sec}</strong>{disclaimer || ''}: {totalReturn}
+                    <strong>{sec}{disclaimer || ''}</strong>: {totalReturn}
                   </li>
                 ))}
               </ul>
@@ -1494,8 +1496,13 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                   {portfolioTotalReturns.map((p, idx) => ( // Change here: iterate over portfolioTotalReturns
                     <p key={idx}>
                       <strong>
-                        {p.name}{p.isPartial ? " (Partial Period)" : ""}:
-                      </strong> {p.totalReturn}
+                        {p.name}
+                        {p.isPartial
+                          ? ` (from ${p.startDateStr} to ${p.endDateStr})`
+                          : ""}
+                        :
+                      </strong>{" "}
+                      {p.totalReturn}
                     </p>
 
                   ))}
