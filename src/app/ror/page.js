@@ -1198,8 +1198,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
 
 
 
-{showPriceChart && priceChartData && priceChartData.datasets.length > 0
- && (
+{showPriceChart && (
   <div className="toggle-section">
     <div>
       <button
