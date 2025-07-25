@@ -566,7 +566,7 @@ field_names = [
     "going concern liabilities retired members",
     "going concern liabilities other participants",
     "going concern liabilities optional ancillary benefits flexible pension plan",
-    "solvency liabilities incremental cost",
+    "incremental cost",
     "duration of liabilities assumed to be settled through the purchase of annuities",
     "",
     "",
@@ -842,7 +842,7 @@ misc_text = [203, 205]
 found = [383, 384, 385, 386, 387, 388, 389, 390]
 
 # don't search for these
-dc_nc = [33, 34, 38, 39, 43, 45, 49, 50]
+dc_nc = [33, 34, 38, 39, 43, 44, 45, 49, 50]
 
 membership = [58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 126]
 

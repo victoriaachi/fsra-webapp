@@ -46,6 +46,8 @@ def compare_route():
 
     # page numbers
     avr_pages = ["not matched"]*len(key_map);
+    incr_pages = []
+    pages_text = []
 
     # value metadata - percent, negative, etc
     ais_meta = [""]*len(key_map);
@@ -108,7 +110,7 @@ def compare_route():
                     cleaned_val = clean_numbers_val(field_val, ais_meta, field_count)
                     if field_count in ratios:
                         ais_meta[field_count] = "%"
-                    ais_text += f"{titles[field_count]}: {field_val}\n"
+                    ais_text += f"{field_count} {titles[field_count]}: {field_val}\n"
                     ais_found_fields += 1
                     valid_field[field_count] = 1
                     ais_vals[field_count] = cleaned_val
@@ -124,16 +126,19 @@ def compare_route():
         num_years = find_period(ais_vals[3], ais_vals[4])
         incremental_cost = extract_num(ais_vals[solv_incr]) * num_years
         incremental_cost = str(incremental_cost)
-        #ais_vals[solv_incr] = str(incremental_cost)
+        ais_vals[solv_incr] = str(incremental_cost)
 
 
         # reading avr text
 
         with pdfplumber.open(avr_file) as avr_pdf:
-            pages_text = []
-            for page in avr_pdf.pages:
-                pages_text.append(page.extract_text() or "")
-            avr_text = "\n".join(pages_text)
+            for i, page in enumerate(avr_pdf.pages, start=1):
+                text = page.extract_text() or ""
+                pages_text.append(text)
+                if "incremental cost" in text.lower() and i >= 10:
+                    incr_pages.append(i)   # or append(page) if you'll use it inside the context
+
+        avr_text = "\n".join(pages_text)
 
         avr_text = clean_text(avr_text);
         avr_text = clean_numbers_pdf(avr_text);
@@ -555,12 +560,37 @@ def compare_route():
                 
         
         not_found = compare.count(0)
+
         for i, val in enumerate(ais_vals):
             if i == 104:
                 ais_display[i] = gc_mortality[int(val)-2]
             elif i == 158:
                 ais_display[i] = solv_mortality[int(val)-1]
+            elif i == solv_incr:
+                ais_display[i] = ais_vals[i]
+        keyword = "incremental cost"
+        windows = []
 
+        # Use re.finditer to find all occurrences (case-insensitive)
+        for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE):
+            start = max(0, match.start() - window_size)
+            end = match.end() + 100
+            snippet = avr_text[start:end]
+
+            # Extract only numbers in this snippet
+            numbers = re.findall(r"\d+(?:\.\d+)?", snippet)
+            windows.append(numbers)
+
+        flat_numbers = [num for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE)
+                for num in re.findall(r"\d+(?:\.\d+)?", avr_text[max(0, match.start()):match.end()+100])]
+        clean_nums = [extract_num(n) for n in flat_numbers]
+
+        print(flat_numbers)  # This will be a list of all snippets
+        avr_vals[solv_incr] = (max(clean_nums) * scale) if scale else max(clean_nums)
+
+
+        if avr_vals[solv_incr] != ais_vals[solv_incr]:
+            compare[solv_incr] = 0
 
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
@@ -582,6 +612,8 @@ def compare_route():
                 print(f"Error parsing date at index {idx}: {e}")
 
         print("hi")
+        print(incr_pages)
+
 
         try:
             date_str = "-".join(ais_vals[i] for i in val_date)
