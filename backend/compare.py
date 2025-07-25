@@ -196,10 +196,13 @@ def compare_route():
             
             # checkmark in tables
             elif i in table_check:
+
                 compare_table += 1
                 print(f"{i} table check: {val}")
                 if i == 104:
+                    #ais_vals[i] = gc_mortality[int(val)-2]
                     if gc_mortality[int(val) - 2] in avr_text:
+
                         print(f"found gc {gc_mortality[int(val)-2]}")
                         mark_found(i, fields_found)
                     else:
@@ -207,6 +210,7 @@ def compare_route():
                         print("not found - gc mortality")
                 else:
                     print("else")
+                    #ais_vals[i] = solv_mortality[int(val)-1]
                     #print(solv_mortality)
                     if solv_mortality[int(val) - 1] in avr_text:
                         print(f"found solv {solv_mortality[int(val)-1]}")
@@ -392,11 +396,14 @@ def compare_route():
             if val == 0:
                 compare0 += 1
                 print(f"not found: {keys[i]} {ais_vals[i]}")
+
             elif val == 3:
                 compare3 += 1
             elif val == 1:
                 compare1 += 1
         print(f"not found: {compare0}")
+
+
 
 
 
@@ -548,6 +555,12 @@ def compare_route():
                 
         
         not_found = compare.count(0)
+        for i, val in enumerate(ais_vals):
+            if i == 104:
+                ais_display[i] = gc_mortality[int(val)-2]
+            elif i == 158:
+                ais_display[i] = solv_mortality[int(val)-1]
+
 
 
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]

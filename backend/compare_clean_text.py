@@ -90,7 +90,7 @@ def clean_numbers_pdf(text):
 
     return text
 
-# adds commas to numbers to be dispalyed
+# adds commas to numbers to be displayed
 def format_numbers(arr):
     formatted = []
     for s in arr:
