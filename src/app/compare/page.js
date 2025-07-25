@@ -273,7 +273,7 @@ export default function Compare() {
                   <tr>
                     <th>Field Name</th>
                     <th>AIS Value</th>
-                    {/* <th>AVR Value</th> */}
+                    <th>AVR Value</th>
                     <th>AVR Page Number</th>
                   </tr>
                 </thead>
@@ -282,7 +282,7 @@ export default function Compare() {
                     <tr key={title}>
                       <td>{title}</td>
                       <td>{aisValue}</td>
-                      {/* <td>{avrValue}</td> */}
+                      <td>{avrValue}</td>
                       <td>{pageNumber}</td>
                     </tr>
                   ))}
@@ -332,7 +332,7 @@ export default function Compare() {
         </>
       )}
 
-          {/* {excelData.length > 0 && (
+          {excelData.length > 0 && (
            <div className="container">
            <h2>Excel Data</h2>
            <table className="table">
@@ -357,7 +357,7 @@ export default function Compare() {
            </table>
          </div>
          
-          )} */}
+          )}
     </div>
     
   );
