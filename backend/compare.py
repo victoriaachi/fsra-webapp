@@ -13,7 +13,7 @@ from compare_word_match import avr_match_dec, extract_num, extract_sum, find_per
 
 fuzzy_threshold = 40 
 sum_fuzzy_threshold = 60
-sparkle_fuzzy_threshold = 80
+sparkle_fuzzy_threshold = 60
 window_size = 250
 max_combo = 3
 sum_tol = 0.01
@@ -123,7 +123,8 @@ def compare_route():
         titles[206] = ais_vals[205]
         num_years = find_period(ais_vals[3], ais_vals[4])
         incremental_cost = extract_num(ais_vals[solv_incr]) * num_years
-        ais_vals[solv_incr] = str(incremental_cost)
+        incremental_cost = str(incremental_cost)
+        #ais_vals[solv_incr] = str(incremental_cost)
 
 
         # reading avr text
@@ -221,38 +222,44 @@ def compare_route():
             
             # solvency incremental cost
             elif i == solv_incr:
-                compare_rounding += 1
-                variants = [str(int(float(ais_vals[i])) + offset) for offset in range(-3, 4)]
-
-                print(f"🔎 Checking numeric/rounded variants for '{val}': {variants}")
-
-                best_score = 0
-                best_context = ""
-                found_match = False
-
-                for variant in variants:
-                    pattern = r'\b' + re.escape(variant) + r'\b'
-                    matches = list(re.finditer(pattern, avr_text))
-
-                    for match in matches:
-                        match_pos = match.start()
-                        context_start = max(0, match_pos - 250)
-                        context_end = min(len(avr_text), match_pos + 250)
-                        context = avr_text[context_start:context_end]
-
-                        score = fuzz.partial_ratio(titles[i].lower(), context.lower())
-                        if score > best_score:
-                            best_score = score
-                            best_context = context
-                            found_match = True
-
-                if best_score >= fuzzy_threshold and found_match:
+                if ais_vals[solv_incr] in avr_text:
                     mark_found(i, fields_found)
-                    print(f"✅ Found nearby numeric variant of '{val}' (score={best_score})")
-                    print(f"↪ Context: {best_context[:200]}...")
-                else:
-                    mark_not_found(i, fields_not_found)
-                    print(f"❌ No numeric variant matched '{val}' (max score={best_score})")
+                    print("solv incremental found in avr")
+                else: 
+                    ais_vals[solv_incr] = str(incremental_cost)
+                    compare_rounding += 1
+
+                    variants = [str(int(float(ais_vals[i])) + offset) for offset in range(-3, 4)]
+
+                    print(f"🔎 Checking numeric/rounded variants for '{val}': {variants}")
+
+                    best_score = 0
+                    best_context = ""
+                    found_match = False
+
+                    for variant in variants:
+                        pattern = r'\b' + re.escape(variant) + r'\b'
+                        matches = list(re.finditer(pattern, avr_text))
+
+                        for match in matches:
+                            match_pos = match.start()
+                            context_start = max(0, match_pos - 250)
+                            context_end = min(len(avr_text), match_pos + 250)
+                            context = avr_text[context_start:context_end]
+
+                            score = fuzz.partial_ratio(titles[i].lower(), context.lower())
+                            if score > best_score:
+                                best_score = score
+                                best_context = context
+                                found_match = True
+
+                    if best_score >= fuzzy_threshold and found_match:
+                        mark_found(i, fields_found)
+                        print(f"✅ Found nearby numeric variant of '{val}' (score={best_score})")
+                        print(f"↪ Context: {best_context[:200]}...")
+                    else:
+                        mark_not_found(i, fields_not_found)
+                        print(f"❌ No numeric variant matched '{val}' (max score={best_score})")
 
 
             
@@ -321,7 +328,7 @@ def compare_route():
                     if best_score >= fuzzy_threshold:
                         mark_found(i, fields_found)
                         print(f"✅ Number '{val}' found, and title '{titles[i]}' matched in context (score={best_score})")
-                        print(f"↪ Context: {best_context[:200]}...")
+                        print(f"↪ Context: {best_context[:100]}...")
                     else:
                         mark_not_found(i, fields_not_found)
                         print(f"⚠️ Number '{val}' found, but no strong match for title '{titles[i]}' (max score={best_score})")
