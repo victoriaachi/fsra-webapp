@@ -516,17 +516,21 @@ def compare_route():
         #print(merged_df)
         # with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
         #     print(merged_df)
-
+        print(len(compare), len(titles), len(ais_vals), len(avr_vals), len(avr_pages))
         for i, val in enumerate(compare):
+            print(f"🧪 i = {i}, len(compare) = {len(compare)}")
+            #print("for loop")
 
             if val == 0:
+                print("val = 0")
                 best_score = 0
                 best_value = None
                 
                 target_title = titles[i].lower()
                 
                 # Loop through each Excel row in merged_df
-                for idx, row in merged_df.iterrows():
+                for i, row in merged_df.iterrows():
+                    #print("loop")
                     row_label = str(row['row label']).lower()
                     col_label = str(row['col label']).lower()
                     excel_value = row['value']

@@ -782,19 +782,6 @@ field_names = [
     "firm name",
     "actuary phone number",
     "actuary email address",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
 ]
 
 
