@@ -584,6 +584,11 @@ def compare_route():
         flat_numbers = [num for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE)
                 for num in re.findall(r"\d+(?:\.\d+)?", avr_text[max(0, match.start()):match.end()+100])]
         clean_nums = [extract_num(n) for n in flat_numbers]
+        print(clean_nums)
+        solv_incr_exclude = [ais_vals[i] for i in dates + dates_excl]
+        solv_incr_exclude = [extract_num(n) for n in solv_incr_exclude]
+        print(solv_incr_exclude)
+        clean_nums = [n for n in clean_nums if n not in solv_incr_exclude]
 
         print(flat_numbers)  # This will be a list of all snippets
         avr_vals[solv_incr] = (max(clean_nums) * scale) if scale else max(clean_nums)
