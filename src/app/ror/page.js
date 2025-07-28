@@ -1097,6 +1097,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           {/* First Chart Section: Individual Rate of Return Chart */}
           <div className="ror-chart-section" >
             <h2>Market Indices Rate of Return Chart</h2>
+            <p>Note: Returns are calculated for full calendar months, quarters and years that fall within the selected date range</p>
             <div className="container">
               {/* <h3>Customize Chart</h3>
               <div className="gap"></div> */}
@@ -1106,7 +1107,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                   <option value="daily">Daily</option>
                   <option value="monthly">Monthly</option>{/* Added monthly option */}
                   <option value="quarter">Quarterly</option>
-                  <option value="annual">Annual (Calendar Year)</option>
+                  <option value="annual">Annual</option>
                 </select>
               </div>
 
@@ -1361,6 +1362,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           {/* Second Chart Section: Weighted Rate of Return Chart */}
           <div className="ror-chart-section">
             <h2>Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
+            <p>Note: Returns are calculated for full calendar months, quarters and years that fall within the selected date range</p>
             <div className="container">
               {/* <h3>Customize Chart</h3>
               <div className="gap"></div> */}
@@ -1370,7 +1372,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                   <option value="daily">Daily</option>
                   <option value="monthly">Monthly</option>
                   <option value="quarter">Quarterly</option>
-                  <option value="annual">Annual (Calendar Year)</option>
+                  <option value="annual">Annual</option>
                 </select>
               </div>
 

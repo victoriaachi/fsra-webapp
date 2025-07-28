@@ -590,8 +590,10 @@ def compare_route():
         print(solv_incr_exclude)
         clean_nums = [n for n in clean_nums if n not in solv_incr_exclude]
 
-        print(flat_numbers)  # This will be a list of all snippets
-        avr_vals[solv_incr] = (max(clean_nums) * scale) if scale else max(clean_nums)
+        print(clean_nums)  # This will be a list of all snippets
+        avr_vals[solv_incr] = max(clean_nums)
+        if scale and abs(avr_vals[solv_incr]*scale - extract_num(ais_vals[solv_incr])) < abs(avr_vals[solv_incr] - extract_num(ais_vals[solv_incr])):
+            avr_vals[solv_incr] = avr_vals[solv_incr] * scale
 
 
         if avr_vals[solv_incr] != ais_vals[solv_incr]:
