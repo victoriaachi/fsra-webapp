@@ -69,6 +69,8 @@ def compare_route():
     num_years = 0
     excel_data = []
 
+    
+
     #test
 
 
@@ -130,6 +132,13 @@ def compare_route():
         incremental_cost = extract_num(ais_vals[solv_incr]) * num_years
         incremental_cost = str(incremental_cost)
         ais_vals[solv_incr] = str(incremental_cost)
+        date_variants = [ais_vals[i] for i in dates + dates_excl]
+        date_variants = [extract_num(n) for n in date_variants if extract_num(n) is not None]
+        original_dates = list(date_variants)
+
+        for n in original_dates:
+            date_variants.append(n+1)
+            date_variants.append(n-1)
 
 
         # reading avr text
@@ -258,12 +267,14 @@ def compare_route():
                             context_start = max(0, match_pos - 250)
                             context_end = min(len(avr_text), match_pos + 250)
                             context = avr_text[context_start:context_end]
+                    
 
                             score = fuzz.partial_ratio(titles[i].lower(), context.lower())
                             if score > best_score:
                                 best_score = score
                                 best_context = context
                                 found_match = True
+                                
 
                     if best_score >= fuzzy_threshold and found_match:
                         mark_found(i, fields_found)
@@ -292,16 +303,18 @@ def compare_route():
                     for match in matches:
                         match_pos = match.start()
 
-                        # Define a fixed window around the match position (e.g., ±250 chars)
+                        # Define a fixed window around the match positioxfn (e.g., ±250 chars)
                         context_start = max(0, match_pos - 250)
                         context_end = min(len(avr_text), match_pos + 250)
                         context = avr_text[context_start:context_end]
+                        print(context)
 
                         score = fuzz.partial_ratio(titles[i].lower(), context.lower())
                         if score > best_score:
                             best_score = score
                             best_context = context
                             found_match = True
+                            print(f"score {score}")
 
                 if best_score >= fuzzy_threshold and found_match:
                     mark_found(i, fields_found)
@@ -601,21 +614,8 @@ def compare_route():
                 for num in re.findall(r"\d+(?:\.\d+)?", avr_text[max(0, match.start()):match.end()+200])]
         clean_nums = [extract_num(n) for n in flat_numbers]
         print(f"clean nums {clean_nums}")
-        solv_incr_exclude = [ais_vals[i] for i in dates + dates_excl]
-        
-        solv_incr_exclude = [extract_num(n) for n in solv_incr_exclude if extract_num(n) is not None]
-        print(f"pre {solv_incr_exclude}")
 
-        original_excl = list(solv_incr_exclude)
-
-        for n in original_excl:
-            solv_incr_exclude.append(n+1)
-            solv_incr_exclude.append(n-1)
-
-
-        
-        print(f"exclude {solv_incr_exclude}")
-        clean_nums = [n for n in clean_nums if n not in solv_incr_exclude]
+        clean_nums = [n for n in clean_nums if n not in date_variants]
 
         print(f" post clean nums {clean_nums}")  # This will be a list of all snippets
         if clean_nums is not None:
@@ -689,13 +689,13 @@ def compare_route():
         print(incremental_cost)
         # print(plan_info)
         # print(display_fields)
-        response_data = {
-            "compare": compare,
-            "titles": titles,
-            "ais_vals": ais_vals,
-            "avr_vals": avr_vals,
-            "avr_pages": avr_pages,
-        }
+        # response_data = {
+        #     "compare": compare,
+        #     "titles": titles,
+        #     "ais_vals": ais_vals,
+        #     "avr_vals": avr_vals,
+        #     "avr_pages": avr_pages,
+        # }
 
         # # Only include excel_data if it's not empty
         # if excel_data:

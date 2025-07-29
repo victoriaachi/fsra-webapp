@@ -74,7 +74,7 @@ def avr_match_dec(val, is_percent=False):
         num = float(val)
     except:
         return variants
-
+    variants.append(val)
     variants.append(f"{num:.2f}")            # original with 2 decimals
     variants.append(f"{round(num, 1):.1f}")  # rounded with built-in round, converted to string with 1 decimal
 
