@@ -415,7 +415,7 @@ def compare_route():
 
 
 
-
+        print(f"🧪 len(compare) = {len(compare)}, len(titles) = {len(titles)}, len(ais_vals) = {len(ais_vals)}")
         for i, val in enumerate(compare):
             if val == 0:
                 title = titles[i]
@@ -428,18 +428,25 @@ def compare_route():
                 best_score = 0
 
                 found_combo = False  # flag to track if sum combo is found
+                print("before for loop")
 
                 for m in re.finditer(r'.{0,250}', avr_text):
                     snippet = m.group()
                     score = fuzz.token_set_ratio(snippet.lower(), title.lower())
+                    print("a")
 
                     if score >= sum_fuzzy_threshold:
+
                         nums_nearby = extract_sum(avr_text, m.start(), m.end(), window_size)
+                        print("b")
 
                         for combo_size in range(2, min(max_combo, len(nums_nearby)) + 1):
+                            print("bb")
                             for combo in combinations(nums_nearby, combo_size):
+                                print("cc")
                                 # Try all +/- sign combinations for the current combo
                                 for signs in product([1, -1], repeat=len(combo)):
+                                    print("dd")
                                     signed_sum = sum(s * n for s, n in zip(signs, combo))
                                     if abs(signed_sum - expected_value) < 0.01:
                                         compare[i] = 1  # mark found
@@ -454,7 +461,9 @@ def compare_route():
 
                     if found_combo:
                         break  # no need to check further substrings
+
         if excel_file:
+            print("excel")
             # avr values
             xls = pd.ExcelFile(excel_file, engine="openpyxl")
             financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
@@ -579,31 +588,45 @@ def compare_route():
         windows = []
 
         # Use re.finditer to find all occurrences (case-insensitive)
-        for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE):
-            start = max(0, match.start() - window_size)
-            end = match.end() + 100
-            snippet = avr_text[start:end]
+        # for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE):
+            # start = max(0, match.start() - window_size)
+            # end = match.end() + 200
+            # snippet = avr_text[start:end]
 
-            # Extract only numbers in this snippet
-            numbers = re.findall(r"\d+(?:\.\d+)?", snippet)
-            windows.append(numbers)
+            # # Extract only numbers in this snippet
+            # numbers = re.findall(r"\d+(?:\.\d+)?", snippet)
+            # windows.append(numbers)
 
         flat_numbers = [num for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE)
-                for num in re.findall(r"\d+(?:\.\d+)?", avr_text[max(0, match.start()):match.end()+100])]
+                for num in re.findall(r"\d+(?:\.\d+)?", avr_text[max(0, match.start()):match.end()+200])]
         clean_nums = [extract_num(n) for n in flat_numbers]
-        print(clean_nums)
+        print(f"clean nums {clean_nums}")
         solv_incr_exclude = [ais_vals[i] for i in dates + dates_excl]
-        solv_incr_exclude = [extract_num(n) for n in solv_incr_exclude]
-        print(solv_incr_exclude)
+        
+        solv_incr_exclude = [extract_num(n) for n in solv_incr_exclude if extract_num(n) is not None]
+        print(f"pre {solv_incr_exclude}")
+
+        original_excl = list(solv_incr_exclude)
+
+        for n in original_excl:
+            solv_incr_exclude.append(n+1)
+            solv_incr_exclude.append(n-1)
+
+
+        
+        print(f"exclude {solv_incr_exclude}")
         clean_nums = [n for n in clean_nums if n not in solv_incr_exclude]
 
-        print(clean_nums)  # This will be a list of all snippets
-        avr_vals[solv_incr] = max(clean_nums)
+        print(f" post clean nums {clean_nums}")  # This will be a list of all snippets
+        if clean_nums is not None:
+            avr_vals[solv_incr] = max(clean_nums)
+        else:
+            avr_vals[solv_incr] = "not matched"
         if scale and abs(avr_vals[solv_incr]*scale - extract_num(ais_vals[solv_incr])) < abs(avr_vals[solv_incr] - extract_num(ais_vals[solv_incr])):
             avr_vals[solv_incr] = avr_vals[solv_incr] * scale
 
-
-        if avr_vals[solv_incr] != ais_vals[solv_incr]:
+        print(f"ais {ais_vals[solv_incr]} {type(ais_vals[solv_incr])} avr {avr_vals[solv_incr]} {type(avr_vals[solv_incr])}")
+        if avr_vals[solv_incr] != extract_num(ais_vals[solv_incr]):
             compare[solv_incr] = 0
 
 
