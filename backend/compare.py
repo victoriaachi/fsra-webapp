@@ -18,6 +18,7 @@ window_size = 250
 max_combo = 3
 sum_tol = 0.01
 
+
 compare_bp = Blueprint('compare', __name__)
 
 @compare_bp.route('/compare', methods=['GET', 'POST'])
@@ -30,11 +31,12 @@ def compare_route():
 
     ais_file = request.files['ais']
     avr_file = request.files['avr']
-    excel_file = request.files['excel']
+    excel_file = request.files.get('excel')
 
     print("AIS filename:", ais_file.filename)
     print("AVR filename:", avr_file.filename)
-    print("Excel filename:", excel_file.filename)
+    if excel_file:
+        print("Excel filename:", excel_file.filename)
 
     # variable names
     keys = list(key_map.keys());
@@ -65,6 +67,7 @@ def compare_route():
 
     incremental_cost = 0
     num_years = 0
+    excel_data = []
 
     #test
 
@@ -451,116 +454,116 @@ def compare_route():
 
                     if found_combo:
                         break  # no need to check further substrings
+        if excel_file:
+            # avr values
+            xls = pd.ExcelFile(excel_file, engine="openpyxl")
+            financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
 
-        # avr values
-        xls = pd.ExcelFile(excel_file, engine="openpyxl")
-        financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
+            records = []
+            for sheet_name in xls.sheet_names:
+                cleaned_sheet_name = clean_sheet_name(sheet_name)
+                df = xls.parse(sheet_name, header=None)
+                current_section = ""  # Tracks the current header label
 
-        records = []
-        for sheet_name in xls.sheet_names:
-            cleaned_sheet_name = clean_sheet_name(sheet_name)
-            df = xls.parse(sheet_name, header=None)
-            current_section = ""  # Tracks the current header label
+                for row_idx, row in df.iterrows():
+                    first_cell = str(row.iloc[0]).strip().lower() if pd.notna(row.iloc[0]) else ""
 
-            for row_idx, row in df.iterrows():
-                first_cell = str(row.iloc[0]).strip().lower() if pd.notna(row.iloc[0]) else ""
+                    is_header_row = (
+                        row.count() == 1 and  # only one non-empty cell
+                        isinstance(row.iloc[0], str) and
+                        not financial_pattern.search(row.iloc[0])
+                    )
 
-                is_header_row = (
-                    row.count() == 1 and  # only one non-empty cell
-                    isinstance(row.iloc[0], str) and
-                    not financial_pattern.search(row.iloc[0])
-                )
-
-                if is_header_row:
-                    current_section = first_cell  # update the section header
-                    continue
-
-                for col_idx, cell in row.items():
-                    value = None
-
-                    # Build row label (composite with section)
-                    base_row_label = str(df.iloc[row_idx, 0]).strip() if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                    full_row_label = f"{current_section} {base_row_label}".strip() if current_section else base_row_label
-
-                    # Find nearest non-null column label above this row
-                    col_label = ""
-                    for r in range(row_idx - 1, -1, -1):
-                        above = df.iloc[r, col_idx]
-                        if pd.notna(above):
-                            col_label = str(above).strip()
-                            break
-
-                    # Skip if either label contains "table of contents"
-                    if "table of contents" in full_row_label.lower() or "table of contents" in col_label.lower():
+                    if is_header_row:
+                        current_section = first_cell  # update the section header
                         continue
 
-                    # Parse value
-                    if isinstance(cell, str):
-                        matches = financial_pattern.findall(cell)
-                        for match in matches:
-                            value = clean_numbers_pdf(match)
+                    for col_idx, cell in row.items():
+                        value = None
+
+                        # Build row label (composite with section)
+                        base_row_label = str(df.iloc[row_idx, 0]).strip() if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
+                        full_row_label = f"{current_section} {base_row_label}".strip() if current_section else base_row_label
+
+                        # Find nearest non-null column label above this row
+                        col_label = ""
+                        for r in range(row_idx - 1, -1, -1):
+                            above = df.iloc[r, col_idx]
+                            if pd.notna(above):
+                                col_label = str(above).strip()
+                                break
+
+                        # Skip if either label contains "table of contents"
+                        if "table of contents" in full_row_label.lower() or "table of contents" in col_label.lower():
+                            continue
+
+                        # Parse value
+                        if isinstance(cell, str):
+                            matches = financial_pattern.findall(cell)
+                            for match in matches:
+                                value = clean_numbers_pdf(match)
+                                records.append([value, col_label, full_row_label, cleaned_sheet_name])
+
+                        elif isinstance(cell, (int, float)):
+                            value = cell
                             records.append([value, col_label, full_row_label, cleaned_sheet_name])
 
-                    elif isinstance(cell, (int, float)):
-                        value = cell
-                        records.append([value, col_label, full_row_label, cleaned_sheet_name])
+
+            # Create final DataFrame
+            merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
+            merged_df = merged_df.fillna("")
+            excel_data = merged_df.to_dict(orient="records")
 
 
-        # Create final DataFrame
-        merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
-        merged_df = merged_df.fillna("")
-        excel_data = merged_df.to_dict(orient="records")
+            # Print full DataFrame without truncation
+            #print(merged_df)
+            # with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
+            #     print(merged_df)
+            print(len(compare), len(titles), len(ais_vals), len(avr_vals), len(avr_pages))
+            for i, val in enumerate(compare):
+                print(f"🧪 i = {i}, len(compare) = {len(compare)}")
+                #print("for loop")
 
-
-        # Print full DataFrame without truncation
-        #print(merged_df)
-        # with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
-        #     print(merged_df)
-        print(len(compare), len(titles), len(ais_vals), len(avr_vals), len(avr_pages))
-        for i, val in enumerate(compare):
-            print(f"🧪 i = {i}, len(compare) = {len(compare)}")
-            #print("for loop")
-
-            if val == 0:
-                print("val = 0")
-                best_score = 0
-                best_value = None
-                
-                target_title = titles[i].lower()
-                
-                # Loop through each Excel row in merged_df
-                for i, row in merged_df.iterrows():
-                    #print("loop")
-                    row_label = str(row['row label']).lower()
-                    col_label = str(row['col label']).lower()
-                    excel_value = row['value']
+                if val == 0:
+                    print("val = 0")
+                    best_score = 0
+                    best_value = None
                     
-                    # Compute fuzzy match scores for row label and col label against the title
-                    score_row = fuzz.partial_ratio(target_title, row_label)
-                    score_col = fuzz.partial_ratio(target_title, col_label)
+                    target_title = titles[i].lower()
                     
-                    # Use whichever label matches best
-                    score = max(score_row, score_col)
+                    # Loop through each Excel row in merged_df
+                    for i, row in merged_df.iterrows():
+                        #print("loop")
+                        row_label = str(row['row label']).lower()
+                        col_label = str(row['col label']).lower()
+                        excel_value = row['value']
+                        
+                        # Compute fuzzy match scores for row label and col label against the title
+                        score_row = fuzz.partial_ratio(target_title, row_label)
+                        score_col = fuzz.partial_ratio(target_title, col_label)
+                        
+                        # Use whichever label matches best
+                        score = max(score_row, score_col)
+                        
+                        # Check if this is the best match so far and above threshold
+                        if score > best_score and score >= sparkle_fuzzy_threshold:
+                            print("if statement")
+                            best_score = score
+                            best_value = excel_value
+                            best_page = row['sheet name']
                     
-                    # Check if this is the best match so far and above threshold
-                    if score > best_score and score >= sparkle_fuzzy_threshold:
-                        print("if statement")
-                        best_score = score
-                        best_value = excel_value
-                        best_page = row['sheet name']
-                
-                # If a good match was found, update avr_vals[i]
-                if best_value is not None:
-                    avr_vals[i] = best_value
-                    avr_pages[i] = best_page
-                    if best_value == ais_vals[i]:
-                        compare[i] = 1  # mark as found only if values match
-                    print(f"✅ Excel exact match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
+                    # If a good match was found, update avr_vals[i]
+                    if best_value is not None:
+                        avr_vals[i] = best_value
+                        avr_pages[i] = best_page
+                        if best_value == ais_vals[i]:
+                            compare[i] = 1  # mark as found only if values match
+                        print(f"✅ Excel exact match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
 
-                if best_value is not None:
-                    avr_vals[i] = best_value
-                    #compare[i] = 1  # mark as found
-                    print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
+                    if best_value is not None:
+                        avr_vals[i] = best_value
+                        #compare[i] = 1  # mark as found
+                        print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
                 
         
         not_found = compare.count(0)
@@ -663,6 +666,19 @@ def compare_route():
         print(incremental_cost)
         # print(plan_info)
         # print(display_fields)
+        response_data = {
+            "compare": compare,
+            "titles": titles,
+            "ais_vals": ais_vals,
+            "avr_vals": avr_vals,
+            "avr_pages": avr_pages,
+        }
+
+        # # Only include excel_data if it's not empty
+        # if excel_data:
+        #     response_data["excel_data"] = excel_data
+
+        # return jsonify(response_data)
 
         return jsonify({
             "result": "Received both files successfully!",

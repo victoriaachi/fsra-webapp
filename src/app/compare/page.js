@@ -59,8 +59,8 @@ export default function Compare() {
   };
 
   const fileSubmit = async () => {
-    if (!ais || !avr || !excel) {
-      setError("Please upload 3 files.");
+    if (!ais || !avr) {
+      setError("Please upload an AIS and AVR.");
       return;
     }
     setError("");
@@ -69,7 +69,9 @@ export default function Compare() {
     const formData = new FormData();
     formData.append("ais", ais);
     formData.append("avr", avr);
-    formData.append("excel", excel);
+    if (excel) {
+      formData.append("excel", excel);
+    }
 
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/compare`, {
@@ -170,7 +172,7 @@ export default function Compare() {
           className="w-3 h-3 text-gray-600 hover:text-blue-500"
           style={{ height: "50px" }}
         />
-        <span>Upload Excel File</span>
+        <span>Upload Optional Excel File</span>
       </label>
       <input
         id="excel"
