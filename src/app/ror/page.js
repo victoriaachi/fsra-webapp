@@ -137,78 +137,9 @@ export default function Ror() {
   }, [backendData, frequency, selectedSecurities, startDate, endDate]);
 
   // Rebuild weighted chart data when backendData or weightedFrequency changes
-// Rebuild weighted chart data when backendData, weightedFrequency, portfolios change
-  // and manage the weightedStartDate/weightedEndDate based on selected portfolio securities
   useEffect(() => {
-    if (!backendData || !backendData[weightedFrequency] || !portfolios || portfolios.length === 0) {
-      // If no backend data or no portfolios, reset dates to default ranges
-      const defaultRange = backendData?.ranges?.[weightedFrequency] || {};
-      setWeightedStartDate(defaultRange.min || "");
-      setWeightedEndDate(defaultRange.max || "");
-      return;
-    }
-
-    const rawData = backendData[weightedFrequency];
-
-    // Collect all unique selected securities from all portfolios
-    const allSelectedWeightedSecurities = portfolios
-      .flatMap(p => p.selectedSecurities)
-      .filter((v, i, a) => a.indexOf(v) === i); // Ensures unique securities
-
-    // If no securities are selected across all portfolios, revert to the full frequency range
-    if (allSelectedWeightedSecurities.length === 0) {
-      const defaultRange = backendData.ranges?.[weightedFrequency] || {};
-      setWeightedStartDate(defaultRange.min || "");
-      setWeightedEndDate(defaultRange.max || "");
-      generateWeightedChart(); // Re-generate chart even if no securities selected, to clear old data
-      return;
-    }
-
-    const startDates = [];
-    const endDates = [];
-
-    // Find the min/max dates for each selected security and store them
-    allSelectedWeightedSecurities.forEach(sec => {
-      const secData = rawData[sec];
-      if (secData && secData.length > 0) {
-        const dates = secData.map(d => new Date(d.Date));
-        dates.sort((a, b) => a - b);
-        startDates.push(dates[0]);
-        endDates.push(dates[dates.length - 1]);
-      }
-    });
-
-    if (startDates.length === 0 || endDates.length === 0) {
-      // This might happen if selected securities have no data for the chosen frequency
-      const defaultRange = backendData.ranges?.[weightedFrequency] || {};
-      setWeightedStartDate(defaultRange.min || "");
-      setWeightedEndDate(defaultRange.max || "");
-      generateWeightedChart();
-      return;
-    }
-
-    // Determine the latest start date (maximum of all start dates)
-    // and the earliest end date (minimum of all end dates) for the overlap
-    const newWeightedMinDate = new Date(Math.max(...startDates.map(d => d.getTime())));
-    const newWeightedMaxDate = new Date(Math.min(...endDates.map(d => d.getTime())));
-
-    // Update the state for weightedStartDate and weightedEndDate
-    // Only update if they are different to prevent infinite re-renders
-    const formattedNewMin = newWeightedMinDate.toISOString().split("T")[0];
-    const formattedNewMax = newWeightedMaxDate.toISOString().split("T")[0];
-
-    if (weightedStartDate !== formattedNewMin) {
-      setWeightedStartDate(formattedNewMin);
-    }
-    if (weightedEndDate !== formattedNewMax) {
-      setWeightedEndDate(formattedNewMax);
-    }
-
-    // Generate the chart after dates are potentially updated.
-    // This will trigger if the dates or other dependencies change.
     generateWeightedChart();
-
-  }, [backendData, weightedFrequency, portfolios, weightedStartDate, weightedEndDate]); // Add weightedStartDate and weightedEndDate to dependencies
+  }, [backendData, weightedFrequency]);
 
   useEffect(() => {
     if (backendData && selectedSecurities.length > 0) {
@@ -1206,7 +1137,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                   <label>Market Indices:</label>
                   <button onClick={handleSelectAll} className="chart-button">
                     {selectedSecurities.length === backendData.securities.length
-                      ? "Deselect All"
+                      ? "Unselect All"
                       : "Select All"}
                   </button>
                   <div className="securities">
@@ -1492,7 +1423,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                       <div style={{ marginBottom: "10px" }}>
                          <button onClick={() => handlePortfolioSelectAll(portfolio.id)} className="chart-button">
                             {portfolio.selectedSecurities.length === backendData.securities.length
-                                ? "Deselect All"
+                                ? "Unselect All"
                                 : "Select All"}
                          </button>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
