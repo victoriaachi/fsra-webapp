@@ -1206,7 +1206,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                   <label>Market Indices:</label>
                   <button onClick={handleSelectAll} className="chart-button">
                     {selectedSecurities.length === backendData.securities.length
-                      ? "Unselect All"
+                      ? "Deselect All"
                       : "Select All"}
                   </button>
                   <div className="securities">
@@ -1492,7 +1492,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                       <div style={{ marginBottom: "10px" }}>
                          <button onClick={() => handlePortfolioSelectAll(portfolio.id)} className="chart-button">
                             {portfolio.selectedSecurities.length === backendData.securities.length
-                                ? "Unselect All"
+                                ? "Deselect All"
                                 : "Select All"}
                          </button>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
