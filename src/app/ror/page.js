@@ -1377,8 +1377,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               </div>
 
               {backendData.ranges?.[weightedFrequency] && (
-                <div style={{ marginBottom: "15px" }}>
-                  <label style={{ marginRight: "10px" }}>Date Range:</label>
+                <div>
+                  <label>Date Range:</label>
                   <input
                     type="date"
                     value={weightedStartDate}
@@ -1397,7 +1397,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                 </div>
               )}
 
-              <div style={{ marginBottom: "20px" }}>
+              <div>
                 {portfolios.map((portfolio, pIdx) => (
                   <div key={portfolio.id} style={{ border: "1px solid #ccc", padding: "15px", marginBottom: "15px", borderRadius: "8px" }}>
                     <h4 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
@@ -1415,12 +1415,12 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                     </h4>
                     {/* NEW: Display weight error message */}
                     {portfolioWeightErrors[portfolio.id] && (
-                        <p style={{ color: "red", fontSize: "0.9em", marginBottom: "10px" }}>
+                        <p className="error">
                             {portfolioWeightErrors[portfolio.id]}
                         </p>
                     )}
                     {backendData.securities?.length > 0 && (
-                      <div style={{ marginBottom: "10px" }}>
+                      <div>
                          <button onClick={() => handlePortfolioSelectAll(portfolio.id)} className="chart-button">
                             {portfolio.selectedSecurities.length === backendData.securities.length
                                 ? "Deselect All"
@@ -1438,7 +1438,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                                 <span>{sec}</span>
                               </label>
                               {portfolio.selectedSecurities.includes(sec) && (
-                               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                               <div>
                                <input
                                  type="number"
                                  placeholder="Weight"
@@ -1457,7 +1457,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                       </div>
                     )}
                     {portfolio.selectedSecurities.length > 0 && (
-                      <div style={{ marginTop: "10px" }}>
+                      <div>
                         <strong>Current Total Weight: </strong>
                         {(portfolio.selectedSecurities.reduce(
                           (sum, sec) => sum + (portfolio.weights[sec] || 0),
