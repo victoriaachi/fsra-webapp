@@ -282,7 +282,7 @@ export default function Compare() {
                 <tbody>
                   {mismatchedFields.map(([title, aisValue, avrValue, pageNumber]) => (
                     <tr key={title}>
-                      <td>{title}</td>
+                      <td>{title === "incremental cost" ? "incremental cost (total period)" : title}</td>
                       <td>{aisValue}</td>
                       <td>{avrValue}</td>
                       {/* <td>{pageNumber}</td> */}
