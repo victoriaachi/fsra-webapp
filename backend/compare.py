@@ -629,7 +629,9 @@ def compare_route():
         if avr_vals[solv_incr] != extract_num(ais_vals[solv_incr]):
             compare[solv_incr] = 0
 
-
+        for i, val in enumerate(compare):
+            if i != solv_incr:
+                compare[i] = 1
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_ais_values = [ais_display[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_avr_values = [avr_vals[i] for i in range(len(compare)) if compare[i] == 0]

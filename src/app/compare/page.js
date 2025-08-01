@@ -160,7 +160,7 @@ export default function Compare() {
   </label>
 
         {/* Excel File Upload */}
-        <label htmlFor="excel" style={{ cursor: "pointer" }}>
+        {/* <label htmlFor="excel" style={{ cursor: "pointer" }}>
     <div
       className={`drop-zone ${excelDragging ? "dragging" : ""}`}
       onDragOver={(e) => handleDrag(e, setExcelDragging)}
@@ -187,7 +187,7 @@ export default function Compare() {
       </p>
     
     </div>
-  </label>
+  </label> */}
 
         </div>
 
@@ -276,7 +276,7 @@ export default function Compare() {
                     <th>Field Name</th>
                     <th>AIS Value</th>
                     <th>AVR Value</th>
-                    <th>AVR Page Number</th>
+                    {/* <th>AVR Page Number</th> */}
                   </tr>
                 </thead>
                 <tbody>
@@ -285,7 +285,7 @@ export default function Compare() {
                       <td>{title}</td>
                       <td>{aisValue}</td>
                       <td>{avrValue}</td>
-                      <td>{pageNumber}</td>
+                      {/* <td>{pageNumber}</td> */}
                     </tr>
                   ))}
                 </tbody>

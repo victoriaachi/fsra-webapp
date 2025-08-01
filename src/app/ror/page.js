@@ -1391,7 +1391,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                     type="date"
                     value={weightedEndDate}
                     min={weightedStartDate}
-                    max={backendData.ranges[weightedFrequency].max}
+                    max={backendData.ranges[weightedFrequency].max} 
                     onChange={(e) => setWeightedEndDate(e.target.value)}
                   />
                 </div>
