@@ -1132,84 +1132,86 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
               
             )}  
 
-      {backendData && (
-        <>
-          {/* First Chart Section: Individual Rate of Return Chart */}
-          <div className="ror-chart-section" >
-            <h2>Market Indices Rate of Return Chart</h2>
-            <p>Note: Returns are calculated for full calendar months, quarters and years that fall within the selected date range</p>
-            <div className="container">
-              {/* <h3>Customize Chart</h3>
-              <div className="gap"></div> */}
-              <div>
-                <label>Frequency:</label>
-                <select value={frequency} onChange={handleFrequencyChange}>
-                  <option value="daily">Daily</option>
-                  <option value="monthly">Monthly</option>{/* Added monthly option */}
-                  <option value="quarter">Quarterly</option>
-                  <option value="annual">Annual</option>
-                </select>
-              </div>
+{backendData && (
+  <>
+    {/* First Chart Section: Individual Rate of Return Chart */}
+    <div className="ror-chart-section">
+      <h2>Market Indices Rate of Return Chart</h2>
+      <p>
+        Note: Returns are calculated for full calendar months, quarters and years that fall within the selected date range
+      </p>
 
-              {backendData.ranges?.[frequency] && (
-                <div>
-                  <label>Date Range:</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    min={backendData.ranges[frequency].min}
-                    max={endDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
-                  <span style={{ margin: "0 10px" }}>to</span>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate}
-                    max={backendData.ranges[frequency].max}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
-                </div>
-              )}
+      {/* Side-by-side layout using flex */}
+      <div style={{ display: "flex", gap: "30px", alignItems: "flex-start" }}>
+        {/* Left: Controls */}
+        <div style={{ flex: 1, minWidth: "320px" }}>
+          <div>
+            <label>Frequency:</label>
+            <select value={frequency} onChange={handleFrequencyChange}>
+              <option value="daily">Daily</option>
+              <option value="monthly">Monthly</option>
+              <option value="quarter">Quarterly</option>
+              <option value="annual">Annual</option>
+            </select>
+          </div>
 
-              {backendData.securities?.length > 0 && (
-                <div >
-                  <label>Market Indices:</label>
-                  <button onClick={handleSelectAll} className="chart-button">
-                    {selectedSecurities.length === backendData.securities.length
-                      ? "Deselect All"
-                      : "Select All"}
-                  </button>
-                  <div className="securities">
-                    {backendData.securities.map((sec) => (
-                  <label
-                  key={`chart1-${sec}`}
-                  className="security-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedSecurities.includes(sec)}
-                    onChange={() => handleSecurityToggle(sec)}
-                  />
-                  <span>{sec}</span>
-                </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-
-
-              <button onClick={exportChart} className="chart-button">
-                  Export Chart
-                </button>
-                <button onClick={() => exportSecurities(backendData, frequency)} 
-                className="chart-button"
-                disabled={!backendData || selectedSecurities.length === 0}>
-                  Download Excel File
-                </button>
+          {backendData.ranges?.[frequency] && (
+            <div>
+              <label>Date Range:</label>
+              <input
+                type="date"
+                value={startDate}
+                min={backendData.ranges[frequency].min}
+                max={endDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+              <span style={{ margin: "0 10px" }}>to</span>
+              <input
+                type="date"
+                value={endDate}
+                min={startDate}
+                max={backendData.ranges[frequency].max}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
             </div>
+          )}
 
-            {selectedSecurities.length > 0 && (
+          {backendData.securities?.length > 0 && (
+            <div>
+              <label>Market Indices:</label>
+              <button onClick={handleSelectAll} className="chart-button">
+                {selectedSecurities.length === backendData.securities.length ? "Deselect All" : "Select All"}
+              </button>
+              <div className="securities">
+                {backendData.securities.map((sec) => (
+                  <label key={`chart1-${sec}`} className="security-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={selectedSecurities.includes(sec)}
+                      onChange={() => handleSecurityToggle(sec)}
+                    />
+                    <span>{sec}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ marginTop: "10px" }}>
+            <button onClick={exportChart} className="chart-button">Export Chart</button>
+            <button
+              onClick={() => exportSecurities(backendData, frequency)}
+              className="chart-button"
+              disabled={!backendData || selectedSecurities.length === 0}
+            >
+              Download Excel File
+            </button>
+          </div>
+        </div>
+
+        {/* Right: Charts and outputs */}
+        <div style={{ flex: 2 }}>
+          {selectedSecurities.length > 0 && (
             <div>
               <h3>Total Return by Market Index (Selected Time Period)</h3>
               <ul>
@@ -1219,423 +1221,490 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                   </li>
                 ))}
               </ul>
-
             </div>
-          )} 
+          )}
 
-            <div>
-              <div>
-                <label>
-                  Show Index Value Chart
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={showPriceChart}
-                      onChange={() => setShowPriceChart(prev => !prev)}
-                    />
-                    <span className="slider"></span>
-                  </label>
-                </label>
-              </div>
-            
-
-
-
-{showPriceChart && (
-  <div className="toggle-section">
-    <div>
-      <button
-        onClick={() => priceChartRef.current?.resetZoom()}
-        className="chart-button"
-      >
-        Reset Zoom
-      </button>
-    </div>
-
-    <Line
-      ref={priceChartRef}
-      data={priceChartData}
-      options={{
-        responsive: true,
-        maintainAspectRatio: true,
-        aspectRatio: 1.2,
-        plugins: {
-          title: { display: true, text: "Index Value Chart", font: { size: 18 } },
-          tooltip: {
-            callbacks: {
-              label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
-            },
-          },
-          legend: {
-            onClick: null,
-            labels: {
-              usePointStyle: true,
-              boxWidth: 12,
-              boxHeight: 12,
-              color: "#000",
-            },
-          },
-          zoom: {
-            pan: { enabled: true, mode: "x" },
-            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "x" },
-          },
-        },
-        scales: {
-          x: {
-            type: "time",
-            time: {
-              unit:
-                frequency === "daily"
-                  ? "day"
-                  : frequency === "quarter"
-                  ? "quarter"
-                  : frequency === "monthly"
-                  ? "month"
-                  : "year",
-              tooltipFormat: "MMM dd, yyyy",
-              displayFormats: {
-                year: "yyyy",
-                month: "MMM yyyy",
-                day: "MMM dd, yyyy",
-              },
-            },
-            title: { display: true, text: "Date" },
-          },
-          y: {
-            title: { display: true, text: "Price ($)" },
-            ticks: {
-              callback: function(value) {
-                // Format value with commas if > 1000
-                if (value >= 1000 || value <= -1000) {
-                  return value.toLocaleString();
-                }
-                return value;
-              }
-            },
-          },
-        },
-      }}
-    />
-  </div>
-)}
-
-
-
-
-              <div>
-                <button onClick={() => chartRef.current?.resetZoom()} className="chart-button">
-                  Reset Zoom
-                </button>
-      
-
-              </div>
-            </div>
-
-            {individualChartError && (
-                <p className="grey-error">{individualChartError}</p>
-            )}
-
-            {chartData && chartData.datasets.length > 0 && (
-              <div>
-                  <Line
-                    ref={chartRef}
-                    data={chartData}
-                    options={{
-                      responsive: true,
-                      maintainAspectRatio: true,
-                      aspectRatio: 1.2,
-                      plugins: {
-                        title: { display: true, text: "Rate of Return", font: { size: 18 } },
-                        tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`, }, },
-                        legend: {
-                          onClick: null,
-                          labels: { usePointStyle: true, boxWidth: 12, boxHeight: 12, color: "#000" }
-                        },
-                        zoom: {
-                          pan: { enabled: true, mode: 'x',  },
-                          zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
-                          limits: {
-                            x: {
-                              min: startDate ? new Date(startDate).getTime() : undefined,
-                              max: endDate ? new Date(endDate).getTime() : undefined,
-                            }
-                          }
-                        },
-
-
-                      },
-                      scales: {
-                        x: {
-                            type: "time",
-                            time: {
-                              unit:
-                                frequency === "daily"
-                                  ? "day"
-                                  : frequency === "quarter"
-                                  ? "quarter"
-                                  : frequency === "monthly"
-                                  ? "month"
-                                  : "year",
-                              tooltipFormat: "MMM dd, yyyy",
-                              displayFormats: {
-                                year: "yyyy",
-                                month: "MMM yyyy",
-                                day: "MMM dd, yyyy",
-                              },
-                            },
-                            title: { display: true, text: "Date" },
-                        },
-                        y: {
-                          ticks: {
-                            callback: (value) => `${value}%`,
-                          },
-                          title: { display: true, text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Return (%)` },
-                        },
-                      },
-                    }}
-                  />
-              </div>
-            )}
+          <div>
+            <label>
+              Show Index Value Chart
+              <label className="toggle-switch">
+                <input
+                  type="checkbox"
+                  checked={showPriceChart}
+                  onChange={() => setShowPriceChart(prev => !prev)}
+                />
+                <span className="slider"></span>
+              </label>
+            </label>
           </div>
-          <div className="bottom-border"></div>
 
-          {/* Second Chart Section: Weighted Rate of Return Chart */}
-          <div className="ror-chart-section">
-            <h2>Portfolios Rate of Return Chart</h2> {/* Changed title for clarity */}
-            <p>Note: Returns are calculated for full calendar months, quarters and years that fall within the selected date range</p>
-            <div className="container">
-              {/* <h3>Customize Chart</h3>
-              <div className="gap"></div> */}
-              <div >
-                <label >Frequency:</label>
-                <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
-                  <option value="daily">Daily</option>
-                  <option value="monthly">Monthly</option>
-                  <option value="quarter">Quarterly</option>
-                  <option value="annual">Annual</option>
-                </select>
-              </div>
+          {showPriceChart && (
+            <div className="toggle-section">
+              <button
+                onClick={() => priceChartRef.current?.resetZoom()}
+                className="chart-button"
+              >
+                Reset Zoom
+              </button>
+              <Line
+                ref={priceChartRef}
+                data={priceChartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  aspectRatio: 1.2,
+                  plugins: {
+                    title: { display: true, text: "Index Value Chart", font: { size: 18 } },
+                    tooltip: {
+                      callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toFixed(2)}`,
+                      },
+                    },
+                    legend: {
+                      onClick: null,
+                      labels: {
+                        usePointStyle: true,
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        color: "#000",
+                      },
+                    },
+                    zoom: {
+                      pan: { enabled: true, mode: "x" },
+                      zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: "x" },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      type: "time",
+                      time: {
+                        unit:
+                          frequency === "daily"
+                            ? "day"
+                            : frequency === "quarter"
+                            ? "quarter"
+                            : frequency === "monthly"
+                            ? "month"
+                            : "year",
+                        tooltipFormat: "MMM dd, yyyy",
+                        displayFormats: {
+                          year: "yyyy",
+                          month: "MMM yyyy",
+                          day: "MMM dd, yyyy",
+                        },
+                      },
+                      title: { display: true, text: "Date" },
+                    },
+                    y: {
+                      title: { display: true, text: "Price ($)" },
+                      ticks: {
+                        callback: function (value) {
+                          return value >= 1000 || value <= -1000 ? value.toLocaleString() : value;
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          )}
 
-              {backendData.ranges?.[weightedFrequency] && (
+          <div>
+            <button onClick={() => chartRef.current?.resetZoom()} className="chart-button">
+              Reset Zoom
+            </button>
+          </div>
+
+          {individualChartError && (
+            <p className="grey-error">{individualChartError}</p>
+          )}
+
+          {chartData && chartData.datasets.length > 0 && (
+            <div>
+              <Line
+                ref={chartRef}
+                data={chartData}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: true,
+                  aspectRatio: 1.2,
+                  plugins: {
+                    title: { display: true, text: "Rate of Return", font: { size: 18 } },
+                    tooltip: {
+                      callbacks: {
+                        label: (ctx) =>
+                          `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
+                      },
+                    },
+                    legend: {
+                      onClick: null,
+                      labels: {
+                        usePointStyle: true,
+                        boxWidth: 12,
+                        boxHeight: 12,
+                        color: "#000",
+                      },
+                    },
+                    zoom: {
+                      pan: { enabled: true, mode: "x" },
+                      zoom: {
+                        wheel: { enabled: true },
+                        pinch: { enabled: true },
+                        mode: "x",
+                      },
+                      limits: {
+                        x: {
+                          min: startDate ? new Date(startDate).getTime() : undefined,
+                          max: endDate ? new Date(endDate).getTime() : undefined,
+                        },
+                      },
+                    },
+                  },
+                  scales: {
+                    x: {
+                      type: "time",
+                      time: {
+                        unit:
+                          frequency === "daily"
+                            ? "day"
+                            : frequency === "quarter"
+                            ? "quarter"
+                            : frequency === "monthly"
+                            ? "month"
+                            : "year",
+                        tooltipFormat: "MMM dd, yyyy",
+                        displayFormats: {
+                          year: "yyyy",
+                          month: "MMM yyyy",
+                          day: "MMM dd, yyyy",
+                        },
+                      },
+                      title: { display: true, text: "Date" },
+                    },
+                    y: {
+                      ticks: {
+                        callback: (value) => `${value}%`,
+                      },
+                      title: {
+                        display: true,
+                        text: `${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Return (%)`,
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+    <div className="bottom-border"></div>
+
+
+{/* Second Chart Section: Weighted Rate of Return Chart */}
+<div className="ror-chart-section">
+  <h2>Portfolios Rate of Return Chart</h2>
+  <p>
+    Note: Returns are calculated for full calendar months, quarters and years
+    that fall within the selected date range
+  </p>
+
+  {/* FLEX CONTAINER to make side-by-side layout */}
+  <div style={{ display: "flex", gap: "30px", alignItems: "flex-start" }}>
+    {/* Left side: Customization controls */}
+    <div style={{ flex: 1, minWidth: "320px" }}>
+      <div className="container">
+        <div>
+          <label>Frequency:</label>
+          <select value={weightedFrequency} onChange={handleWeightedFrequencyChange}>
+            <option value="daily">Daily</option>
+            <option value="monthly">Monthly</option>
+            <option value="quarter">Quarterly</option>
+            <option value="annual">Annual</option>
+          </select>
+        </div>
+
+        {backendData.ranges?.[weightedFrequency] && (
+          <div>
+            <label>Date Range:</label>
+            <input
+              type="date"
+              value={weightedStartDate}
+              min={backendData.ranges[weightedFrequency].min}
+              max={weightedEndDate}
+              onChange={(e) => setWeightedStartDate(e.target.value)}
+            />
+            <span style={{ margin: "0 10px" }}>to</span>
+            <input
+              type="date"
+              value={weightedEndDate}
+              min={weightedStartDate}
+              max={backendData.ranges[weightedFrequency].max}
+              onChange={(e) => setWeightedEndDate(e.target.value)}
+            />
+          </div>
+        )}
+
+        <div>
+          {portfolios.map((portfolio, pIdx) => (
+            <div
+              key={portfolio.id}
+              style={{
+                border: "1px solid #ccc",
+                padding: "15px",
+                marginBottom: "15px",
+                borderRadius: "8px",
+              }}
+            >
+              <h4
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "10px",
+                }}
+              >
+                <input
+                  type="text"
+                  value={portfolio.name}
+                  onChange={(e) => handlePortfolioNameChange(portfolio.id, e.target.value)}
+                  className="portfolio-name"
+                />
+                {portfolios.length > 1 && (
+                  <button
+                    onClick={() => handleRemovePortfolio(portfolio.id)}
+                    className="portfolio-button remove-portfolio"
+                  >
+                    Remove
+                  </button>
+                )}
+              </h4>
+
+              {portfolioWeightErrors[portfolio.id] && (
+                <p className="error">{portfolioWeightErrors[portfolio.id]}</p>
+              )}
+
+              {backendData.securities?.length > 0 && (
                 <div>
-                  <label>Date Range:</label>
-                  <input
-                    type="date"
-                    value={weightedStartDate}
-                    min={backendData.ranges[weightedFrequency].min}
-                    max={weightedEndDate}
-                    onChange={(e) => setWeightedStartDate(e.target.value)}
-                  />
-                  <span style={{ margin: "0 10px" }}>to</span>
-                  <input
-                    type="date"
-                    value={weightedEndDate}
-                    min={weightedStartDate}
-                    max={backendData.ranges[weightedFrequency].max} 
-                    onChange={(e) => setWeightedEndDate(e.target.value)}
-                  />
+                  <button
+                    onClick={() => handlePortfolioSelectAll(portfolio.id)}
+                    className="chart-button"
+                  >
+                    {portfolio.selectedSecurities.length === backendData.securities.length
+                      ? "Deselect All"
+                      : "Select All"}
+                  </button>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+                    {backendData.securities.map((sec) => (
+                      <div
+                        key={`portfolio-${portfolio.id}-${sec}`}
+                        className="security-checkbox"
+                      >
+                        <label
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
+                            marginBottom: "5px",
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={portfolio.selectedSecurities.includes(sec)}
+                            onChange={() => handlePortfolioSecurityToggle(portfolio.id, sec)}
+                          />
+                          <span>{sec}</span>
+                        </label>
+                        {portfolio.selectedSecurities.includes(sec) && (
+                          <div>
+                            <input
+                              type="number"
+                              placeholder="Weight"
+                              value={portfolio.weights[sec] || ""}
+                              onChange={(e) =>
+                                handlePortfolioWeightChange(portfolio.id, sec, e.target.value)
+                              }
+                              className="weight-change"
+                              style={{ width: "80px" }}
+                            />
+                            <span>%</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
-              <div>
-                {portfolios.map((portfolio, pIdx) => (
-                  <div key={portfolio.id} style={{ border: "1px solid #ccc", padding: "15px", marginBottom: "15px", borderRadius: "8px" }}>
-                    <h4 style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                      <input
-                        type="text"
-                        value={portfolio.name}
-                        onChange={(e) => handlePortfolioNameChange(portfolio.id, e.target.value)}
-                        className="portfolio-name"
-                      />
-                      {portfolios.length > 1 && (
-                        <button onClick={() => handleRemovePortfolio(portfolio.id)} className="portfolio-button remove-portfolio">
-                          Remove
-                        </button>
-                      )}
-                    </h4>
-                    {/* NEW: Display weight error message */}
-                    {portfolioWeightErrors[portfolio.id] && (
-                        <p className="error">
-                            {portfolioWeightErrors[portfolio.id]}
-                        </p>
-                    )}
-                    {backendData.securities?.length > 0 && (
-                      <div>
-                         <button onClick={() => handlePortfolioSelectAll(portfolio.id)} className="chart-button">
-                            {portfolio.selectedSecurities.length === backendData.securities.length
-                                ? "Deselect All"
-                                : "Select All"}
-                         </button>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                          {backendData.securities.map((sec) => (
-                            <div key={`portfolio-${portfolio.id}-${sec}`} className="security-checkbox">
-                              <label style={{ display: "flex", alignItems: "center", gap: "5px", marginBottom: "5px" }}>
-                                <input
-                                  type="checkbox"
-                                  checked={portfolio.selectedSecurities.includes(sec)}
-                                  onChange={() => handlePortfolioSecurityToggle(portfolio.id, sec)}
-                                />
-                                <span>{sec}</span>
-                              </label>
-                              {portfolio.selectedSecurities.includes(sec) && (
-                               <div>
-                               <input
-                                 type="number"
-                                 placeholder="Weight"
-                                 value={portfolio.weights[sec] || ''}
-                                 onChange={(e) => handlePortfolioWeightChange(portfolio.id, sec, e.target.value)}
-                                 className="weight-change"
-                                 style={{ width: '80px' }}
-                               />
-                               <span>%</span>
-                             </div>
-                                
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {portfolio.selectedSecurities.length > 0 && (
-                      <div>
-                        <strong>Current Total Weight: </strong>
-                        {(portfolio.selectedSecurities.reduce(
-                          (sum, sec) => sum + (portfolio.weights[sec] || 0),
-                          0
-                        )).toFixed(2)}%
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <button onClick={handleAddPortfolio} className="portfolio-button add-portfolio">
-                  Add Portfolio
-                </button>
-              </div>
-
-              {/* NEW: Manual trigger button for weighted chart */}
-              <div>
-                <button onClick={generateWeightedChart} className="generate-button">
-                  Generate Weighted Chart
-                </button>
-                <button onClick={() => weightedChartRef.current?.resetZoom()} className="chart-button">
-                  Reset Zoom
-                </button>
-                <button onClick={exportWeightedChart} className="chart-button">
-                  Export Chart
-                </button>
-                <button onClick={() => exportPortfolios(portfolios, backendData)}
-                 className="chart-button"
-                 disabled={!weightedChartData || weightedChartData.datasets.length === 0}
-                 >
-                  Download Excel File
-                </button>
-              </div>
+              {portfolio.selectedSecurities.length > 0 && (
+                <div>
+                  <strong>Current Total Weight: </strong>
+                  {portfolio.selectedSecurities
+                    .reduce((sum, sec) => sum + (portfolio.weights[sec] || 0), 0)
+                    .toFixed(2)}
+                  %
+                </div>
+              )}
             </div>
-            <div >
-            {portfolioTotalReturns.length > 0 && (
-              <div>
-                  <h3>Portfolio Total Returns:</h3>
-                  {portfolioTotalReturns.map((p, idx) => ( // Change here: iterate over portfolioTotalReturns
-                    <p key={idx}>
-                      <strong>
-                        {p.name}
-                        {p.isPartial
-                          ? ` (from ${p.startDateStr} to ${p.endDateStr})`
-                          : ""}
-                        :
-                      </strong>{" "}
-                      {p.totalReturn}
-                    </p>
+          ))}
 
-                  ))}
-              </div>
+          <button onClick={handleAddPortfolio} className="portfolio-button add-portfolio">
+            Add Portfolio
+          </button>
+        </div>
+
+        <div>
+          <button onClick={generateWeightedChart} className="generate-button">
+            Generate Weighted Chart
+          </button>
+          <button onClick={() => weightedChartRef.current?.resetZoom()} className="chart-button">
+            Reset Zoom
+          </button>
+          <button onClick={exportWeightedChart} className="chart-button">
+            Export Chart
+          </button>
+          <button
+            onClick={() => exportPortfolios(portfolios, backendData)}
+            className="chart-button"
+            disabled={!weightedChartData || weightedChartData.datasets.length === 0}
+          >
+            Download Excel File
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* Right side: Chart + Results */}
+    <div style={{ flex: 2 }}>
+      {portfolioTotalReturns.length > 0 && (
+        <div>
+          <h3>Portfolio Total Returns:</h3>
+          {portfolioTotalReturns.map((p, idx) => (
+            <p key={idx}>
+              <strong>
+                {p.name}
+                {p.isPartial ? ` (from ${p.startDateStr} to ${p.endDateStr})` : ""}
+                :
+              </strong>{" "}
+              {p.totalReturn}
+            </p>
+          ))}
+        </div>
+      )}
+
+      {weightedChartData && (
+        <div>
+          {weightedChartData.datasets.length > 0 ? (
+            <Line
+              ref={weightedChartRef}
+              data={weightedChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: true,
+                aspectRatio: 1.2,
+                plugins: {
+                  title: {
+                    display: true,
+                    text: "Portfolios Rate of Return",
+                    font: { size: 18 },
+                  },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) =>
+                        `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
+                    },
+                  },
+                  legend: {
+                    onClick: null,
+                    labels: {
+                      usePointStyle: true,
+                      boxWidth: 12,
+                      boxHeight: 12,
+                      color: "#000",
+                    },
+                  },
+                  zoom: {
+                    pan: { enabled: true, mode: "x" },
+                    zoom: {
+                      wheel: { enabled: true },
+                      pinch: { enabled: true },
+                      mode: "x",
+                    },
+                    limits: {
+                      x: {
+                        min: weightedStartDate
+                          ? new Date(weightedStartDate).getTime()
+                          : undefined,
+                        max: weightedEndDate
+                          ? new Date(weightedEndDate).getTime()
+                          : undefined,
+                      },
+                    },
+                  },
+                },
+                scales: {
+                  x: {
+                    type: "time",
+                    time: {
+                      unit:
+                        weightedFrequency === "daily"
+                          ? "day"
+                          : weightedFrequency === "quarter"
+                          ? "quarter"
+                          : weightedFrequency === "monthly"
+                          ? "month"
+                          : "year",
+                      tooltipFormat: "MMM dd, yyyy",
+                      displayFormats: {
+                        year: "yyyy",
+                        month: "MMM yyyy",
+                        day: "MMM dd, yyyy",
+                      },
+                      round: false,
+                      ticks: {
+                        source: "auto",
+                        callback: function (value, index, values) {
+                          const date = new Date(value);
+                          if (this.options.time.unit === "year") {
+                            return date.getFullYear();
+                          }
+                          return ChartJS.Ticks.formatters.datetime.call(
+                            this,
+                            value,
+                            index,
+                            values
+                          );
+                        },
+                      },
+                    },
+                    title: { display: true, text: "Date" },
+                  },
+                  y: {
+                    ticks: {
+                      callback: (value) => `${value}%`,
+                    },
+                    title: {
+                      display: true,
+                      text: `${
+                        weightedFrequency.charAt(0).toUpperCase() +
+                        weightedFrequency.slice(1)
+                      } Return (%)`,
+                    },
+                  },
+                },
+              }}
+            />
+          ) : (
+            <p className="grey-error">
+              Please select market indices and weights for at least one portfolio to display the weighted chart.
+            </p>
           )}
-            </div>
-            
-            {weightedChartData && (
-              <div>
-                {weightedChartData.datasets.length > 0 ? (
-                  <>
-                    <Line
-                      ref={weightedChartRef}
-                      data={weightedChartData}
-                      options={{
-                        responsive: true,
-                        maintainAspectRatio: true,
-                        aspectRatio: 1.2,
-                        plugins: {
-                          title: { display: true, text: "Portfolios Rate of Return", font: { size: 18 } },
-                          tooltip: {
-                            callbacks: {
-                              label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
-                            },
-                          },
-                          legend: {
-                            onClick: null,
-                            labels: { usePointStyle: true, boxWidth: 12, boxHeight: 12, color: "#000" }
-                          },
-                          zoom: {
-                            pan: { enabled: true, mode: 'x', },
-                            zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x', },
-                            limits: {
-                                x: {
-                                    min: weightedStartDate ? new Date(weightedStartDate).getTime() : undefined,
-                                    max: weightedEndDate ? new Date(weightedEndDate).getTime() : undefined,
-                                }
-                            }
-                          },
-                        },
-                        scales: {
-                          x: {
-                            type: "time",
-                            time: {
-                              unit:
-                                weightedFrequency === "daily"
-                                  ? "day"
-                                  : weightedFrequency === "quarter"
-                                  ? "quarter"
-                                  : weightedFrequency === "monthly"
-                                  ? "month"
-                                  : "year",
-                              tooltipFormat: "MMM dd, yyyy",
-                              displayFormats: {
-                                year: "yyyy",
-                                month: "MMM yyyy",
-                                day: "MMM dd, yyyy",
-                              },
-                              round: false,
-                              ticks: {
-                                source: 'auto',
-                                callback: function(value, index, values) {
-                                  const date = new Date(value);
-                                  if (this.options.time.unit === 'year') {
-                                    return date.getFullYear();
-                                  }
-                                  return ChartJS.Ticks.formatters.datetime.call(this, value, index, values);
-                                }
-                              }
-                            },
-                            
-                            title: { display: true, text: "Date" },
-                          },
-                          y: {
-                          
-                            ticks: {
-                              callback: (value) => `${value}%`,
-                            },
-                            title: { display: true, text: `${weightedFrequency.charAt(0).toUpperCase() + weightedFrequency.slice(1)} Return (%)` },
-                          },
-                        },
-                      }}
-                    />
-                   
-                  </>
-                ) : (
-                  <p className="grey-error">Please select market indices and weights for at least one portfolio to display the weighted chart.</p>
-                )}
-              </div>
-            )}
-          </div>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
+
         </>
       )}
     </div>
