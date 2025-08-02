@@ -1557,9 +1557,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           <button onClick={generateWeightedChart} className="generate-button">
             Generate Weighted Chart
           </button>
-          <button onClick={() => weightedChartRef.current?.resetZoom()} className="chart-button">
-            Reset Zoom
-          </button>
+
           <button onClick={exportWeightedChart} className="chart-button">
             Export Chart
           </button>
@@ -1593,7 +1591,11 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       )}
 
       {weightedChartData && (
+        
         <div>
+          <button onClick={() => weightedChartRef.current?.resetZoom()} className="chart-button">
+            Reset Zoom
+          </button>
           {weightedChartData.datasets.length > 0 ? (
             <Line
               ref={weightedChartRef}
