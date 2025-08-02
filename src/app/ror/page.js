@@ -611,8 +611,8 @@ export default function Ror() {
       const result = calculatePortfolioReturns(
         portfolio,
         backendData,
-        weightedStartDate, // Pass original weightedStartDate
-        weightedEndDate // Pass original weightedEndDate
+        finalStart.toISOString().split("T")[0], // Pass the final, calculated start date string
+        finalEnd.toISOString().split("T")[0]   // Pass the final, calculated end date string
       );
       
       //const name = result.isPartialPeriod ? `${portfolio.name} (Partial Period)` : portfolio.name;
@@ -624,8 +624,9 @@ export default function Ror() {
         name: portfolio.name,
         totalReturn: result.value,
         isPartial: result.isPartialPeriod,
-        startDateStr: finalStart.toISOString().split("T")[0],
-        endDateStr: finalEnd.toISOString().split("T")[0]
+        // Use the dates returned from the calculation
+        startDateStr: result.startPriceDate ? formatDateUTC(result.startPriceDate) : 'N/A',
+        endDateStr: result.endPriceDate ? formatDateUTC(result.endPriceDate) : 'N/A'
       });
       
       
@@ -706,6 +707,9 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
   let allSecuritiesHaveValidPrices = true;
   let isPartialPeriod = false;
 
+  let finalStartPriceDate = null;
+  let finalEndPriceDate = null;
+
   portfolio.selectedSecurities.forEach(sec => {
     const weightFraction = (portfolio.weights[sec] || 0) / 100;
     const allSecDailyData = backendData.daily[sec] || [];
@@ -717,12 +721,13 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     // Find end price
     const { price: endPrice, date: endPriceDate } = findPriceOnOrBefore(sortedData, userEndDateObj);
 
+    console.log(`Security: ${sec}, User Start Date: ${startDateStr}, Data Start Date: ${formatDateUTC(startPriceDate)}`);
+    console.log(`Security: ${sec}, User End Date: ${endDateStr}, Data End Date: ${formatDateUTC(endPriceDate)}`);
+
     // Check if the found dates are exactly the user's requested dates (if provided)
-    // If user provided a start date AND the found start price date doesn't match the user's start date
     if (startDateStr && formatDateUTC(startPriceDate) !== startDateStr) {
       isPartialPeriod = true;
     }
-    // If user provided an end date AND the found end price date doesn't match the user's end date
     if (endDateStr && formatDateUTC(endPriceDate) !== endDateStr) {
       isPartialPeriod = true;
     }
@@ -736,28 +741,38 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       return;
     }
 
+    // Capture the dates from the first security, assuming they are representative of the whole portfolio's data range.
+    if (!finalStartPriceDate) finalStartPriceDate = startPriceDate;
+    if (!finalEndPriceDate) finalEndPriceDate = endPriceDate;
+
     const securityTotalReturn = (endPrice / startPrice) - 1;
     const weightedContribution = securityTotalReturn * weightFraction;
     simpleWeightedPortfolioReturn += weightedContribution;
   });
 
-  // 👇 ADD YOUR CONSOLE.LOG HERE 👇
   console.log(`Portfolio: ${portfolio.name}, isPartialPeriod:`, isPartialPeriod);
 
   if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
     return {
       value: (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%",
       isPartialPeriod,
+      // Return the actual dates from the data
+      startPriceDate: finalStartPriceDate,
+      endPriceDate: finalEndPriceDate,
     };
   } else if (portfolio.selectedSecurities.length === 0) {
     return {
       value: "N/A (No securities selected)",
       isPartialPeriod: false,
+      startPriceDate: null,
+      endPriceDate: null,
     };
   } else {
     return {
       value: "N/A (Missing price data or invalid range for some securities)",
       isPartialPeriod: false,
+      startPriceDate: null,
+      endPriceDate: null,
     };
   }
 };
@@ -803,7 +818,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       if (endDateStr && formatDateUTC(endPriceDate) !== endDateStr) {
         isPartial = true;
       }
-      const disclaimer = isPartial ? `    (from ${startDateStr} to ${endPriceDate})` : "";
+      const disclaimer = isPartial ? `    (from ${startPriceDate} to ${endPriceDate})` : "";
+
 
 
       if (
