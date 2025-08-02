@@ -676,91 +676,110 @@ export default function Ror() {
   
 // Helper function to find the closest price on or before a given date
 const findPriceOnOrBefore = (data, targetDateObj) => {
-    if (!targetDateObj) return { price: null, date: null };
+  if (!targetDateObj) return { price: null, date: null };
 
-    let foundPrice = null;
-    let foundDate = null;
-    
-    // Iterate backwards to find the last price on or before targetDate
-    for (let i = data.length - 1; i >= 0; i--) {
-        const dataPointDate = new Date(data[i].Date);
-        if (dataPointDate <= targetDateObj) {
-            foundPrice = data[i].Price;
-            foundDate = data[i].Date;
-            break;
-        }
+  let foundPrice = null;
+  let foundDate = null;
+
+  for (let i = data.length - 1; i >= 0; i--) {
+    const dataPointDate = new Date(data[i].Date);
+    if (dataPointDate <= targetDateObj) {
+      foundPrice = data[i].Price;
+      foundDate = data[i].Date;
+      break;
     }
-    
-    // If no date found before or on targetDate, take the very first available data point
-    if (foundPrice === null && data.length > 0) {
-        foundPrice = data[0].Price;
-        foundDate = data[0].Date;
-    }
-    return { price: foundPrice, date: foundDate };
+  }
+
+  if (foundPrice === null && data.length > 0) {
+    foundPrice = data[0].Price;
+    foundDate = data[0].Date;
+  }
+
+  return { price: foundPrice, date: foundDate };
 };
 
 const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDateStr) => {
   const userStartDateObj = startDateStr ? new Date(startDateStr) : null;
   const userEndDateObj = endDateStr ? new Date(endDateStr) : null;
 
-  let simpleWeightedPortfolioReturn = 0;
   let allSecuritiesHaveValidPrices = true;
   let isPartialPeriod = false;
+  let simpleWeightedPortfolioReturn = 0;
 
-  let finalStartPriceDate = null;
-  let finalEndPriceDate = null;
+  let allStartDates = [];
+  let allEndDates = [];
 
+  console.log("==== Calculating Portfolio Return for:", portfolio.name);
+  console.log("User Selected Date Range:", startDateStr, "to", endDateStr);
+
+  // First pass: collect actual data dates for all securities
+  portfolio.selectedSecurities.forEach(sec => {
+    const data = backendData.daily[sec] || [];
+    const sorted = [...data].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+
+    const { date: foundStartDate } = findPriceOnOrBefore(sorted, userStartDateObj);
+    const { date: foundEndDate } = findPriceOnOrBefore(sorted, userEndDateObj);
+
+    console.log(`→ Security: ${sec}`);
+    console.log(`   Found Start Date: ${formatDateUTC(foundStartDate)}, Found End Date: ${formatDateUTC(foundEndDate)}`);
+
+    if (foundStartDate) allStartDates.push(new Date(foundStartDate));
+    if (foundEndDate) allEndDates.push(new Date(foundEndDate));
+  });
+
+  // Determine the synchronized date range (latest start, earliest end)
+  const unifiedStartDate = allStartDates.length > 0 ? new Date(Math.min(...allStartDates.map(d => d.getTime()))) : null;
+  const unifiedEndDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates.map(d => d.getTime()))) : null;
+  
+
+  console.log("→ Unified Date Range to Use:", formatDateUTC(unifiedStartDate), "to", formatDateUTC(unifiedEndDate));
+
+  if (
+    (startDateStr && formatDateUTC(unifiedStartDate) !== startDateStr) ||
+    (endDateStr && formatDateUTC(unifiedEndDate) !== endDateStr)
+  ) {
+    isPartialPeriod = true;
+    console.log("⚠️ Partial Period: The unified range differs from user's selected range");
+  }
+
+  // Second pass: calculate weighted returns using unified date range
   portfolio.selectedSecurities.forEach(sec => {
     const weightFraction = (portfolio.weights[sec] || 0) / 100;
-    const allSecDailyData = backendData.daily[sec] || [];
-    const sortedData = [...allSecDailyData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+    const data = backendData.daily[sec] || [];
+    const sorted = [...data].sort((a, b) => new Date(a.Date) - new Date(b.Date));
 
-    // Find start price
-    const { price: startPrice, date: startPriceDate } = findPriceOnOrBefore(sortedData, userStartDateObj);
-
-    // Find end price
-    const { price: endPrice, date: endPriceDate } = findPriceOnOrBefore(sortedData, userEndDateObj);
-
-    console.log(`Security: ${sec}, User Start Date: ${startDateStr}, Data Start Date: ${formatDateUTC(startPriceDate)}`);
-    console.log(`Security: ${sec}, User End Date: ${endDateStr}, Data End Date: ${formatDateUTC(endPriceDate)}`);
-
-    // Check if the found dates are exactly the user's requested dates (if provided)
-    if (startDateStr && formatDateUTC(startPriceDate) !== startDateStr) {
-      isPartialPeriod = true;
-    }
-    if (endDateStr && formatDateUTC(endPriceDate) !== endDateStr) {
-      isPartialPeriod = true;
-    }
+    const { price: startPrice, date: actualStartDate } = findPriceOnOrBefore(sorted, unifiedStartDate);
+    const { price: endPrice, date: actualEndDate } = findPriceOnOrBefore(sorted, unifiedEndDate);
 
     if (
       startPrice === null || endPrice === null ||
       typeof startPrice !== "number" || typeof endPrice !== "number" ||
       isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
     ) {
+      console.log(`⚠️ Invalid price data for ${sec} — skipping`);
       allSecuritiesHaveValidPrices = false;
       return;
     }
 
-    // Capture the dates from the first security, assuming they are representative of the whole portfolio's data range.
-    if (!finalStartPriceDate) finalStartPriceDate = startPriceDate;
-    if (!finalEndPriceDate) finalEndPriceDate = endPriceDate;
-
-    const securityTotalReturn = (endPrice / startPrice) - 1;
-    const weightedContribution = securityTotalReturn * weightFraction;
+    const returnPct = (endPrice / startPrice) - 1;
+    const weightedContribution = returnPct * weightFraction;
     simpleWeightedPortfolioReturn += weightedContribution;
+
+    console.log(`✔️ ${sec} — Start: ${startPrice} (${formatDateUTC(actualStartDate)}), End: ${endPrice} (${formatDateUTC(actualEndDate)})`);
+    console.log(`   Weight: ${weightFraction * 100}%, Return: ${(returnPct * 100).toFixed(2)}%, Contribution: ${(weightedContribution * 100).toFixed(2)}%`);
   });
 
-  console.log(`Portfolio: ${portfolio.name}, isPartialPeriod:`, isPartialPeriod);
-
   if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
-    return {
+    const result = {
       value: (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%",
       isPartialPeriod,
-      // Return the actual dates from the data
-      startPriceDate: finalStartPriceDate,
-      endPriceDate: finalEndPriceDate,
+      startPriceDate: unifiedStartDate,
+      endPriceDate: unifiedEndDate,
     };
+    console.log("✅ Final Portfolio Return:", result.value, "Partial:", result.isPartialPeriod);
+    return result;
   } else if (portfolio.selectedSecurities.length === 0) {
+    console.log("❌ No securities selected.");
     return {
       value: "N/A (No securities selected)",
       isPartialPeriod: false,
@@ -768,6 +787,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       endPriceDate: null,
     };
   } else {
+    console.log("❌ Missing or invalid price data for one or more securities.");
     return {
       value: "N/A (Missing price data or invalid range for some securities)",
       isPartialPeriod: false,
@@ -776,6 +796,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     };
   }
 };
+
   
 
   // Calculate total returns for selected securities (daily data)
