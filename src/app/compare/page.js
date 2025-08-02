@@ -106,7 +106,7 @@ export default function Compare() {
       className={`drop-zone ${aisDragging ? "dragging" : ""}`}
       onDragOver={(e) => handleDrag(e, setAisDragging)}
       onDragLeave={(e) => handleDragLeave(e, setAisDragging)}
-      onDrop={(e) => handleDrop(e, setAisDragging, aisChange)}
+      onDrop={(e) => handleDrop(e, setAisDragging, setAis)}
     >
       <label htmlFor="ais" className="upload-label">
         <ArrowUpTrayIcon
@@ -136,7 +136,7 @@ export default function Compare() {
       className={`drop-zone ${avrDragging ? "dragging" : ""}`}
       onDragOver={(e) => handleDrag(e, setAvrDragging)}
       onDragLeave={(e) => handleDragLeave(e, setAvrDragging)}
-      onDrop={(e) => handleDrop(e, setAvrDragging, avrChange)}
+      onDrop={(e) => handleDrop(e, setAvrDragging, setAvr)}
     >
       <label htmlFor="avr" className="upload-label">
         <ArrowUpTrayIcon

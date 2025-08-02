@@ -741,6 +741,9 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     simpleWeightedPortfolioReturn += weightedContribution;
   });
 
+  // 👇 ADD YOUR CONSOLE.LOG HERE 👇
+  console.log(`Portfolio: ${portfolio.name}, isPartialPeriod:`, isPartialPeriod);
+
   if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
     return {
       value: (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%",
@@ -1048,7 +1051,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         <div className={`drop-zone ${fileDragging ? "dragging" : ""}`}
         onDragOver={(e) => handleDrag(e, setFileDragging)}
         onDragLeave={(e) => handleDragLeave(e, setFileDragging)}
-        onDrop={(e) => handleDrop(e, setFileDragging, excelChange)}
+        onDrop={(e) => handleDrop(e, setFileDragging, setExcel)}
         >
         <label htmlFor="excel" className="upload-label">
         <ArrowUpTrayIcon className="w-3 h-3 text-gray-600 hover:text-blue-500" style={{height:'50px'}}/>
