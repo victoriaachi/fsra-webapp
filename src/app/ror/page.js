@@ -294,6 +294,34 @@ export default function Ror() {
     const selected = selectedSecurities || [];
     const rawData = backendData[frequency];
   
+    // Get the latest available daily date (used to validate "complete periods")
+    const maxDailyDate = (() => {
+      const allDates = Object.values(backendData.daily || {}).flatMap(secData =>
+        secData.map(d => new Date(d.Date))
+      );
+      return allDates.length > 0 ? new Date(Math.max(...allDates.map(d => d.getTime()))) : null;
+    })();
+  
+    // Helper: is this date a full/completed period?
+    const isFullPeriod = (dateObj, freq, maxDaily) => {
+      if (!maxDaily) return true;
+      if (freq === "daily") return true;
+      if (freq === "monthly") {
+        const monthEnd = new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+        return monthEnd <= maxDaily;
+      }
+      if (freq === "quarter") {
+        const quarterEndMonth = Math.floor(dateObj.getMonth() / 3) * 3 + 2;
+        const quarterEnd = new Date(dateObj.getFullYear(), quarterEndMonth + 1, 0);
+        return quarterEnd <= maxDaily;
+      }
+      if (freq === "annual") {
+        const yearEnd = new Date(dateObj.getFullYear(), 11, 31);
+        return yearEnd <= maxDaily;
+      }
+      return true;
+    };
+  
     // No securities selected — use full range
     if (selected.length === 0) {
       const defaultRange = backendData.ranges?.[frequency] || {};
@@ -308,10 +336,15 @@ export default function Ror() {
     selected.forEach(sec => {
       const secData = rawData[sec];
       if (secData && secData.length > 0) {
-        const dates = secData.map(d => new Date(d.Date));
-        dates.sort((a, b) => a - b);
-        startDates.push(dates[0]);
-        endDates.push(dates[dates.length - 1]);
+        const validDates = secData
+          .map(d => new Date(d.Date))
+          .filter(date => isFullPeriod(date, frequency, maxDailyDate))
+          .sort((a, b) => a - b);
+  
+        if (validDates.length > 0) {
+          startDates.push(validDates[0]);
+          endDates.push(validDates[validDates.length - 1]);
+        }
       }
     });
   
@@ -328,6 +361,7 @@ export default function Ror() {
     setStartDate(min.toISOString().split("T")[0]);
     setEndDate(max.toISOString().split("T")[0]);
   }, [frequency, selectedSecurities, backendData]);
+  
   
 
   const handleSecurityToggle = (sec) => {

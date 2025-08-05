@@ -271,3 +271,12 @@ button:active {
   color: red;
   margin-top: 10px;
 }
+
+pre {
+  margin: 0;                     /* remove default margin */
+  font-family: inherit;          /* match page font */
+  font-size: inherit;            /* match page font size */
+  line-height: inherit;          /* match page line height */
+  white-space: pre-wrap;          /* allow wrapping */
+  word-break: break-word;         /* break long words */
+}
