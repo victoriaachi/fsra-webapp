@@ -1327,7 +1327,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                           day: "MMM dd, yyyy",
                         },
                       },
-                      title: { display: true, text: "Date" },
+                      title: { display: false, text: "Date" },
                     },
                     y: {
                       title: { display: true, text: "Price ($)" },
@@ -1413,7 +1413,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                           day: "MMM dd, yyyy",
                         },
                       },
-                      title: { display: true, text: "Date" },
+                      title: { display: false, text: "Date" },
                     },
                     y: {
                       ticks: {
@@ -1713,7 +1713,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
                         },
                       },
                     },
-                    title: { display: true, text: "Date" },
+                    title: { display: false, text: "Date" },
                   },
                   y: {
                     ticks: {
