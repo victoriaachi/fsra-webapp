@@ -629,9 +629,9 @@ def compare_route():
         if avr_vals[solv_incr] != extract_num(ais_vals[solv_incr]):
             compare[solv_incr] = 0
 
-        for i, val in enumerate(compare):
-            if i != solv_incr:
-                compare[i] = 1
+        # for i, val in enumerate(compare):
+        #     if i != solv_incr:
+        #         compare[i] = 1
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_ais_values = [ais_display[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_avr_values = [avr_vals[i] for i in range(len(compare)) if compare[i] == 0]
@@ -676,7 +676,7 @@ def compare_route():
             #print("Formatted valuation date:", filtered_val_date)
 
             # Insert into results
-            filtered_plan_info.insert(2, filtered_val_date)
+            # filtered_plan_info.insert(2, filtered_val_date)
             display_fields = list(zip(filtered_titles, filtered_ais_values, filtered_avr_values, filtered_page_numbers))
             print(display_fields)
             plan_info = list(zip(plan_info_titles, filtered_plan_info))

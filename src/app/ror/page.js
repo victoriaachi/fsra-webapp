@@ -904,53 +904,54 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       link.click();
     }
   };
-  const exportSecurities = (data) => {
+  const exportSecurities = (data, frequency, start, end, selectedSecurities) => {
     const wb = XLSX.utils.book_new();
   
-    const allFrequencies = ["daily", "monthly", "quarter", "annual"];
+    const startDate = start ? new Date(start) : null;
+    const endDate = end ? new Date(end) : null;
   
-    // Assume all frequencies have the same security keys
-    Object.keys(data["daily"]).forEach((security) => {
-      // Collect data from all frequencies for this security
-      const merged = {};
+    selectedSecurities.forEach((security) => {
+      const freqData = data[frequency][security] || [];
   
-      allFrequencies.forEach((freq) => {
-        const freqData = data[freq][security] || [];
-        freqData.forEach(entry => {
-          const dateStr = entry.Date;
-          if (!merged[dateStr]) {
-            merged[dateStr] = { Date: dateStr };
-          }
-          merged[dateStr].Price = entry.Price; // last one will stick (assumed same price per freq)
-          const returnKey = `${freq.charAt(0).toUpperCase() + freq.slice(1)} Return`;
-          merged[dateStr][returnKey] = entry[`${freq.charAt(0).toUpperCase() + freq.slice(1)}Return`];
-        });
+      // 🔑 Filter by selected date range
+      const filtered = freqData.filter(entry => {
+        const dateObj = new Date(entry.Date);
+        if (startDate && dateObj < startDate) return false;
+        if (endDate && dateObj > endDate) return false;
+        return true;
       });
   
-      const rows = Object.values(merged).sort((a, b) => new Date(a.Date) - new Date(b.Date));
+      // Shape rows for Excel
+      const rows = filtered.map(entry => ({
+        Date: entry.Date,
+        Price: entry.Price,
+        [`${frequency.charAt(0).toUpperCase() + frequency.slice(1)} Return`]: 
+          entry[`${frequency.charAt(0).toUpperCase() + frequency.slice(1)}Return`]
+      }));
+  
       const ws = XLSX.utils.json_to_sheet(rows);
   
-      // Find columns that contain returns, e.g. Daily Return, Monthly Return, etc.
+      // Find return column
       const range = XLSX.utils.decode_range(ws['!ref']);
-      const headerRow = 0; // headers are in the first row
-      const returnCols = [];
+      const headerRow = 0;
+      let returnCol = -1;
   
-      // Find the column indexes of the return headers
       for (let C = range.s.c; C <= range.e.c; ++C) {
         const cellAddress = XLSX.utils.encode_cell({ r: headerRow, c: C });
         const cell = ws[cellAddress];
         if (cell && typeof cell.v === 'string' && cell.v.includes('Return')) {
-          returnCols.push(C);
+          returnCol = C;
+          break;
         }
       }
   
-      // Apply percentage format to return columns, starting from row 1 (data rows)
-      for (const col of returnCols) {
+      // Apply percentage format
+      if (returnCol !== -1) {
         for (let R = 1; R <= range.e.r; ++R) {
-          const cellAddress = XLSX.utils.encode_cell({ r: R, c: col });
+          const cellAddress = XLSX.utils.encode_cell({ r: R, c: returnCol });
           const cell = ws[cellAddress];
           if (cell && typeof cell.v === 'number') {
-            cell.z = '0.00%'; // two decimal percent format
+            cell.z = '0.00%';
           }
         }
       }
@@ -959,8 +960,9 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     });
   
     const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-    saveAs(new Blob([wbout], { type: "application/octet-stream" }), "individual-securities.xlsx");
+    saveAs(new Blob([wbout], { type: "application/octet-stream" }), `securities-${frequency}.xlsx`);
   };
+  
   
   
   // Helper function to get the correct return key from backend data
@@ -1231,10 +1233,10 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             </div>
           )}
 
-          <div style={{ marginTop: "10px" }}>
+          <div>
             <button onClick={exportChart} className="chart-button">Export Chart</button>
             <button
-              onClick={() => exportSecurities(backendData, frequency)}
+              onClick={() => exportSecurities(backendData, frequency, startDate, endDate, selectedSecurities)}
               className="chart-button"
               disabled={!backendData || selectedSecurities.length === 0}
             >

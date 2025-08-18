@@ -816,7 +816,7 @@ solv_mortality = ["1994 UP Generational", "CPM2014Priv", "CPM2014", "CPM2014Publ
 # plan info 
 plan_info_keys = [0, 1, 3, 4, 386, 387, 388, 389]
 
-plan_info_titles = ["Pension Plan Name", "Registration Number", "Valuation Date", "Start Date", "End Date", "Actuary Name",
+plan_info_titles = ["Pension Plan Name", "Registration Number", "Valuation/Start Date", "End Date", "Actuary Name",
                     "Firm Name", "Actuary Phone Number", "Actuary Email Address"]
 
 # valuation date
