@@ -48,6 +48,7 @@ def compare_route():
 
     # page numbers
     avr_pages = ["not matched"]*len(key_map);
+    avr_dates = []
     incr_pages = []
     pages_text = []
 
@@ -132,16 +133,7 @@ def compare_route():
         incremental_cost = extract_num(ais_vals[solv_incr]) * num_years
         incremental_cost = str(incremental_cost)
         ais_vals[solv_incr] = str(incremental_cost)
-        date_variants = [ais_vals[i] for i in dates + dates_excl]
-        date_variants = [extract_num(n) for n in date_variants if extract_num(n) is not None]
-        original_dates = list(date_variants)
 
-        for n in original_dates:
-            date_variants.append(n+1)
-            date_variants.append(n-1)
-
-
-        # reading avr text
 
         with pdfplumber.open(avr_file) as avr_pdf:
             for i, page in enumerate(avr_pdf.pages, start=1):
@@ -153,7 +145,8 @@ def compare_route():
         avr_text = "\n".join(pages_text)
 
         avr_text = clean_text(avr_text);
-        avr_text = clean_numbers_pdf(avr_text);
+        avr_text = clean_numbers_pdf(avr_text, avr_dates);
+        print(f"avr dates {avr_dates}")
 
         not_num = 0;
         zero = 0
@@ -446,20 +439,15 @@ def compare_route():
                 for m in re.finditer(r'.{0,250}', avr_text):
                     snippet = m.group()
                     score = fuzz.token_set_ratio(snippet.lower(), title.lower())
-                    print("a")
 
                     if score >= sum_fuzzy_threshold:
 
                         nums_nearby = extract_sum(avr_text, m.start(), m.end(), window_size)
-                        print("b")
 
                         for combo_size in range(2, min(max_combo, len(nums_nearby)) + 1):
-                            print("bb")
                             for combo in combinations(nums_nearby, combo_size):
-                                print("cc")
                                 # Try all +/- sign combinations for the current combo
                                 for signs in product([1, -1], repeat=len(combo)):
-                                    print("dd")
                                     signed_sum = sum(s * n for s, n in zip(signs, combo))
                                     if abs(signed_sum - expected_value) < 0.01:
                                         compare[i] = 1  # mark found
@@ -475,117 +463,117 @@ def compare_route():
                     if found_combo:
                         break  # no need to check further substrings
 
-        if excel_file:
-            print("excel")
-            # avr values
-            xls = pd.ExcelFile(excel_file, engine="openpyxl")
-            financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
+        # if excel_file:
+        #     print("excel")
+        #     # avr values
+        #     xls = pd.ExcelFile(excel_file, engine="openpyxl")
+        #     financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
 
-            records = []
-            for sheet_name in xls.sheet_names:
-                cleaned_sheet_name = clean_sheet_name(sheet_name)
-                df = xls.parse(sheet_name, header=None)
-                current_section = ""  # Tracks the current header label
+        #     records = []
+        #     for sheet_name in xls.sheet_names:
+        #         cleaned_sheet_name = clean_sheet_name(sheet_name)
+        #         df = xls.parse(sheet_name, header=None)
+        #         current_section = ""  # Tracks the current header label
 
-                for row_idx, row in df.iterrows():
-                    first_cell = str(row.iloc[0]).strip().lower() if pd.notna(row.iloc[0]) else ""
+        #         for row_idx, row in df.iterrows():
+        #             first_cell = str(row.iloc[0]).strip().lower() if pd.notna(row.iloc[0]) else ""
 
-                    is_header_row = (
-                        row.count() == 1 and  # only one non-empty cell
-                        isinstance(row.iloc[0], str) and
-                        not financial_pattern.search(row.iloc[0])
-                    )
+        #             is_header_row = (
+        #                 row.count() == 1 and  # only one non-empty cell
+        #                 isinstance(row.iloc[0], str) and
+        #                 not financial_pattern.search(row.iloc[0])
+        #             )
 
-                    if is_header_row:
-                        current_section = first_cell  # update the section header
-                        continue
+        #             if is_header_row:
+        #                 current_section = first_cell  # update the section header
+        #                 continue
 
-                    for col_idx, cell in row.items():
-                        value = None
+        #             for col_idx, cell in row.items():
+        #                 value = None
 
-                        # Build row label (composite with section)
-                        base_row_label = str(df.iloc[row_idx, 0]).strip() if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-                        full_row_label = f"{current_section} {base_row_label}".strip() if current_section else base_row_label
+        #                 # Build row label (composite with section)
+        #                 base_row_label = str(df.iloc[row_idx, 0]).strip() if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
+        #                 full_row_label = f"{current_section} {base_row_label}".strip() if current_section else base_row_label
 
-                        # Find nearest non-null column label above this row
-                        col_label = ""
-                        for r in range(row_idx - 1, -1, -1):
-                            above = df.iloc[r, col_idx]
-                            if pd.notna(above):
-                                col_label = str(above).strip()
-                                break
+        #                 # Find nearest non-null column label above this row
+        #                 col_label = ""
+        #                 for r in range(row_idx - 1, -1, -1):
+        #                     above = df.iloc[r, col_idx]
+        #                     if pd.notna(above):
+        #                         col_label = str(above).strip()
+        #                         break
 
-                        # Skip if either label contains "table of contents"
-                        if "table of contents" in full_row_label.lower() or "table of contents" in col_label.lower():
-                            continue
+        #                 # Skip if either label contains "table of contents"
+        #                 if "table of contents" in full_row_label.lower() or "table of contents" in col_label.lower():
+        #                     continue
 
-                        # Parse value
-                        if isinstance(cell, str):
-                            matches = financial_pattern.findall(cell)
-                            for match in matches:
-                                value = clean_numbers_pdf(match)
-                                records.append([value, col_label, full_row_label, cleaned_sheet_name])
+        #                 # Parse value
+        #                 if isinstance(cell, str):
+        #                     matches = financial_pattern.findall(cell)
+        #                     for match in matches:
+        #                         value = clean_numbers_pdf(match)
+        #                         records.append([value, col_label, full_row_label, cleaned_sheet_name])
 
-                        elif isinstance(cell, (int, float)):
-                            value = cell
-                            records.append([value, col_label, full_row_label, cleaned_sheet_name])
+        #                 elif isinstance(cell, (int, float)):
+        #                     value = cell
+        #                     records.append([value, col_label, full_row_label, cleaned_sheet_name])
 
 
-            # Create final DataFrame
-            merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
-            merged_df = merged_df.fillna("")
-            excel_data = merged_df.to_dict(orient="records")
+        #     # Create final DataFrame
+        #     merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
+        #     merged_df = merged_df.fillna("")
+        #     excel_data = merged_df.to_dict(orient="records")
 
 
             # Print full DataFrame without truncation
             #print(merged_df)
             # with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
             #     print(merged_df)
-            print(len(compare), len(titles), len(ais_vals), len(avr_vals), len(avr_pages))
-            for i, val in enumerate(compare):
-                print(f"🧪 i = {i}, len(compare) = {len(compare)}")
-                #print("for loop")
+            # print(len(compare), len(titles), len(ais_vals), len(avr_vals), len(avr_pages))
+            # for i, val in enumerate(compare):
+            #     print(f"🧪 i = {i}, len(compare) = {len(compare)}")
+            #     #print("for loop")
 
-                if val == 0:
-                    print("val = 0")
-                    best_score = 0
-                    best_value = None
+            #     if val == 0:
+            #         print("val = 0")
+            #         best_score = 0
+            #         best_value = None
                     
-                    target_title = titles[i].lower()
+            #         target_title = titles[i].lower()
                     
-                    # Loop through each Excel row in merged_df
-                    for i, row in merged_df.iterrows():
-                        #print("loop")
-                        row_label = str(row['row label']).lower()
-                        col_label = str(row['col label']).lower()
-                        excel_value = row['value']
+            #         # Loop through each Excel row in merged_df
+            #         for i, row in merged_df.iterrows():
+            #             #print("loop")
+            #             row_label = str(row['row label']).lower()
+            #             col_label = str(row['col label']).lower()
+            #             excel_value = row['value']
                         
-                        # Compute fuzzy match scores for row label and col label against the title
-                        score_row = fuzz.partial_ratio(target_title, row_label)
-                        score_col = fuzz.partial_ratio(target_title, col_label)
+            #             # Compute fuzzy match scores for row label and col label against the title
+            #             score_row = fuzz.partial_ratio(target_title, row_label)
+            #             score_col = fuzz.partial_ratio(target_title, col_label)
                         
-                        # Use whichever label matches best
-                        score = max(score_row, score_col)
+            #             # Use whichever label matches best
+            #             score = max(score_row, score_col)
                         
-                        # Check if this is the best match so far and above threshold
-                        if score > best_score and score >= sparkle_fuzzy_threshold:
-                            print("if statement")
-                            best_score = score
-                            best_value = excel_value
-                            best_page = row['sheet name']
+            #             # Check if this is the best match so far and above threshold
+            #             if score > best_score and score >= sparkle_fuzzy_threshold:
+            #                 print("if statement")
+            #                 best_score = score
+            #                 best_value = excel_value
+            #                 best_page = row['sheet name']
                     
-                    # If a good match was found, update avr_vals[i]
-                    if best_value is not None:
-                        avr_vals[i] = best_value
-                        avr_pages[i] = best_page
-                        if best_value == ais_vals[i]:
-                            compare[i] = 1  # mark as found only if values match
-                        print(f"✅ Excel exact match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
+            #         # If a good match was found, update avr_vals[i]
+            #         if best_value is not None:
+            #             avr_vals[i] = best_value
+            #             avr_pages[i] = best_page
+            #             if best_value == ais_vals[i]:
+            #                 compare[i] = 1  # mark as found only if values match
+            #             print(f"✅ Excel exact match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
 
-                    if best_value is not None:
-                        avr_vals[i] = best_value
-                        #compare[i] = 1  # mark as found
-                        print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
+            #         if best_value is not None:
+            #             avr_vals[i] = best_value
+            #             #compare[i] = 1  # mark as found
+            #             print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
                 
         
         not_found = compare.count(0)
@@ -609,6 +597,19 @@ def compare_route():
             # # Extract only numbers in this snippet
             # numbers = re.findall(r"\d+(?:\.\d+)?", snippet)
             # windows.append(numbers)
+
+        date_variants = avr_dates
+        print(f"date vairants 1 {date_variants}")
+        date_variants = [extract_num(n) for n in date_variants if extract_num(n) is not None]
+        original_dates = list(date_variants)
+        print(f" original dates: {original_dates}")
+
+        for n in original_dates:
+            date_variants.append(n+1)
+            date_variants.append(n-1)
+
+
+        # reading avr text
 
         flat_numbers = [num for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE)
                 for num in re.findall(r"\d+(?:\.\d+)?", avr_text[max(0, match.start()):match.end()+200])]

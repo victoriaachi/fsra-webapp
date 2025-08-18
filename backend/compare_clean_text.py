@@ -51,8 +51,7 @@ def clean_numbers_val(text, arr, index):
 
 
 # cleans numbers in avr text
-def clean_numbers_pdf(text):
-
+def clean_numbers_pdf(text, dates_array):
     def replace_number(match):
         matched_str = match.group(0)
         cleaned = matched_str.replace('$', '').replace(',', '')
@@ -68,18 +67,31 @@ def clean_numbers_pdf(text):
     number_pattern = r'\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?|\$?\d+(?:\.\d+)?'
     text = re.sub(number_pattern, replace_number, text)
 
-    text = re.sub(r'\b(\d{4})/(\d{2})/(\d{2})\b', r'\1\2\3', text)
+    # numeric-style dates (YYYY/MM/DD → YYYYMMDD)
+    def replace_numeric_date(match):
+        cleaned = f"{match.group(1)}{match.group(2)}{match.group(3)}"
+        if cleaned not in dates_array:
+            dates_array.append(cleaned)
+        return cleaned
 
+    numeric_date_pattern = r'\b(\d{4})/(\d{2})/(\d{2})\b'
+    text = re.sub(numeric_date_pattern, replace_numeric_date, text)
+
+    # written-style dates (e.g. January 18, 2025 → 20250118)
     def replace_written_date(match):
         try:
             date_obj = datetime.strptime(match.group(0), '%B %d, %Y')
-            return date_obj.strftime('%Y%m%d')
+            cleaned = date_obj.strftime('%Y%m%d')
+            if cleaned not in dates_array:
+                dates_array.append(cleaned)
+            return cleaned
         except ValueError:
             return match.group(0)
 
     written_date_pattern = r'\b(?:January|February|March|April|May|June|July|August|September|October|November|December) \d{1,2}, \d{4}\b'
     text = re.sub(written_date_pattern, replace_written_date, text, flags=re.IGNORECASE)
 
+    # percents
     def replace_percent(match):
         number = match.group(1)
         return number
