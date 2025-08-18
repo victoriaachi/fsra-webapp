@@ -31,10 +31,10 @@ def read_and_clean_sheet(xls, sheet_name):
     df = df.dropna().sort_values(by='Date')
 
     # If it's a Bloomberg-style sheet, shift price forward
-    if sheet_name.strip().upper().startswith("BB"):
-        df = df.copy()
-        df['Price'] = df['Price'].shift(-1)
-        return df.dropna(subset=['Price'])
+    # if sheet_name.strip().upper().startswith("BB"):
+    #     df = df.copy()
+    #     df['Price'] = df['Price'].shift(-1)
+    #     return df.dropna(subset=['Price'])
 
     return df
 
