@@ -1,3 +1,4 @@
+# ais field names
 key_map = {
     "NameRegistered": "",
     "RegNumber": "",
@@ -391,6 +392,7 @@ key_map = {
     "EmailAddress": ""
 }
 
+# display field names
 field_names = [
     "pension plan name",
     "registration number",
@@ -801,13 +803,12 @@ rounding = [59, 64, 67, 126, 175]
 dates = [3, 4]
 
 # period start dates
-
 dates_excl = [14, 15, 16, 17, 18, 19, 20, 21]
 
 # mortality tables
-table_other = [105, 159, 161] #161
+table_other = [105, 159, 161] 
 
-table_check = [104, 158, 160] #160
+table_check = [104, 158, 160] 
 
 gc_mortality = ["A", "B", "C", "Other", "CPM2014", "F", "CPM2014Priv"]
 
@@ -828,7 +829,7 @@ misc_text = [203, 205]
 # actuary contact info
 found = [383, 384, 385, 386, 387, 388, 389, 390]
 
-# don't search for these
+# don't search for these (in disclaimer)
 dc_nc = [33, 34, 38, 39, 43, 44, 45, 49, 50]
 
 membership = [58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 126]

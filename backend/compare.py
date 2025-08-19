@@ -1,6 +1,5 @@
 from flask import Blueprint, jsonify, request
 import os
-#from gemini import call_gemini_compare
 import json, requests, re, copy, array
 import pymupdf, pdfplumber
 import pandas as pd
@@ -8,7 +7,7 @@ from rapidfuzz import fuzz
 from datetime import datetime
 from itertools import combinations, product
 from compare_template import key_map, field_names, exclude, ratios, rounding, dates, dates_excl, table_check, table_other, gc_mortality, solv_mortality, plan_info_keys, val_date, plan_info_titles, misc_text, found, dc_nc, sensitivity, membership, solv_incr
-from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers, clean_sheet_name
+from compare_clean_text import clean_text, clean_numbers_val, clean_numbers_pdf, format_numbers
 from compare_word_match import avr_match_dec, extract_num, extract_sum, find_period
 
 fuzzy_threshold = 40 
@@ -18,9 +17,7 @@ window_size = 250
 max_combo = 3
 sum_tol = 0.01
 
-
 compare_bp = Blueprint('compare', __name__)
-
 @compare_bp.route('/compare', methods=['GET', 'POST'])
 def compare_route():
 
@@ -31,12 +28,9 @@ def compare_route():
 
     ais_file = request.files['ais']
     avr_file = request.files['avr']
-    excel_file = request.files.get('excel')
 
     print("AIS filename:", ais_file.filename)
     print("AVR filename:", avr_file.filename)
-    if excel_file:
-        print("Excel filename:", excel_file.filename)
 
     # variable names
     keys = list(key_map.keys());
@@ -61,20 +55,17 @@ def compare_route():
     avr_found = [0]*len(key_map);
     compare = [0]*len(key_map);
     valid_field = [0]*len(key_map);
+
     # trackers
     fields_found = 0
     fields_not_found = 0
     fields_excl = 0  
 
+    # solvency incremental cost
     incremental_cost = 0
     num_years = 0
-    excel_data = []
 
-    
-
-    #test
-
-
+    # tracking functions
     def mark_found(i, counter):
         compare[i] = 1
         counter += 1
@@ -88,8 +79,8 @@ def compare_route():
         counter += 1
 
     try:
-        # Extract text from AIS
-        ais_doc = pymupdf.open(stream=ais_file.read(), filetype="pdf")  # read file bytes directly
+        # extract text from ais
+        ais_doc = pymupdf.open(stream=ais_file.read(), filetype="pdf")
         ais_text = ""
         field_count = 0
         ais_found_fields = 0;
@@ -100,17 +91,14 @@ def compare_route():
             for field in page.widgets():
                 field_val = field.field_value
                 field_name = field.field_name
-                #print(f"{field_count} {field_name} {field_val}")
                 if field_name in seen_fields:
                     continue
-                    #print("seen")
 
                 elif field_name in exclude or field_count in dates_excl or titles[field_count] == "" or field_val is None or field_val == "":
                     ais_vals[field_count] = "NULL"
                     field_count += 1;
                     parsing_exclude += 1
                     seen_fields.add(field_name)
-                    #ais_text += f"{field_count} {titles[field_count]} {field_name}: {field_val} {ais_found_fields}\n"
                 
                 elif field_name not in seen_fields:
                     cleaned_val = clean_numbers_val(field_val, ais_meta, field_count)
@@ -126,9 +114,12 @@ def compare_route():
                     parsing_include += 1 
 
         ais_doc.close()
+
         # for checking lines 125-127
         titles[204] = ais_vals[203]
         titles[206] = ais_vals[205]
+
+        # solv incr cost 
         num_years = find_period(ais_vals[3], ais_vals[4])
         incremental_cost = extract_num(ais_vals[solv_incr]) * num_years
         incremental_cost = str(incremental_cost)
@@ -140,13 +131,11 @@ def compare_route():
                 text = page.extract_text() or ""
                 pages_text.append(text)
                 if "incremental cost" in text.lower() and i >= 10:
-                    incr_pages.append(i)   # or append(page) if you'll use it inside the context
+                    incr_pages.append(i)  
 
         avr_text = "\n".join(pages_text)
-
         avr_text = clean_text(avr_text);
         avr_text = clean_numbers_pdf(avr_text, avr_dates);
-        print(f"avr dates {avr_dates}")
 
         not_num = 0;
         zero = 0
@@ -159,33 +148,30 @@ def compare_route():
         compare_reg = 0
 
         for i, val in enumerate(ais_vals):
+            # exclude
             if i in misc_text:
                 mark_exclude(i, fields_excl)
                 compare_no_num += 1
+            # exclude
             elif i in found or i in plan_info_keys or i in dc_nc or i in membership or i in sensitivity:
                 mark_found(i, fields_found)
                 compare_no_num += 1
-
-            #print(f"{i}: {val}")
-            # if i >= 383:
-            #     continue
+            # exclude
             elif valid_field[i] == 0:
                 mark_exclude(i, fields_excl)
                 compare_invalid += 1
                 continue
-
+            # exclude
             elif val == "0":
                 mark_exclude(i, fields_excl)
-                #print("zero")
                 compare_zero += 1
                 continue
             # other text for tables 
             elif i in table_other:
                 mark_exclude(i, fields_excl)
                 compare_no_num += 1
-
+            # "other" checked for mortality table
             elif i in table_check and val == "5":
-                print("table other")
                 compare_table += 1
 
                 target = ais_vals[i+1].strip().lower()
@@ -208,31 +194,22 @@ def compare_route():
             elif i in table_check:
 
                 compare_table += 1
-                print(f"{i} table check: {val}")
                 if i == 104:
                     #ais_vals[i] = gc_mortality[int(val)-2]
                     if gc_mortality[int(val) - 2] in avr_text:
 
-                        print(f"found gc {gc_mortality[int(val)-2]}")
                         mark_found(i, fields_found)
                     else:
                         mark_not_found(i, fields_not_found)
-                        print("not found - gc mortality")
                 else:
-                    print("else")
-                    #ais_vals[i] = solv_mortality[int(val)-1]
-                    #print(solv_mortality)
                     if solv_mortality[int(val) - 1] in avr_text:
-                        print(f"found solv {solv_mortality[int(val)-1]}")
                         mark_found(i, fields_found)
                     else:
-                        print("not found - solv mortality")
                         mark_not_found(i, fields_not_found)
             elif extract_num(val) is None or extract_num(val) == "":
                 mark_exclude(i, fields_excl)
                 not_num += 1
                 compare_no_num += 1
-                print("no numbers extracted")
             
             # solvency incremental cost
             elif i == solv_incr:
@@ -272,14 +249,13 @@ def compare_route():
                     if best_score >= fuzzy_threshold and found_match:
                         mark_found(i, fields_found)
                         print(f"✅ Found nearby numeric variant of '{val}' (score={best_score})")
-                        print(f"↪ Context: {best_context[:200]}...")
                     else:
                         mark_not_found(i, fields_not_found)
                         print(f"❌ No numeric variant matched '{val}' (max score={best_score})")
 
 
             
-              # percentage / rounded numbers — exact numeric variant match, fuzzy title match
+            # percentage / rounded numbers — exact numeric variant match, fuzzy title match
             elif i in special_rounding_indices:
                 compare_rounding += 1
                 variants = avr_match_dec(val, is_percent=('%' in ais_meta[i]))
@@ -300,7 +276,6 @@ def compare_route():
                         context_start = max(0, match_pos - 250)
                         context_end = min(len(avr_text), match_pos + 250)
                         context = avr_text[context_start:context_end]
-                        print(context)
 
                         score = fuzz.partial_ratio(titles[i].lower(), context.lower())
                         if score > best_score:
@@ -312,7 +287,7 @@ def compare_route():
                 if best_score >= fuzzy_threshold and found_match:
                     mark_found(i, fields_found)
                     print(f"✅ Found variant of '{val}' with strong title match (score={best_score})")
-                    print(f"↪ Context: {best_context[:200]}...")
+
                 else:
                     mark_not_found(i, fields_not_found)
                     print(f"❌ No valid context/title match found for any variant of '{val}' (max score={best_score})")
@@ -346,11 +321,11 @@ def compare_route():
                     if best_score >= fuzzy_threshold:
                         mark_found(i, fields_found)
                         print(f"✅ Number '{val}' found, and title '{titles[i]}' matched in context (score={best_score})")
-                        print(f"↪ Context: {best_context[:100]}...")
                     else:
                         mark_not_found(i, fields_not_found)
                         print(f"⚠️ Number '{val}' found, but no strong match for title '{titles[i]}' (max score={best_score})")
 
+        # scale checking
         thousands_phrases = ["in thousands", "in thousand", "thousands of dollars"]
         millions_phrases = ["in millions", "in million", "millions of dollars"]
 
@@ -396,7 +371,6 @@ def compare_route():
                     if best_score >= fuzzy_threshold:
                         mark_found(i, fields_found)
                         print(f"✅ Scaled match for '{titles[i]}' → Value: {scaled_val} (score={best_score})")
-                        print(f"↪ Context: {best_context[:200]}...")
                     else:
                         mark_not_found(i, fields_not_found)
                         print(f"❌ Scaled value '{scaled_val}' found, but no strong title match (max score={best_score})")
@@ -417,11 +391,7 @@ def compare_route():
                 compare1 += 1
         print(f"not found: {compare0}")
 
-
-
-
-
-        print(f"🧪 len(compare) = {len(compare)}, len(titles) = {len(titles)}, len(ais_vals) = {len(ais_vals)}")
+        # sum checking
         for i, val in enumerate(compare):
             if val == 0:
                 title = titles[i]
@@ -434,7 +404,6 @@ def compare_route():
                 best_score = 0
 
                 found_combo = False  # flag to track if sum combo is found
-                print("before for loop")
 
                 for m in re.finditer(r'.{0,250}', avr_text):
                     snippet = m.group()
@@ -461,123 +430,12 @@ def compare_route():
                                 break
 
                     if found_combo:
-                        break  # no need to check further substrings
+                        break  
 
-        # if excel_file:
-        #     print("excel")
-        #     # avr values
-        #     xls = pd.ExcelFile(excel_file, engine="openpyxl")
-        #     financial_pattern = re.compile(r'[\$\(]?-?\d{1,3}(?:,\d{3})*(?:\.\d+)?[\)]?')
-
-        #     records = []
-        #     for sheet_name in xls.sheet_names:
-        #         cleaned_sheet_name = clean_sheet_name(sheet_name)
-        #         df = xls.parse(sheet_name, header=None)
-        #         current_section = ""  # Tracks the current header label
-
-        #         for row_idx, row in df.iterrows():
-        #             first_cell = str(row.iloc[0]).strip().lower() if pd.notna(row.iloc[0]) else ""
-
-        #             is_header_row = (
-        #                 row.count() == 1 and  # only one non-empty cell
-        #                 isinstance(row.iloc[0], str) and
-        #                 not financial_pattern.search(row.iloc[0])
-        #             )
-
-        #             if is_header_row:
-        #                 current_section = first_cell  # update the section header
-        #                 continue
-
-        #             for col_idx, cell in row.items():
-        #                 value = None
-
-        #                 # Build row label (composite with section)
-        #                 base_row_label = str(df.iloc[row_idx, 0]).strip() if col_idx > 0 and pd.notna(df.iloc[row_idx, 0]) else ""
-        #                 full_row_label = f"{current_section} {base_row_label}".strip() if current_section else base_row_label
-
-        #                 # Find nearest non-null column label above this row
-        #                 col_label = ""
-        #                 for r in range(row_idx - 1, -1, -1):
-        #                     above = df.iloc[r, col_idx]
-        #                     if pd.notna(above):
-        #                         col_label = str(above).strip()
-        #                         break
-
-        #                 # Skip if either label contains "table of contents"
-        #                 if "table of contents" in full_row_label.lower() or "table of contents" in col_label.lower():
-        #                     continue
-
-        #                 # Parse value
-        #                 if isinstance(cell, str):
-        #                     matches = financial_pattern.findall(cell)
-        #                     for match in matches:
-        #                         value = clean_numbers_pdf(match)
-        #                         records.append([value, col_label, full_row_label, cleaned_sheet_name])
-
-        #                 elif isinstance(cell, (int, float)):
-        #                     value = cell
-        #                     records.append([value, col_label, full_row_label, cleaned_sheet_name])
-
-
-        #     # Create final DataFrame
-        #     merged_df = pd.DataFrame(records, columns=["value", "col label", "row label", "sheet name"])
-        #     merged_df = merged_df.fillna("")
-        #     excel_data = merged_df.to_dict(orient="records")
-
-
-            # Print full DataFrame without truncation
-            #print(merged_df)
-            # with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.width', 1000):
-            #     print(merged_df)
-            # print(len(compare), len(titles), len(ais_vals), len(avr_vals), len(avr_pages))
-            # for i, val in enumerate(compare):
-            #     print(f"🧪 i = {i}, len(compare) = {len(compare)}")
-            #     #print("for loop")
-
-            #     if val == 0:
-            #         print("val = 0")
-            #         best_score = 0
-            #         best_value = None
-                    
-            #         target_title = titles[i].lower()
-                    
-            #         # Loop through each Excel row in merged_df
-            #         for i, row in merged_df.iterrows():
-            #             #print("loop")
-            #             row_label = str(row['row label']).lower()
-            #             col_label = str(row['col label']).lower()
-            #             excel_value = row['value']
-                        
-            #             # Compute fuzzy match scores for row label and col label against the title
-            #             score_row = fuzz.partial_ratio(target_title, row_label)
-            #             score_col = fuzz.partial_ratio(target_title, col_label)
-                        
-            #             # Use whichever label matches best
-            #             score = max(score_row, score_col)
-                        
-            #             # Check if this is the best match so far and above threshold
-            #             if score > best_score and score >= sparkle_fuzzy_threshold:
-            #                 print("if statement")
-            #                 best_score = score
-            #                 best_value = excel_value
-            #                 best_page = row['sheet name']
-                    
-            #         # If a good match was found, update avr_vals[i]
-            #         if best_value is not None:
-            #             avr_vals[i] = best_value
-            #             avr_pages[i] = best_page
-            #             if best_value == ais_vals[i]:
-            #                 compare[i] = 1  # mark as found only if values match
-            #             print(f"✅ Excel exact match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
-
-            #         if best_value is not None:
-            #             avr_vals[i] = best_value
-            #             #compare[i] = 1  # mark as found
-            #             print(f"✅ Excel fuzzy match for '{titles[i]}': assigned '{best_value}' with score {best_score}")
-                
-        
+     
         not_found = compare.count(0)
 
+        # mortality table display
         for i, val in enumerate(ais_vals):
             if i == 104:
                 ais_display[i] = gc_mortality[int(val)-2]
@@ -585,40 +443,26 @@ def compare_route():
                 ais_display[i] = solv_mortality[int(val)-1]
             elif i == solv_incr:
                 ais_display[i] = ais_vals[i]
+
+        # finding avr incremental cost        
         keyword = "incremental cost"
         windows = []
 
-        # Use re.finditer to find all occurrences (case-insensitive)
-        # for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE):
-            # start = max(0, match.start() - window_size)
-            # end = match.end() + 200
-            # snippet = avr_text[start:end]
-
-            # # Extract only numbers in this snippet
-            # numbers = re.findall(r"\d+(?:\.\d+)?", snippet)
-            # windows.append(numbers)
-
         date_variants = avr_dates
-        print(f"date vairants 1 {date_variants}")
         date_variants = [extract_num(n) for n in date_variants if extract_num(n) is not None]
         original_dates = list(date_variants)
-        print(f" original dates: {original_dates}")
 
         for n in original_dates:
             date_variants.append(n+1)
             date_variants.append(n-1)
-
 
         # reading avr text
 
         flat_numbers = [num for match in re.finditer(keyword, avr_text, flags=re.IGNORECASE)
                 for num in re.findall(r"\d+(?:\.\d+)?", avr_text[max(0, match.start()):match.end()+200])]
         clean_nums = [extract_num(n) for n in flat_numbers]
-        print(f"clean nums {clean_nums}")
-
         clean_nums = [n for n in clean_nums if n not in date_variants]
 
-        print(f" post clean nums {clean_nums}")  # This will be a list of all snippets
         if clean_nums is not None:
             avr_vals[solv_incr] = max(clean_nums)
         else:
@@ -626,13 +470,10 @@ def compare_route():
         if scale and abs(avr_vals[solv_incr]*scale - extract_num(ais_vals[solv_incr])) < abs(avr_vals[solv_incr] - extract_num(ais_vals[solv_incr])):
             avr_vals[solv_incr] = avr_vals[solv_incr] * scale
 
-        print(f"ais {ais_vals[solv_incr]} {type(ais_vals[solv_incr])} avr {avr_vals[solv_incr]} {type(avr_vals[solv_incr])}")
         if avr_vals[solv_incr] != extract_num(ais_vals[solv_incr]):
             compare[solv_incr] = 0
 
-        # for i, val in enumerate(compare):
-        #     if i != solv_incr:
-        #         compare[i] = 1
+        # display forcomparison
         filtered_titles = [titles[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_ais_values = [ais_display[i] for i in range(len(compare)) if compare[i] == 0]
         filtered_avr_values = [avr_vals[i] for i in range(len(compare)) if compare[i] == 0]
@@ -644,67 +485,16 @@ def compare_route():
         for idx in [2, 3]:
             try:
                 date_str = filtered_plan_info[idx]
-                #print(f"Original date at index {idx}: {date_str}")
                 date_obj = datetime.strptime(date_str, "%Y%m%d")
                 filtered_plan_info[idx] = date_obj.strftime("%B %d, %Y")
-                #print(f"Formatted date at index {idx}: {filtered_plan_info[idx]}")
             except Exception as e:
                 print(f"Error parsing date at index {idx}: {e}")
-
-        print("hi")
-        print(incr_pages)
-
-
         try:
-            date_str = "-".join(ais_vals[i] for i in val_date)
-            # print("Raw valuation date string:", date_str)
-            # # for i, val in enumerate(ais_vals):
-            # #     print(f"{i} {val}")
-            # print(f"null/excluded fields: {null}")
-            # print(f"fields: {ais_found_fields}")
-            # print(f"found: {found}")
-            #print(compare)
 
-            parsed_date = datetime.strptime(date_str, "%B-%d-%Y")
-            filtered_val_date = parsed_date.strftime("%B %d, %Y")
-            # for i, val in enumerate(ais_vals):
-            #     print(f"{i}: {val}")
-            # print(f"parsing include {parsing_include}")
-            # print(f"parsing exclude {parsing_exclude}")
-            # print(f"zeros: {compare_zero}, tables: {compare_table}, invalid {compare_invalid}, rounding: {compare_rounding}, regular: {compare_reg}, no num: {compare_no_num}")
-            # print(f"found: {fields_found}, not found: {fields_not_found}, excluded: {fields_excl}")
-            # print(f"compare 1:{compare1}, 0:{compare0}, 3:{compare3}")
-            #print("Formatted valuation date:", filtered_val_date)
-
-            # Insert into results
-            # filtered_plan_info.insert(2, filtered_val_date)
             display_fields = list(zip(filtered_titles, filtered_ais_values, filtered_avr_values, filtered_page_numbers))
-            print(display_fields)
             plan_info = list(zip(plan_info_titles, filtered_plan_info))
-            #print(plan_info)
-            #filtered_plan_titles.insert(2, "Valuation Date")
         except Exception as e:
             print(f"Error parsing valuation date: {e}")
-        
-        #print(filtered_plan_info)
-        # filtered_plan_titles = plan_info_titles
-        # print(filtered_plan_titles)
-        print(incremental_cost)
-        # print(plan_info)
-        # print(display_fields)
-        # response_data = {
-        #     "compare": compare,
-        #     "titles": titles,
-        #     "ais_vals": ais_vals,
-        #     "avr_vals": avr_vals,
-        #     "avr_pages": avr_pages,
-        # }
-
-        # # Only include excel_data if it's not empty
-        # if excel_data:
-        #     response_data["excel_data"] = excel_data
-
-        # return jsonify(response_data)
 
         return jsonify({
             "result": "Received both files successfully!",
@@ -712,9 +502,6 @@ def compare_route():
             "avr_text": avr_text,
             "mismatched_fields": display_fields,
             "plan_info": plan_info, 
-            "excel_data": excel_data
-            #"plan_titles": plan_info_titles, 
-
         })
 
     except Exception as e:
