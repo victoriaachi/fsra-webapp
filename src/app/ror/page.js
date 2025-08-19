@@ -708,6 +708,7 @@ export default function Ror() {
         datasets: allChartDatasets});
       setPortfolioTotalReturns(tempPortfolioTotalReturns);
     }
+
   };
   
 // Helper function to find the closest price on or before a given date
@@ -1028,7 +1029,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         freqData.forEach(entry => {
           const entryDate = new Date(entry.Date);
           if ((startDate && entryDate < startDate)) return;
-
+  
           // **MODIFIED LOGIC START**
           // Check for monthly frequency to include the entire last month
           const isMonthly = frequency === 'monthly';
@@ -1052,44 +1053,44 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       sheetData.push(['Date', ...portfolio.selectedSecurities, returnHeader]);
   
       // 5. Build rows per date (filtered)
-      const filteredDates = allDates.filter(d => {
-        const dateObj = new Date(d);
-        return (!start || dateObj >= new Date(start)) && (!end || dateObj <= new Date(end));
+      const returnDatesSet = new Set();
+      portfolio.selectedSecurities.forEach(sec => {
+        Object.keys(returnsBySec[sec]).forEach(date => returnDatesSet.add(date));
       });
-  
-      // A new array to hold only the rows with valid return data
-      const validDataRows = [];
+      const filteredDates = Array.from(returnDatesSet)
+        .map(d => new Date(d))
+        .filter(dateObj => (!start || dateObj >= new Date(start)) && (!end || dateObj <= new Date(end)))
+        .map(d => d.toISOString().slice(0, 10))
+        .sort((a, b) => new Date(a) - new Date(b));
   
       filteredDates.forEach(date => {
         const row = [date];
-      
-        // Asset prices
+  
+        // ✅ Asset prices (use findPriceOnOrBefore instead of raw lookup)
         portfolio.selectedSecurities.forEach(sec => {
-          const price = pricesByDateAndSec[sec]?.[date];
+          const rawData = backendData.rawPrices?.[sec] || [];
+          const { price } = findPriceOnOrBefore(rawData, new Date(date));
           row.push(price != null ? price : '');
         });
-      
+  
         // Weighted return for the selected frequency
         const weightSum = portfolio.selectedSecurities.reduce((sum, sec) => sum + (portfolio.weights[sec] || 0), 0);
         let weightedReturn = 0;
         let validData = true;
-      
+  
         portfolio.selectedSecurities.forEach(sec => {
           const weight = portfolio.weights[sec] || 0;
           const retVal = returnsBySec[sec]?.[date];
           if (retVal == null) validData = false;
           else weightedReturn += retVal * (weight / 100);
         });
-      
-        // Only push row if weighted return is valid
+  
         if (validData && weightSum > 0) {
           row.push(weightedReturn);
-          validDataRows.push(row); // Push to the new array
+          sheetData.push(row);
         }
       });
-
-      // Insert the valid data rows after the headers and asset mix information
-      sheetData.push(...validDataRows);
+  
     
       // 6. Convert sheetData to worksheet
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
@@ -1111,8 +1112,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     // 9. Write file and trigger download
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'portfolios.xlsx');
-};
-  
+  };
 
   // Export weighted chart functionality
   const exportWeightedChart = () => {
