@@ -254,7 +254,7 @@ export default function Compare() {
           <div className="container">
             <h2>Missing / Mismatched Fields</h2>
             <p>Disclaimer: DC normal cost, membership data and sensitivity information excluded in comparison</p>
-            <p>Number of Fields not Found: {mismatchedFields.length}</p>
+            <p>Number of mismatched/missing fields: {mismatchedFields.length}</p>
             <div>
               <span>{toggles.fields ? "Hide" : "Show"}</span>
               <label className="toggle-switch">

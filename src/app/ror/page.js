@@ -383,6 +383,8 @@ export default function Ror() {
     const range = backendData?.ranges?.[newFreq] || {};
     setWeightedStartDate(range.min || "");
     setWeightedEndDate(range.max || "");
+    console.log(weightedStartDate);
+    console.log(weightedEndDate);
   };
 
   const allSelectedSecurities = portfolios
@@ -974,7 +976,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     return null;
   };
   
-  const exportPortfolios = (portfolios, backendData) => {
+  const exportPortfolios = (backendData, frequency, start, end, portfolios) => {
     const wb = XLSX.utils.book_new();
   
     portfolios.forEach((portfolio) => {
@@ -984,113 +986,121 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       sheetData.push([`${portfolio.name || `Portfolio ${portfolio.id}`}`]);
       sheetData.push([]);
       sheetData.push(['Asset Mix:']);
-      if (Object.keys(portfolio.weights).length > 0) {
-        Object.entries(portfolio.weights).forEach(([sec, weight]) => {
+  
+      // Filter weights to only include > 0
+      const validWeights = Object.entries(portfolio.weights)
+        .filter(([sec, weight]) => parseFloat(weight) > 0);
+  
+      if (validWeights.length > 0) {
+        validWeights.forEach(([sec, weight]) => {
           sheetData.push([sec, `${parseFloat(weight).toFixed(2)}%`]);
         });
       } else {
         sheetData.push(['No securities selected or weights defined.']);
       }
+  
       sheetData.push([]);
   
       // 2. Collect all unique dates
       const allDatesSet = new Set();
       portfolio.selectedSecurities.forEach(sec => {
-        const rawPrices = backendData.rawPrices?.[sec] || [];
-        rawPrices.forEach(({ Date }) => allDatesSet.add(Date));
+        (backendData.rawPrices?.[sec] || []).forEach(({ Date }) => allDatesSet.add(Date));
       });
       const allDates = Array.from(allDatesSet).sort((a, b) => new Date(a) - new Date(b));
   
-      // 3. Prepare price and returns maps per asset
+      // 3. Prepare prices and returns for the selected frequency
       const pricesByDateAndSec = {};
-      const returnsByFreqAndSec = {
-        daily: {},
-        monthly: {},
-        quarter: {},
-        annual: {},
-      };
+      const returnsBySec = {};
   
       portfolio.selectedSecurities.forEach(sec => {
         // Prices
-        const secPrices = {};
+        pricesByDateAndSec[sec] = {};
         (backendData.rawPrices?.[sec] || []).forEach(({ Date, Price }) => {
-          secPrices[Date] = Price;
+          pricesByDateAndSec[sec][Date] = Price;
         });
-        pricesByDateAndSec[sec] = secPrices;
   
-        // Returns for each frequency
-        ['daily', 'monthly', 'quarter', 'annual'].forEach(freq => {
-          const secReturns = {};
-          const returnKey = getReturnKey(freq);
-          (backendData[freq]?.[sec] || []).forEach(entry => {
-            if (entry[returnKey] != null) {
-              secReturns[entry.Date] = entry[returnKey];
-            }
-          });
-          returnsByFreqAndSec[freq][sec] = secReturns;
+        // Returns for the selected frequency, filtered by start/end
+        returnsBySec[sec] = {};
+        const freqData = backendData[frequency]?.[sec] || [];
+        const startDate = start ? new Date(start) : null;
+        const endDate = end ? new Date(end) : null;
+  
+        freqData.forEach(entry => {
+          const entryDate = new Date(entry.Date);
+          if ((startDate && entryDate < startDate)) return;
+
+          // **MODIFIED LOGIC START**
+          // Check for monthly frequency to include the entire last month
+          const isMonthly = frequency === 'monthly';
+          const isWithinDateRange = (!endDate || entryDate <= endDate);
+          const isInLastMonth = isMonthly && endDate && 
+                                entryDate.getFullYear() === endDate.getFullYear() &&
+                                entryDate.getMonth() === endDate.getMonth();
+          
+          if (isWithinDateRange || isInLastMonth) {
+              const returnKey = getReturnKey(frequency);
+              if (entry[returnKey] != null) {
+                  returnsBySec[sec][entry.Date] = entry[returnKey];
+              }
+          }
+          // **MODIFIED LOGIC END**
         });
       });
   
-      // 4. Header row: Date, Assets' Prices, then returns columns
-      const returnsHeaders = ['Daily Return', 'Monthly Return', 'Quarterly Return', 'Annual Return'];
-      const headers = ['Date', ...portfolio.selectedSecurities, ...returnsHeaders];
-      sheetData.push(headers);
+      // 4. Header row: Date, asset prices, selected frequency return
+      const returnHeader = getReturnKey(frequency).replace(/([a-z])([A-Z])/g, '$1 $2');
+      sheetData.push(['Date', ...portfolio.selectedSecurities, returnHeader]);
   
-      // 5. Build rows per date
-      allDates.forEach(date => {
+      // 5. Build rows per date (filtered)
+      const filteredDates = allDates.filter(d => {
+        const dateObj = new Date(d);
+        return (!start || dateObj >= new Date(start)) && (!end || dateObj <= new Date(end));
+      });
+  
+      // A new array to hold only the rows with valid return data
+      const validDataRows = [];
+  
+      filteredDates.forEach(date => {
         const row = [date];
-  
-        // Asset prices for this date
+      
+        // Asset prices
         portfolio.selectedSecurities.forEach(sec => {
           const price = pricesByDateAndSec[sec]?.[date];
           row.push(price != null ? price : '');
         });
-  
-        // Calculate weighted portfolio returns per frequency
-        ['daily', 'monthly', 'quarter', 'annual'].forEach(freq => {
-          const weightSum = portfolio.selectedSecurities.reduce((sum, sec) => sum + (portfolio.weights[sec] || 0), 0);
-          let weightedReturn = 0;
-          let validData = true;
-  
-          portfolio.selectedSecurities.forEach(sec => {
-            const weight = portfolio.weights[sec] || 0;
-            const retVal = returnsByFreqAndSec[freq][sec]?.[date];
-            if (retVal == null) {
-              validData = false; // Missing return data for this freq/date
-            } else {
-              weightedReturn += retVal * (weight / 100);
-            }
-          });
-  
-          if (validData && weightSum > 0) {
-            row.push(weightedReturn); // decimal kept, formatted later
-          } else {
-            row.push('');  // <-- blank cell instead of "N/A"
-          }
+      
+        // Weighted return for the selected frequency
+        const weightSum = portfolio.selectedSecurities.reduce((sum, sec) => sum + (portfolio.weights[sec] || 0), 0);
+        let weightedReturn = 0;
+        let validData = true;
+      
+        portfolio.selectedSecurities.forEach(sec => {
+          const weight = portfolio.weights[sec] || 0;
+          const retVal = returnsBySec[sec]?.[date];
+          if (retVal == null) validData = false;
+          else weightedReturn += retVal * (weight / 100);
         });
-  
-        sheetData.push(row);
+      
+        // Only push row if weighted return is valid
+        if (validData && weightSum > 0) {
+          row.push(weightedReturn);
+          validDataRows.push(row); // Push to the new array
+        }
       });
-  
+
+      // Insert the valid data rows after the headers and asset mix information
+      sheetData.push(...validDataRows);
+    
       // 6. Convert sheetData to worksheet
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
   
-      // 7. Format the return columns as percentages with 2 decimal places visible
+      // 7. Format return column as percentage
+      const returnColIndex = 1 + portfolio.selectedSecurities.length;
       const range = XLSX.utils.decode_range(ws['!ref']);
-  
-      // Return columns start after: Date + number of assets
-      const firstReturnColIndex = 1 + portfolio.selectedSecurities.length;
-      const lastRow = range.e.r;
-  
-      for (let c = firstReturnColIndex; c <= firstReturnColIndex + 3; c++) { // 4 return columns
-        for (let r = 4 + Object.keys(portfolio.weights).length; r <= lastRow; r++) {
-          const cellAddress = XLSX.utils.encode_cell({ r, c });
-          const cell = ws[cellAddress];
-          if (cell && typeof cell.v === 'number') {
-            // Format as percentage with two decimals visible, keep decimal for formula
-            cell.z = '0.00%';
-          }
-        }
+      for (let r = sheetData.indexOf([]) + validWeights.length + 3; r <= range.e.r; r++) {
+        const cellAddress = XLSX.utils.encode_cell({ r, c: returnColIndex });
+        const cell = ws[cellAddress];
+        if (cell && typeof cell.v === 'number') cell.z = '0.00%';
       }
   
       // 8. Append worksheet
@@ -1101,7 +1111,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     // 9. Write file and trigger download
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'portfolios.xlsx');
-  };
+};
   
 
   // Export weighted chart functionality
@@ -1598,9 +1608,10 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
             Export Chart
           </button>
           <button
-            onClick={() => exportPortfolios(portfolios, backendData)}
+            onClick={() => exportPortfolios(backendData, weightedFrequency, weightedStartDate, weightedEndDate, portfolios)}
             className="chart-button"
             disabled={!weightedChartData || weightedChartData.datasets.length === 0}
+
           >
             Download Excel File
           </button>
@@ -1608,7 +1619,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       </div>
     </div>
 
-    {/* Right side: Chart + Results */}
     <div style={{ flex: 2 }}>
       {portfolioTotalReturns.length > 0 && (
         <div>
