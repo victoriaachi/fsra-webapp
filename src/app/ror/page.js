@@ -18,10 +18,6 @@ import { Line } from "react-chartjs-2";
 import 'chartjs-adapter-date-fns';
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-// import DatePicker from "react-datepicker";
-// import "react-datepicker/dist/react-datepicker.css";
-
-
 
 const whiteBackgroundPlugin = {
   id: 'whiteBackground',
@@ -59,20 +55,14 @@ function formatDateUTC(date) {
   return d.toISOString().split('T')[0]; // Gives 'YYYY-MM-DD'
 }
 
-// function formatDateUTC(dateInput) {
-//   const d = new Date(dateInput);
-//   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-// }
-
 export default function Ror() {
   const [excel, setExcel] = useState(null);
   const [fileDragging, setFileDragging] = useState(false);
   const [error, setError] = useState("");
   const [backendData, setBackendData] = useState(null);
-
   const [loading, setLoading] = useState(false);
 
-  // For single chart controls
+  // individual security chart
   const [frequency, setFrequency] = useState("daily");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -80,15 +70,13 @@ export default function Ror() {
   const [chartData, setChartData] = useState(null);
   const chartRef = useRef();
   const priceChartRef = useRef();
-
   const [showPriceChart, setShowPriceChart] = useState(false);
   const [priceChartData, setPriceChartData] = useState(null);
-  // NEW: State for individual chart errors
   const [individualChartError, setIndividualChartError] = useState("");
   const [individualTotalReturns, setIndividualTotalReturns] = useState([]);
 
 
-  // New: portfolios state for multiple portfolios
+  // portfolio chart
   const [portfolios, setPortfolios] = useState([
     { id: 1, name: "Portfolio 1", selectedSecurities: [], weights: {} }
   ]);
@@ -97,12 +85,10 @@ export default function Ror() {
   const [weightedEndDate, setWeightedEndDate] = useState("");
   const [weightedChartData, setWeightedChartData] = useState(null);
   const weightedChartRef = useRef();
-  // New state for portfolio total returns
   const [portfolioTotalReturns, setPortfolioTotalReturns] = useState([]);
-  // State to manage weight errors per portfolio
   const [portfolioWeightErrors, setPortfolioWeightErrors] = useState({});
 
-
+  // file upload 
   const handleDrag = (e, setter) => {
     e.preventDefault();
     e.stopPropagation();
@@ -123,24 +109,24 @@ export default function Ror() {
     if (file) fileSetter(file);
   };
 
-  // Load zoom plugin once on client side
+  // zoom plugin
   useEffect(() => {
     import('chartjs-plugin-zoom')
       .then((mod) => ChartJS.register(mod.default))
       .catch(console.error);
   }, []);
 
-  // Rebuild chart data whenever dependencies change
+  // generate charts
   useEffect(() => {
     generateIndividualChart();
     generatePriceChart();
   }, [backendData, frequency, selectedSecurities, startDate, endDate]);
 
-  // Rebuild weighted chart data when backendData or weightedFrequency changes
   useEffect(() => {
     generateWeightedChart();
   }, [backendData, weightedFrequency]);
 
+  // total returns
   useEffect(() => {
     if (backendData && selectedSecurities.length > 0) {
         const returns = calculateIndividualReturns(backendData, selectedSecurities, startDate, endDate);
@@ -151,7 +137,7 @@ export default function Ror() {
 }, [backendData, selectedSecurities, startDate, endDate]);
 
 
-  // Handle Excel file input change
+  // excel file change
   const excelChange = (e) => {
     setExcel(e.target.files[0]);
     setError("");
@@ -187,11 +173,11 @@ export default function Ror() {
       setWeightedStartDate(defaultDailyRange.min || "");
 
       setWeightedEndDate(defaultDailyRange.max || "");
-      setPortfolios([{ id: 1, name: "Portfolio 1", selectedSecurities: [], weights: {} }]); // Reset portfolios on new data load
+      setPortfolios([{ id: 1, name: "Portfolio 1", selectedSecurities: [], weights: {} }]); 
       setWeightedChartData(null);
-      setPortfolioTotalReturns([]); // Reset total returns
-      setPortfolioWeightErrors({}); // Reset portfolio weight errors
-      setIndividualChartError(""); // Clear individual chart error on new data load
+      setPortfolioTotalReturns([]); 
+      setPortfolioWeightErrors({}); 
+      setIndividualChartError(""); 
     } catch (error) {
       console.error("Error uploading file:", error);
       setError("Error uploading file");
@@ -201,7 +187,7 @@ export default function Ror() {
     }
   };
 
-  // Add/remove portfolios
+  // add/remove portfolios
   const handleAddPortfolio = () => {
     const newId = portfolios.length > 0 ? Math.max(...portfolios.map(p => p.id)) + 1 : 1;
     setPortfolios([...portfolios, { id: newId, name: `Portfolio ${newId}`, selectedSecurities: [], weights: {} }]);
@@ -209,7 +195,6 @@ export default function Ror() {
 
   const handleRemovePortfolio = (idToRemove) => {
     setPortfolios(prev => prev.filter(p => p.id !== idToRemove));
-    // Also remove any associated weight error when a portfolio is removed
     setPortfolioWeightErrors(prev => {
         const newErrors = { ...prev };
         delete newErrors[idToRemove];
@@ -217,7 +202,7 @@ export default function Ror() {
     });
   };
 
-  // Handle portfolio name change
+  // change portfolio name
   const handlePortfolioNameChange = (portfolioId, newName) => {
     setPortfolios(prev =>
       prev.map(p =>
@@ -228,7 +213,7 @@ export default function Ror() {
     );
   };
 
-  // Update selected securities for a specific portfolio
+  // update portfolio
   const handlePortfolioSecurityToggle = (portfolioId, sec) => {
     setPortfolios(prev =>
       prev.map(p =>
@@ -244,7 +229,7 @@ export default function Ror() {
     );
   };
 
-  // Update weights for a specific security within a specific portfolio
+  // update portfolio weights
   const handlePortfolioWeightChange = (portfolioId, sec, value) => {
     setPortfolios(prev =>
       prev.map(p =>
@@ -261,7 +246,7 @@ export default function Ror() {
     );
   };
 
-  // Select/Unselect all for a specific portfolio
+  // select all for portfolio
   const handlePortfolioSelectAll = (portfolioId) => {
     if (!backendData?.securities) return;
     setPortfolios(prev =>
@@ -278,23 +263,19 @@ export default function Ror() {
     );
   };
 
-
-  // Frequency and securities handlers for single chart
+  // individual freq change
   const handleFrequencyChange = (e) => {
     const newFreq = e.target.value;
     setFrequency(newFreq);
-    // const range = backendData?.ranges?.[newFreq] || {};
-    // setStartDate(range.min || "");
-    // setEndDate(range.max || "");
   };
 
+  // portfolio total returns
   useEffect(() => {
     if (!backendData || !backendData[frequency]) return;
   
     const selected = selectedSecurities || [];
     const rawData = backendData[frequency];
   
-    // Get the latest available daily date (used to validate "complete periods")
     const maxDailyDate = (() => {
       const allDates = Object.values(backendData.daily || {}).flatMap(secData =>
         secData.map(d => new Date(d.Date))
@@ -302,7 +283,6 @@ export default function Ror() {
       return allDates.length > 0 ? new Date(Math.max(...allDates.map(d => d.getTime()))) : null;
     })();
   
-    // Helper: is this date a full/completed period?
     const isFullPeriod = (dateObj, freq, maxDaily) => {
       if (!maxDaily) return true;
       if (freq === "daily") return true;
@@ -322,14 +302,13 @@ export default function Ror() {
       return true;
     };
   
-    // No securities selected — use full range
     if (selected.length === 0) {
       const defaultRange = backendData.ranges?.[frequency] || {};
       setStartDate(defaultRange.min || "");
       setEndDate(defaultRange.max || "");
       return;
     }
-  
+
     const startDates = [];
     const endDates = [];
   
@@ -363,7 +342,7 @@ export default function Ror() {
   }, [frequency, selectedSecurities, backendData]);
   
   
-
+  // individual security chart
   const handleSecurityToggle = (sec) => {
     setSelectedSecurities(prev =>
       prev.includes(sec) ? prev.filter(s => s !== sec) : [...prev, sec]
@@ -376,7 +355,7 @@ export default function Ror() {
     setSelectedSecurities(allSelected ? [] : [...backendData.securities]);
   };
 
-  // Frequency and securities handlers for weighted chart
+  // weighted freq change
   const handleWeightedFrequencyChange = (e) => {
     const newFreq = e.target.value;
     setWeightedFrequency(newFreq);
@@ -387,10 +366,6 @@ export default function Ror() {
     console.log(weightedEndDate);
   };
 
-  const allSelectedSecurities = portfolios
-  .flatMap(p => p.selectedSecurities)
-  .filter((v, i, a) => a.indexOf(v) === i); // remove duplicates
-
   useEffect(() => {
     if (!backendData || !backendData[weightedFrequency] || !portfolios || portfolios.length === 0) return;
   
@@ -398,7 +373,7 @@ export default function Ror() {
   
     const allSelected = portfolios
       .flatMap(p => p.selectedSecurities)
-      .filter((v, i, a) => a.indexOf(v) === i); // unique securities
+      .filter((v, i, a) => a.indexOf(v) === i); 
   
     if (allSelected.length === 0) {
       const defaultRange = backendData.ranges?.[weightedFrequency] || {};
@@ -436,7 +411,7 @@ export default function Ror() {
   
   
 
-  // Prepare data for single securities chart
+  // create individual chart
   const generateIndividualChart = () => {
     if (!backendData) {
       setIndividualChartError("Please upload an Excel file to get data.");
@@ -445,11 +420,10 @@ export default function Ror() {
     }
     if (selectedSecurities.length === 0) {
       setIndividualChartError("Please select at least one market index to display the chart.");
-      setChartData({ datasets: [] }); // Set datasets to empty for the empty state
+      setChartData({ datasets: [] }); 
       return;
     }
 
-    // Clear error if conditions for error are not met
     setIndividualChartError("");
 
     const rawData = backendData[frequency];
@@ -471,7 +445,7 @@ export default function Ror() {
       let returnKey;
       if (frequency === 'quarter') {
         returnKey = 'QuarterReturn';
-      } else if (frequency === 'monthly') { // Added monthly condition
+      } else if (frequency === 'monthly') { 
         returnKey = 'MonthlyReturn';
       } else {
         returnKey = `${frequency.charAt(0).toUpperCase() + frequency.slice(1)}Return`;
@@ -485,7 +459,6 @@ export default function Ror() {
           allYValues.push(yValue);
         }
         return {
-          //x: new Date(point.Date),
           x: formatDateUTC(point.Date),
           y: yValue,
         };
@@ -505,8 +478,6 @@ export default function Ror() {
         hitRadius: 15,
       };
     });
-
-
     setChartData({ datasets });
   };
 
@@ -549,11 +520,10 @@ export default function Ror() {
         hitRadius: 15,
       };
     });
-  
     setPriceChartData({ datasets });
   };
   
-
+  // portfolio chart
   const generateWeightedChart = () => {
     if (!backendData) {
       setWeightedChartData(null);
@@ -566,7 +536,7 @@ export default function Ror() {
     let allYValuesAcrossPortfolios = [];
     let tempPortfolioTotalReturns = [];
     let currentWeightErrors = {};
-    let hasAnyWeightError = false; // Flag to track if any portfolio has an error
+    let hasAnyWeightError = false; 
   
     console.log(`--- Generating Weighted Chart for Portfolios ---`);
     console.log(`  Weighted Chart Input Date Range: Start = ${weightedStartDate}, End = ${weightedEndDate}`);
@@ -594,7 +564,6 @@ export default function Ror() {
       if (weightedFrequency === 'quarter') returnKey = 'QuarterReturn';
       if (weightedFrequency === 'annual') returnKey = 'AnnualReturn';
     
-      // 🔍 Determine overlap window
       const allDatesPerSec = portfolio.selectedSecurities.map(sec => {
         const secData = rawData[sec] || [];
         const sorted = secData.sort((a, b) => new Date(a.Date) - new Date(b.Date));
@@ -609,7 +578,6 @@ export default function Ror() {
       const overlapStart = new Date(Math.max(...allDatesPerSec.map(d => d.start.getTime())));
       const overlapEnd = new Date(Math.min(...allDatesPerSec.map(d => d.end.getTime())));
     
-      // Override with user range if tighter
       const userStart = weightedStartDate ? new Date(weightedStartDate) : null;
       const userEnd = weightedEndDate ? new Date(weightedEndDate) : null;
     
@@ -647,11 +615,10 @@ export default function Ror() {
       const result = calculatePortfolioReturns(
         portfolio,
         backendData,
-        finalStart.toISOString().split("T")[0], // Pass the final, calculated start date string
-        finalEnd.toISOString().split("T")[0]   // Pass the final, calculated end date string
+        finalStart.toISOString().split("T")[0], 
+        finalEnd.toISOString().split("T")[0]   
       );
       
-      //const name = result.isPartialPeriod ? `${portfolio.name} (Partial Period)` : portfolio.name;
       const name = portfolio.name
       console.log(name);
       
@@ -660,13 +627,10 @@ export default function Ror() {
         name: portfolio.name,
         totalReturn: result.value,
         isPartial: result.isPartialPeriod,
-        // Use the dates returned from the calculation
         startDateStr: result.startPriceDate ? formatDateUTC(result.startPriceDate) : 'N/A',
         endDateStr: result.endPriceDate ? formatDateUTC(result.endPriceDate) : 'N/A'
       });
       
-      
-    
       if (sortedPortfolioData.length > 0) {
         allChartDatasets.push({
           label: portfolio.name,
@@ -684,7 +648,6 @@ export default function Ror() {
       }
     });
     
-  
     setPortfolioWeightErrors(currentWeightErrors);
   
     if (hasAnyWeightError) {
@@ -711,7 +674,7 @@ export default function Ror() {
 
   };
   
-// Helper function to find the closest price on or before a given date
+// helper function to find the closest price on or before a given date
 const findPriceOnOrBefore = (data, targetDateObj) => {
   if (!targetDateObj) return { price: null, date: null };
 
@@ -764,7 +727,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     if (foundEndDate) allEndDates.push(new Date(foundEndDate));
   });
 
-  // Determine the synchronized date range (latest start, earliest end)
   const unifiedStartDate = allStartDates.length > 0 ? new Date(Math.min(...allStartDates.map(d => d.getTime()))) : null;
   const unifiedEndDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates.map(d => d.getTime()))) : null;
   
@@ -779,7 +741,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     console.log("⚠️ Partial Period: The unified range differs from user's selected range");
   }
 
-  // Second pass: calculate weighted returns using unified date range
   portfolio.selectedSecurities.forEach(sec => {
     const weightFraction = (portfolio.weights[sec] || 0) / 100;
     const data = backendData.daily[sec] || [];
@@ -834,9 +795,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
   }
 };
 
-  
-
-  // Calculate total returns for selected securities (daily data)
+  // individual total returns
   const calculateIndividualReturns = (backendData, selectedSecurities, startDateStr, endDateStr) => {
     if (!backendData || selectedSecurities.length === 0) return [];
   
@@ -856,29 +815,21 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         return { sec, totalReturn: "N/A (No data)", disclaimer: "" }; // Initialize disclaimer to empty
       }
   
-      // Find start price
       const { price: startPrice, date: startPriceDate } = findPriceOnOrBefore(sortedData, userStartDateObj);
-  
-      // Find end price
       const { price: endPrice, date: endPriceDate } = findPriceOnOrBefore(sortedData, userEndDateObj);
   
-      // 🔍 Logging start/end date and price info
       console.log(`  ${sec}:`);
       console.log(`    Start Date Used: ${startPriceDate}, Start Price: ${startPrice}`);
       console.log(`    End Date Used:   ${endPriceDate}, End Price:   ${endPrice}`);
   
       let isPartial = false;
-      // If user provided a start date AND the found start price date doesn't match the user's start date
       if (startDateStr && formatDateUTC(startPriceDate) !== startDateStr) {
         isPartial = true;
       }
-      // If user provided an end date AND the found end price date doesn't match the user's end date
       if (endDateStr && formatDateUTC(endPriceDate) !== endDateStr) {
         isPartial = true;
       }
       const disclaimer = isPartial ? `    (from ${startPriceDate} to ${endPriceDate})` : "";
-
-
 
       if (
         startPrice === null || endPrice === null ||
@@ -894,11 +845,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       return { sec, totalReturn, disclaimer };
     });
   };
-  
 
-
-
-  // Export chart functionality
+  // export chart as image
   const exportChart = () => {
     if (chartRef.current) {
       const link = document.createElement('a');
@@ -907,6 +855,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       link.click();
     }
   };
+
+  // download excel file
   const exportSecurities = (data, frequency, start, end, selectedSecurities) => {
     const wb = XLSX.utils.book_new();
   
@@ -916,7 +866,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     selectedSecurities.forEach((security) => {
       const freqData = data[frequency][security] || [];
   
-      // 🔑 Filter by selected date range
       const filtered = freqData.filter(entry => {
         const dateObj = new Date(entry.Date);
         if (startDate && dateObj < startDate) return false;
@@ -924,7 +873,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         return true;
       });
   
-      // Shape rows for Excel
       const rows = filtered.map(entry => ({
         Date: entry.Date,
         Price: entry.Price,
@@ -934,7 +882,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
   
       const ws = XLSX.utils.json_to_sheet(rows);
   
-      // Find return column
       const range = XLSX.utils.decode_range(ws['!ref']);
       const headerRow = 0;
       let returnCol = -1;
@@ -948,7 +895,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         }
       }
   
-      // Apply percentage format
       if (returnCol !== -1) {
         for (let R = 1; R <= range.e.r; ++R) {
           const cellAddress = XLSX.utils.encode_cell({ r: R, c: returnCol });
@@ -966,9 +912,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     saveAs(new Blob([wbout], { type: "application/octet-stream" }), `securities-${frequency}.xlsx`);
   };
   
-  
-  
-  // Helper function to get the correct return key from backend data
+  // helper function to get the correct return key from backend data
   const getReturnKey = (frequency) => {
     if (frequency === 'daily') return 'DailyReturn';
     if (frequency === 'monthly') return 'MonthlyReturn';
@@ -983,12 +927,10 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     portfolios.forEach((portfolio) => {
       const sheetData = [];
   
-      // 1. Portfolio name and Asset Mix
       sheetData.push([`${portfolio.name || `Portfolio ${portfolio.id}`}`]);
       sheetData.push([]);
       sheetData.push(['Asset Mix:']);
   
-      // Filter weights to only include > 0
       const validWeights = Object.entries(portfolio.weights)
         .filter(([sec, weight]) => parseFloat(weight) > 0);
   
@@ -1002,57 +944,46 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
   
       sheetData.push([]);
   
-      // 2. Collect all unique dates
       const allDatesSet = new Set();
       portfolio.selectedSecurities.forEach(sec => {
         (backendData.rawPrices?.[sec] || []).forEach(({ Date }) => allDatesSet.add(Date));
       });
-      const allDates = Array.from(allDatesSet).sort((a, b) => new Date(a) - new Date(b));
   
-      // 3. Prepare prices and returns for the selected frequency
       const pricesByDateAndSec = {};
       const returnsBySec = {};
   
       portfolio.selectedSecurities.forEach(sec => {
-        // Prices
         pricesByDateAndSec[sec] = {};
         (backendData.rawPrices?.[sec] || []).forEach(({ Date, Price }) => {
           pricesByDateAndSec[sec][Date] = Price;
         });
   
-        // Returns for the selected frequency, filtered by start/end
         returnsBySec[sec] = {};
         const freqData = backendData[frequency]?.[sec] || [];
         const startDate = start ? new Date(start) : null;
         const endDate = end ? new Date(end) : null;
   
-        freqData.forEach(entry => {
-          const entryDate = new Date(entry.Date);
-          if ((startDate && entryDate < startDate)) return;
-  
-          // **MODIFIED LOGIC START**
-          // Check for monthly frequency to include the entire last month
-          const isMonthly = frequency === 'monthly';
-          const isWithinDateRange = (!endDate || entryDate <= endDate);
-          const isInLastMonth = isMonthly && endDate && 
-                                entryDate.getFullYear() === endDate.getFullYear() &&
-                                entryDate.getMonth() === endDate.getMonth();
+        // freqData.forEach(entry => {
+        //   const entryDate = new Date(entry.Date);
+        //   if ((startDate && entryDate < startDate)) return;
+        //   const isMonthly = frequency === 'monthly';
+        //   const isWithinDateRange = (!endDate || entryDate <= endDate);
+        //   const isInLastMonth = isMonthly && endDate && 
+        //                         entryDate.getFullYear() === endDate.getFullYear() &&
+        //                         entryDate.getMonth() === endDate.getMonth();
           
-          if (isWithinDateRange || isInLastMonth) {
-              const returnKey = getReturnKey(frequency);
-              if (entry[returnKey] != null) {
-                  returnsBySec[sec][entry.Date] = entry[returnKey];
-              }
-          }
-          // **MODIFIED LOGIC END**
-        });
+        //   if (isWithinDateRange || isInLastMonth) {
+        //       const returnKey = getReturnKey(frequency);
+        //       if (entry[returnKey] != null) {
+        //           returnsBySec[sec][entry.Date] = entry[returnKey];
+        //       }
+        //   }
+        // });
       });
   
-      // 4. Header row: Date, asset prices, selected frequency return
       const returnHeader = getReturnKey(frequency).replace(/([a-z])([A-Z])/g, '$1 $2');
       sheetData.push(['Date', ...portfolio.selectedSecurities, returnHeader]);
   
-      // 5. Build rows per date (filtered)
       const returnDatesSet = new Set();
       portfolio.selectedSecurities.forEach(sec => {
         Object.keys(returnsBySec[sec]).forEach(date => returnDatesSet.add(date));
@@ -1066,14 +997,12 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       filteredDates.forEach(date => {
         const row = [date];
   
-        // ✅ Asset prices (use findPriceOnOrBefore instead of raw lookup)
         portfolio.selectedSecurities.forEach(sec => {
           const rawData = backendData.rawPrices?.[sec] || [];
           const { price } = findPriceOnOrBefore(rawData, new Date(date));
           row.push(price != null ? price : '');
         });
   
-        // Weighted return for the selected frequency
         const weightSum = portfolio.selectedSecurities.reduce((sum, sec) => sum + (portfolio.weights[sec] || 0), 0);
         let weightedReturn = 0;
         let validData = true;
@@ -1091,11 +1020,8 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         }
       });
   
-    
-      // 6. Convert sheetData to worksheet
       const ws = XLSX.utils.aoa_to_sheet(sheetData);
   
-      // 7. Format return column as percentage
       const returnColIndex = 1 + portfolio.selectedSecurities.length;
       const range = XLSX.utils.decode_range(ws['!ref']);
       for (let r = sheetData.indexOf([]) + validWeights.length + 3; r <= range.e.r; r++) {
@@ -1104,17 +1030,15 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
         if (cell && typeof cell.v === 'number') cell.z = '0.00%';
       }
   
-      // 8. Append worksheet
       const sheetName = portfolio.name ? portfolio.name.substring(0, 31) : `Portfolio ${portfolio.id}`;
       XLSX.utils.book_append_sheet(wb, ws, sheetName);
     });
   
-    // 9. Write file and trigger download
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
     saveAs(new Blob([wbout], { type: 'application/octet-stream' }), 'portfolios.xlsx');
   };
 
-  // Export weighted chart functionality
+  // export portfolio chart as image
   const exportWeightedChart = () => {
     if (weightedChartRef.current) {
       const link = document.createElement('a');
