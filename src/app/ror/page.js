@@ -616,7 +616,7 @@ export default function Ror() {
         portfolio,
         backendData,
         finalStart.toISOString().split("T")[0], 
-        finalEnd.toISOString().split("T")[0]   
+        finalEnd.toISOString().split("T")[0], 
       );
       
       const name = portfolio.name
@@ -628,7 +628,8 @@ export default function Ror() {
         totalReturn: result.value,
         isPartial: result.isPartialPeriod,
         startDateStr: result.startPriceDate ? formatDateUTC(result.startPriceDate) : 'N/A',
-        endDateStr: result.endPriceDate ? formatDateUTC(result.endPriceDate) : 'N/A'
+        endDateStr: result.endPriceDate ? formatDateUTC(result.endPriceDate) : 'N/A', 
+        disclaimer: result.disclaimer
       });
       
       if (sortedPortfolioData.length > 0) {
@@ -709,9 +710,6 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
   let allStartDates = [];
   let allEndDates = [];
 
-  console.log("==== Calculating Portfolio Return for:", portfolio.name);
-  console.log("User Selected Date Range:", startDateStr, "to", endDateStr);
-
   // First pass: collect actual data dates for all securities
   portfolio.selectedSecurities.forEach(sec => {
     const data = backendData.daily[sec] || [];
@@ -720,80 +718,76 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
     const { date: foundStartDate } = findPriceOnOrBefore(sorted, userStartDateObj);
     const { date: foundEndDate } = findPriceOnOrBefore(sorted, userEndDateObj);
 
-    console.log(`→ Security: ${sec}`);
-    console.log(`   Found Start Date: ${formatDateUTC(foundStartDate)}, Found End Date: ${formatDateUTC(foundEndDate)}`);
-
     if (foundStartDate) allStartDates.push(new Date(foundStartDate));
     if (foundEndDate) allEndDates.push(new Date(foundEndDate));
   });
 
   const unifiedStartDate = allStartDates.length > 0 ? new Date(Math.min(...allStartDates.map(d => d.getTime()))) : null;
   const unifiedEndDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates.map(d => d.getTime()))) : null;
-  
 
-  console.log("→ Unified Date Range to Use:", formatDateUTC(unifiedStartDate), "to", formatDateUTC(unifiedEndDate));
-
+  // Check if the period is partial
+  let disclaimer = "";
   if (
     (startDateStr && formatDateUTC(unifiedStartDate) !== startDateStr) ||
     (endDateStr && formatDateUTC(unifiedEndDate) !== endDateStr)
   ) {
     isPartialPeriod = true;
-    console.log("⚠️ Partial Period: The unified range differs from user's selected range");
+    disclaimer = `(from ${formatDateUTC(unifiedStartDate)} to ${formatDateUTC(unifiedEndDate)})`;
+    console.log("helloooo");
+    console.log(disclaimer);
   }
 
+  // Calculate weighted portfolio return
   portfolio.selectedSecurities.forEach(sec => {
     const weightFraction = (portfolio.weights[sec] || 0) / 100;
     const data = backendData.daily[sec] || [];
     const sorted = [...data].sort((a, b) => new Date(a.Date) - new Date(b.Date));
 
-    const { price: startPrice, date: actualStartDate } = findPriceOnOrBefore(sorted, unifiedStartDate);
-    const { price: endPrice, date: actualEndDate } = findPriceOnOrBefore(sorted, unifiedEndDate);
+    const { price: startPrice } = findPriceOnOrBefore(sorted, unifiedStartDate);
+    const { price: endPrice } = findPriceOnOrBefore(sorted, unifiedEndDate);
 
     if (
       startPrice === null || endPrice === null ||
       typeof startPrice !== "number" || typeof endPrice !== "number" ||
       isNaN(startPrice) || isNaN(endPrice) || startPrice === 0
     ) {
-      console.log(`⚠️ Invalid price data for ${sec} — skipping`);
       allSecuritiesHaveValidPrices = false;
       return;
     }
 
     const returnPct = (endPrice / startPrice) - 1;
-    const weightedContribution = returnPct * weightFraction;
-    simpleWeightedPortfolioReturn += weightedContribution;
-
-    console.log(`✔️ ${sec} — Start: ${startPrice} (${formatDateUTC(actualStartDate)}), End: ${endPrice} (${formatDateUTC(actualEndDate)})`);
-    console.log(`   Weight: ${weightFraction * 100}%, Return: ${(returnPct * 100).toFixed(2)}%, Contribution: ${(weightedContribution * 100).toFixed(2)}%`);
+    simpleWeightedPortfolioReturn += returnPct * weightFraction;
   });
+  console.log(`DISCLAIMER ${disclaimer}`);
 
+  // Return the result including disclaimer
   if (allSecuritiesHaveValidPrices && portfolio.selectedSecurities.length > 0) {
-    const result = {
+    return {
       value: (simpleWeightedPortfolioReturn * 100).toFixed(2) + "%",
       isPartialPeriod,
       startPriceDate: unifiedStartDate,
       endPriceDate: unifiedEndDate,
+      disclaimer, // ✅ include this
     };
-    console.log("✅ Final Portfolio Return:", result.value, "Partial:", result.isPartialPeriod);
-    return result;
   } else if (portfolio.selectedSecurities.length === 0) {
-    console.log("❌ No securities selected.");
     return {
       value: "N/A (No securities selected)",
       isPartialPeriod: false,
       startPriceDate: null,
       endPriceDate: null,
+      disclaimer: "",
     };
   } else {
-    console.log("❌ Missing or invalid price data for one or more securities.");
     return {
       value: "N/A (Missing price data or invalid range for some securities)",
       isPartialPeriod: false,
       startPriceDate: null,
       endPriceDate: null,
+      disclaimer: "",
     };
   }
 };
+
 
   // individual total returns
   const calculateIndividualReturns = (backendData, selectedSecurities, startDateStr, endDateStr) => {
@@ -841,7 +835,7 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
   
       const totalReturnDecimal = (endPrice / startPrice) - 1;
       const totalReturn = (totalReturnDecimal * 100).toFixed(2) + "%";
-      
+
       return { sec, totalReturn, disclaimer };
     });
   };
@@ -1184,13 +1178,22 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
           {selectedSecurities.length > 0 && (
             <div>
               <h3>Total Return by Market Index (Selected Time Period)</h3>
-              <ul>
-                {individualTotalReturns.map(({ sec, totalReturn, disclaimer }, idx) => (
-                  <li key={idx}>
-                    <strong>{sec}{disclaimer || ''}</strong>: {totalReturn}
-                  </li>
-                ))}
-              </ul>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Security</th>
+                    <th>Total Return</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {individualTotalReturns.map(({ sec, totalReturn, disclaimer }, idx) => (
+                    <tr key={idx}>
+                      <td>{sec}{disclaimer || ''}</td>
+                      <td>{totalReturn}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 
@@ -1547,16 +1550,22 @@ const calculatePortfolioReturns = (portfolio, backendData, startDateStr, endDate
       {portfolioTotalReturns.length > 0 && (
         <div>
           <h3>Portfolio Total Returns:</h3>
-          {portfolioTotalReturns.map((p, idx) => (
-            <p key={idx}>
-              <strong>
-                {p.name}
-                {p.isPartial ? ` (from ${p.startDateStr} to ${p.endDateStr})` : ""}
-                :
-              </strong>{" "}
-              {p.totalReturn}
-            </p>
-          ))}
+          <table>
+            <thead>
+              <tr>
+                <th>Portfolio Name</th>
+                <th>Total Return</th>
+              </tr>
+            </thead>
+            <tbody>
+              {portfolioTotalReturns.map((p, idx) => (
+                <tr key={idx}>
+                  <td>{p.name} {p.disclaimer || ''}</td>
+                  <td>{p.totalReturn}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 

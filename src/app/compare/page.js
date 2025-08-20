@@ -230,7 +230,7 @@ export default function Compare() {
 
             {toggles.info && (
               <div className="toggle-section">
-              <table className="table">
+              <table>
                 <thead>
                   <tr>
                     <th>Field Name</th>
@@ -270,7 +270,7 @@ export default function Compare() {
 
             {toggles.fields && (
               <div className="toggle-section">
-              <table className="table">
+              <table>
                 <thead>
                   <tr>
                     <th>Field Name</th>
@@ -337,7 +337,7 @@ export default function Compare() {
           {excelData.length > 0 && (
            <div className="container">
            <h2>Excel Data</h2>
-           <table className="table">
+           <table>
              <thead>
                <tr>
                  <th>Value</th>
