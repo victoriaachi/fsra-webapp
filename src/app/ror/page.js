@@ -55,6 +55,27 @@ function formatDateUTC(date) {
   return d.toISOString().split('T')[0]; // Gives 'YYYY-MM-DD'
 }
 
+function adjustDateForFrequency(dateStr, frequency) {
+  const date = new Date(dateStr);
+
+  if (frequency === "daily") {
+    return date; // keep original
+  } else if (frequency === "monthly") {
+    // move to first day of month
+    date.setDate(1);
+  } else if (frequency === "quarterly") {
+    // move to first month of quarter
+    const quarterStartMonth = Math.floor(date.getMonth() / 3) * 3;
+    return new Date(date.getFullYear(), quarterStartMonth, 1);
+  } else if (frequency === "yearly") {
+    // move to Jan 1 of that year
+    return new Date(date.getFullYear(), 0, 1);
+  }
+
+  return date;
+}
+
+
 export default function Ror() {
   const [excel, setExcel] = useState(null);
   const [fileDragging, setFileDragging] = useState(false);
@@ -115,6 +136,8 @@ export default function Ror() {
       .then((mod) => ChartJS.register(mod.default))
       .catch(console.error);
   }, []);
+
+  
 
   // generate charts
   useEffect(() => {
